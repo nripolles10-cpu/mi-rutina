@@ -1,0 +1,33 @@
+{
+  "appId": "com.nripolles.mirutina",
+  "appName": "Mi Rutina",
+  "webDir": "dist",
+  "android": {
+    "backgroundColor": "#060913",
+    "allowMixedContent": false,
+    "captureInput": false,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 3000,
+      "launchAutoHide": false,
+      "backgroundColor": "#060913",
+      "showSpinner": false,
+      "androidScaleType": "CENTER_CROP"
+    },
+    "SystemBars": {
+      "insetsHandling": "css",
+      "style": "DARK",
+      "hidden": false
+    },
+    "Keyboard": {
+      "resize": "native",
+      "resizeOnFullScreen": true
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_mirutina",
+      "iconColor": "#22D3EE"
+    }
+  }
+}

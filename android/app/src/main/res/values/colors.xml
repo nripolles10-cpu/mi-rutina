@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Colores de la app (los mismos que en la web) -->
+    <color name="fondoApp">#060913</color>
+    <color name="colorPrimary">#060913</color>
+    <color name="colorPrimaryDark">#060913</color>
+    <color name="colorAccent">#22D3EE</color>
+</resources>

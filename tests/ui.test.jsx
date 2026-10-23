@@ -103,24 +103,28 @@ describe('rutina', () => {
     void st;
   });
 
-  test('deshacer y rehacer: los botones se activan al instante y agrupan el tecleo del mismo campo', async () => {
+  test('ya no hay botones de deshacer ni rehacer (lo pidió el dueño) y borrar pide confirmación', async () => {
     await montar();
-    const undo = screen.getByTitle('Deshacer');
-    const redo = screen.getByTitle('Rehacer');
-    expect(undo.disabled).toBe(true);
+    expect(screen.queryByTitle('Deshacer')).toBeNull();
+    expect(screen.queryByTitle('Rehacer')).toBeNull();
     await click(screen.getByText(/Bloqueado — toca para editar/));
-    expect(undo.disabled).toBe(true); // cambiar a modo edición no entra en la pila
-    const label = screen.getByDisplayValue('Pierna A');
-    await type(label, 'Pierna A1');
-    await type(label, 'Pierna A12');
-    expect(undo.disabled).toBe(false);
-    await click(undo);
-    expect(screen.getByDisplayValue('Pierna A')).toBeTruthy(); // un solo paso deshace todo el tecleo agrupado
-    expect(undo.disabled).toBe(true);
-    expect(redo.disabled).toBe(false);
-    await click(redo);
-    expect(screen.getByDisplayValue('Pierna A12')).toBeTruthy();
-    expect(redo.disabled).toBe(true);
+    await click(screen.getByText('🗑️ Eliminar este día'));
+    expect(texto()).toMatch(/No se puede deshacer/);
+    await click(btn('Cancelar'));
+    await flush();
+    expect(guardado().days.length).toBe(5);
+  });
+
+  test('el trofeo 🏆 muestra la MEJOR marca de la serie 1, no la última', async () => {
+    const st = A.buildInitialState();
+    st.exercises.gemelo.history = [
+      { date: '2026-10-01T10:00:00.000Z', sets: [{ tipo: 'top', reps: 7, weight: 110 }] },
+      { date: '2026-10-08T10:00:00.000Z', sets: [{ tipo: 'top', reps: 7, weight: 100 }] },
+    ];
+    localStorage.setItem(A.STORAGE_KEY, JSON.stringify(st));
+    await montar();
+    const card = screen.getByText('Gemelo de pie').closest('.card');
+    expect(card.textContent).toContain('🏆 110 kg');
   });
 
   test('quitar ejercicio con confirmación, mover, crear y borrar día', async () => {
@@ -302,15 +306,25 @@ describe('ajustes: compartir, importar, copia, exportar y restablecer', () => {
     expect(texto()).toMatch(/corrupto/);
   });
 
-  test('exportaciones .txt / .csv / .doc', async () => {
+  test('exportaciones .xlsx / .docx / .csv / .txt', async () => {
     const llamadas = [];
-    A.Native.saveFile = (name, content, mime) => { llamadas.push({ name, content, mime }); return true; };
-    await montar();
-    await click(screen.getByTitle('Ajustes'));
-    for (const b of screen.getAllByText('⬇️ Descargar')) await click(b);
-    expect(llamadas.map((x) => x.name)).toEqual(['mi_rutina.txt', 'mi_rutina.csv', 'mi_rutina.doc']);
-    expect(llamadas[1].content.charCodeAt(0)).toBe(0xFEFF);
-    expect(texto()).toContain('Archivo preparado ✓');
+    const original = A.Native.saveFile;
+    A.Native.saveFile = async (name, content, mime, base64) => { llamadas.push({ name, content, mime, base64 }); return true; };
+    try {
+      await montar();
+      await click(screen.getByTitle('Ajustes'));
+      for (const b of screen.getAllByText('⬇️ Descargar')) { fireEvent.click(b); await act(async () => { await new Promise((r) => setTimeout(r, 50)); }); }
+      await act(async () => { await new Promise((r) => setTimeout(r, 300)); }); // el .docx se genera en segundo plano
+      const por = (n) => llamadas.find((x) => x.name === n);
+      expect(llamadas.map((x) => x.name).sort()).toEqual(['mi_rutina.csv', 'mi_rutina.docx', 'mi_rutina.txt', 'mi_rutina.xlsx']);
+      expect(por('mi_rutina.xlsx').base64).toBe(true);
+      expect(por('mi_rutina.docx').base64).toBe(true);
+      // un .xlsx y un .docx son ZIP: empiezan por "PK"
+      expect(atob(por('mi_rutina.xlsx').content).slice(0, 2)).toBe('PK');
+      expect(atob(por('mi_rutina.docx').content).slice(0, 2)).toBe('PK');
+      expect(por('mi_rutina.csv').content.charCodeAt(0)).toBe(0xFEFF);
+      expect(texto()).toContain('Archivo preparado ✓');
+    } finally { A.Native.saveFile = original; }
   });
 
   test('restablecer guarda copia y vuelve a los datos de serie', async () => {
@@ -387,3 +401,95 @@ describe('temporizador de descanso', () => {
     expect(texto()).toMatch(/Descanso terminado/);
   });
 });
+
+describe('fase 2: botón atrás, importar CSV, fotos y ajustes', () => {
+  test('Escape (botón Atrás) cierra primero la ventana, luego Ajustes', async () => {
+    await montar();
+    await click(screen.getByTitle('Ajustes'));
+    await click(screen.getByText('📤 Compartir mi rutina'));
+    expect(screen.getByText('📤 Compartir mi rutina', { selector: 'div' })).toBeTruthy();
+    fireEvent.keyDown(window, { key: 'Escape' }); await tick();
+    expect(screen.queryByText('Generar código')).toBeNull(); // se cerró la ventana
+    expect(screen.getByText('⚙️ Ajustes')).toBeTruthy(); // seguimos en Ajustes
+    fireEvent.keyDown(window, { key: 'Escape' }); await tick();
+    expect(screen.queryByText('⚙️ Ajustes')).toBeNull(); // volvió a la pantalla principal
+    expect(screen.getByText('Pierna A')).toBeTruthy();
+    expect(A.backStackSize()).toBe(0);
+  });
+
+  test('Escape cierra un diálogo de confirmación antes que la ventana de debajo', async () => {
+    await montar();
+    await click(screen.getByTitle('Ajustes'));
+    await click(screen.getByText('🗑️ Restablecer todos los datos'));
+    expect(screen.getByText('¿Restablecer todo?')).toBeTruthy();
+    fireEvent.keyDown(window, { key: 'Escape' }); await tick();
+    expect(screen.queryByText('¿Restablecer todo?')).toBeNull();
+    expect(screen.getByText('⚙️ Ajustes')).toBeTruthy();
+  });
+
+  test('importar rutina pegando el CSV de la plantilla', async () => {
+    await montar();
+    await click(screen.getByTitle('Ajustes'));
+    await click(screen.getByText('📊 Importar rutina desde Excel o CSV'));
+    expect(screen.getByTestId('plantilla-csv').textContent).toContain('Dia;Equipo;Ejercicio');
+    await type(screen.getByPlaceholderText(/Dia;Equipo;Ejercicio/), A.PLANTILLA_CSV);
+    await click(btn('Comprobar CSV pegado'));
+    expect(texto()).toContain('✅ Rutina leída: 2 días, 4 ejercicios y 6 series');
+    await click(btn('Importar…'));
+    await click(btn('Importar'));
+    expect(texto()).toContain('Importación completada ✓');
+    await click(screen.getAllByText('✕ Cerrar').slice(-1)[0]);
+    await flush();
+    expect(guardado().days.map((d) => d.label)).toEqual(['Pierna A', 'Pecho']);
+  });
+
+  test('foto de un ejercicio: se guarda y se ve (navegador)', async () => {
+    const original = A.Native.pickPhoto;
+    A.Native.pickPhoto = async () => 'data:image/jpeg;base64,/9j/AAAA';
+    try {
+      await montar();
+      await click(screen.getByText(/Bloqueado — toca para editar/));
+      await click(screen.getByText('Gemelo de pie'));
+      await click(screen.getByText('🖼️ Galería'));
+      expect(JSON.parse(localStorage.getItem(A.FOTOS_KEY)).gemelo).toBe('data:image/jpeg;base64,/9j/AAAA');
+      expect(document.querySelector('img[src="data:image/jpeg;base64,/9j/AAAA"]')).toBeTruthy();
+      await click(screen.getByText('Quitar foto'));
+      expect(JSON.parse(localStorage.getItem(A.FOTOS_KEY)).gemelo).toBeUndefined();
+    } finally { A.Native.pickPhoto = original; }
+  });
+
+  test('mantener pantalla encendida se guarda en los datos', async () => {
+    await montar();
+    await click(screen.getByTitle('Ajustes'));
+    await click(screen.getByText('Mantener la pantalla encendida mientras uses la app'));
+    await flush();
+    expect(guardado().preferencias.pantallaEncendida).toBe(true);
+  });
+
+  test('el temporizador explica que en el navegador el aviso solo suena con la app abierta', async () => {
+    await montar();
+    await click(screen.getByTitle('Descanso entre series'));
+    expect(screen.getByTestId('timer-aviso').textContent).toMatch(/En el navegador/);
+  });
+
+  test('crear defaultData.json desde Ajustes sin datos personales', async () => {
+    const llamadas = [];
+    const original = A.Native.saveFile;
+    A.Native.saveFile = async (name, content) => { llamadas.push({ name, content }); return true; };
+    try {
+      await montar();
+      await tab('Progreso');
+      await type(screen.getAllByPlaceholderText('kg')[0], '81,2');
+      await click(screen.getByText('Registrar peso de hoy'));
+      await click(screen.getByTitle('Ajustes'));
+      fireEvent.click(screen.getByText('🎁 Crear defaultData.json'));
+      await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+      expect(llamadas[0].name).toBe('defaultData.json');
+      const obj = JSON.parse(llamadas[0].content);
+      expect(obj.rutina.days.length).toBe(5);
+      expect(obj.peso).toBeUndefined();
+      expect(JSON.stringify(obj)).not.toContain('81.2');
+    } finally { A.Native.saveFile = original; }
+  });
+});
+

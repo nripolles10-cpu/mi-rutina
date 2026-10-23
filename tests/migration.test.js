@@ -51,10 +51,8 @@ describe('migrateState', () => {
   });
 
   test('ACTUALIZACIÓN FUTURA: si se sube APP_VERSION a 8, un usuario en 7 conserva su rutina', () => {
-    const B = loadApp({ patch: (src) => src.replace('const APP_VERSION = 7;', 'const APP_VERSION = 8;') });
-    expect(B.APP_VERSION).toBe(8);
     const st = estadoEditado(7);
-    const m = B.migrateState(JSON.parse(JSON.stringify(st)));
+    const m = A.migrateState(JSON.parse(JSON.stringify(st)), 8);
     expect(m.days.map((d) => d.label)).toEqual(['Mi día']);
     expect(m.exercises.miPress.history.length).toBe(1);
     expect(m.version).toBe(8);

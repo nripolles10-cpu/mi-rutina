@@ -1,0 +1,131 @@
+# Compila el APK de Mi Rutina cada vez que se sube algo a "main" (o a mano desde la pestaña Actions).
+# Resultado: un archivo "mi-rutina" en la parte de abajo de la ejecución, con el APK dentro.
+name: APK de Android
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    name: Pruebas y APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # hace falta el historial completo para el número de versión
+
+      - name: Instalar Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Revisar el código (ESLint)
+        run: npm run lint
+
+      - name: Pruebas automáticas
+        run: npm test
+
+      - name: Construir la web
+        run: npm run build
+
+      - name: Copiar la web al proyecto Android
+        run: npx cap sync android
+
+      - name: Número de versión
+        run: |
+          N=$(git rev-list --count HEAD)
+          echo "MIRUTINA_VERSION_CODE=$N" >> "$GITHUB_ENV"
+          echo "Versión 1.$N (código $N)"
+
+      - name: Comprobar la llave de firma
+        id: llave
+        env:
+          KS: ${{ secrets.MIRUTINA_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.MIRUTINA_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.MIRUTINA_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.MIRUTINA_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KS" ] && [ -n "$KS_PASS" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASS" ]; then
+            echo "hay=si" >> "$GITHUB_OUTPUT"
+            echo "Llave de firma encontrada."
+          else
+            echo "hay=no" >> "$GITHUB_OUTPUT"
+            echo "::warning::Todavía no hay llave de firma en los Secrets. Se comprueba que el proyecto compila, pero NO se genera el APK. Mira GUIA.md, paso 3."
+          fi
+
+      # Sin llave: solo se comprueba que el proyecto Android compila. No se publica ningún APK
+      # (uno firmado con otra llave no se podría instalar encima del bueno).
+      - name: Comprobar que compila (sin llave, no genera APK)
+        if: steps.llave.outputs.hay == 'no'
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Parar porque falta la llave
+        if: steps.llave.outputs.hay == 'no'
+        run: |
+          echo "::error::El proyecto compila bien, pero falta la llave de firma. Sigue GUIA.md, paso 3 (crear la llave y guardarla en Settings → Secrets and variables → Actions) y vuelve a lanzar este flujo."
+          exit 1
+
+      - name: Preparar la llave
+        if: steps.llave.outputs.hay == 'si'
+        env:
+          KS: ${{ secrets.MIRUTINA_KEYSTORE_BASE64 }}
+        run: |
+          printf '%s' "$KS" | tr -d ' \r\n' | base64 -d > "$RUNNER_TEMP/mirutina.jks"
+          echo "MIRUTINA_KEYSTORE_PATH=$RUNNER_TEMP/mirutina.jks" >> "$GITHUB_ENV"
+
+      - name: Compilar el APK firmado
+        if: steps.llave.outputs.hay == 'si'
+        working-directory: android
+        env:
+          MIRUTINA_KEYSTORE_PASSWORD: ${{ secrets.MIRUTINA_KEYSTORE_PASSWORD }}
+          MIRUTINA_KEY_ALIAS: ${{ secrets.MIRUTINA_KEY_ALIAS }}
+          MIRUTINA_KEY_PASSWORD: ${{ secrets.MIRUTINA_KEY_PASSWORD }}
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Comprobar la firma y preparar el archivo
+        if: steps.llave.outputs.hay == 'si'
+        run: |
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)
+          "$BT/apksigner" verify --verbose "$APK"
+          echo "Huella de la llave (debe ser SIEMPRE la misma en todas las versiones):"
+          "$BT/apksigner" verify --print-certs "$APK" | grep -i "SHA-256"
+          mkdir -p salida
+          cp "$APK" "salida/mi-rutina-1.${MIRUTINA_VERSION_CODE}.apk"
+          ls -la salida
+
+      - name: Guardar el APK
+        if: steps.llave.outputs.hay == 'si'
+        uses: actions/upload-artifact@v4
+        with:
+          name: mi-rutina
+          path: salida/*.apk
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Borrar la llave del servidor
+        if: always()
+        run: rm -f "$RUNNER_TEMP/mirutina.jks"

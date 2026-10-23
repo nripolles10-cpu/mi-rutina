@@ -1,0 +1,104 @@
+apply plugin: 'com.android.application'
+
+// ---------------------------------------------------------------------------------------------
+// Firma de la app (la "llave"). Se lee de variables de entorno (GitHub Actions, desde los Secrets)
+// o, para compilar en tu ordenador, del archivo android/keystore.properties (NO se sube a GitHub).
+// Sin llave NO se genera la versión release: así nunca sale un APK firmado con otra llave,
+// que no se podría instalar encima del anterior (y obligaría a desinstalar y perder los datos).
+// ---------------------------------------------------------------------------------------------
+def firma = [:]
+def propsFirma = rootProject.file('keystore.properties')
+if (propsFirma.exists()) {
+    def p = new Properties()
+    propsFirma.withInputStream { p.load(it) }
+    firma.storeFile = p.getProperty('storeFile')
+    firma.storePassword = p.getProperty('storePassword')
+    firma.keyAlias = p.getProperty('keyAlias')
+    firma.keyPassword = p.getProperty('keyPassword')
+}
+if (System.getenv('MIRUTINA_KEYSTORE_PATH')) {
+    firma.storeFile = System.getenv('MIRUTINA_KEYSTORE_PATH')
+    firma.storePassword = System.getenv('MIRUTINA_KEYSTORE_PASSWORD')
+    firma.keyAlias = System.getenv('MIRUTINA_KEY_ALIAS')
+    firma.keyPassword = System.getenv('MIRUTINA_KEY_PASSWORD')
+}
+def hayFirma = firma.storeFile && firma.storePassword && firma.keyAlias && firma.keyPassword && file(firma.storeFile).exists()
+
+// Número de versión: lo pone GitHub Actions (número de cambios del repositorio, siempre sube).
+// Android solo instala una actualización encima si el número es igual o mayor que el instalado.
+def codigoVersion = (System.getenv('MIRUTINA_VERSION_CODE') ?: '1') as Integer
+def nombreVersion = '1.' + codigoVersion
+
+android {
+    namespace = "com.nripolles.mirutina"
+    compileSdk = rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "com.nripolles.mirutina"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode codigoVersion
+        versionName nombreVersion
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    signingConfigs {
+        release {
+            if (hayFirma) {
+                storeFile file(firma.storeFile)
+                storePassword firma.storePassword
+                keyAlias firma.keyAlias
+                keyPassword firma.keyPassword
+            }
+        }
+    }
+    buildTypes {
+        release {
+            if (hayFirma) signingConfig signingConfigs.release
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+// Si se pide la versión release y no hay llave, se para con un mensaje claro
+gradle.taskGraph.whenReady { grafo ->
+    def pideRelease = grafo.allTasks.any { t -> t.project == project && t.name ==~ /(assemble|bundle|package)Release/ }
+    if (pideRelease && !hayFirma) {
+        throw new GradleException('FALTA LA LLAVE DE FIRMA. Configura los Secrets MIRUTINA_KEYSTORE_BASE64, ' +
+            'MIRUTINA_KEYSTORE_PASSWORD, MIRUTINA_KEY_ALIAS y MIRUTINA_KEY_PASSWORD en GitHub ' +
+            '(o el archivo android/keystore.properties en tu ordenador). Mira GUIA.md, paso 3.')
+    }
+}
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}

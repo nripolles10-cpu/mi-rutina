@@ -1,0 +1,2066 @@
+{
+  "app": "gymtracker",
+  "v": 1,
+  "appVersion": 7,
+  "tipo": "datos-por-defecto",
+  "creado": "2026-10-23T20:20:12.929Z",
+  "nombre": "",
+  "rutina": {
+    "days": [
+      {
+        "id": "piernaA",
+        "label": "Pierna A",
+        "equipo": "Banda, mosquetón y cincha",
+        "nota": "",
+        "ids": [
+          "gemelo",
+          "aductores",
+          "extCuadricepsUni",
+          "beltSquat",
+          "prensaPlacas",
+          "extCuadricepsBi"
+        ]
+      },
+      {
+        "id": "pecho",
+        "label": "Pecho, hombro y bíceps",
+        "equipo": "Muñequeras y de polea",
+        "nota": "",
+        "ids": [
+          "aperturasMaq",
+          "pressIncMaq",
+          "elevLat",
+          "pressMaq",
+          "curlBayesian",
+          "curlPredicador"
+        ]
+      },
+      {
+        "id": "piernaB",
+        "label": "Pierna B",
+        "equipo": "Straps, cinturón y cincha",
+        "nota": "",
+        "ids": [
+          "gemelo",
+          "femoralSentadoA",
+          "pesoMuertoBelt",
+          "hipThrust",
+          "abduccion",
+          "absMaquinaB"
+        ]
+      },
+      {
+        "id": "espalda",
+        "label": "Espalda, hombro y tríceps",
+        "equipo": "Straps",
+        "nota": "",
+        "ids": [
+          "remoT",
+          "jalonPecho",
+          "encogimientos",
+          "remoGironda",
+          "aperturasAtras",
+          "pressFrances",
+          "extTricepsPolea"
+        ]
+      },
+      {
+        "id": "abs",
+        "label": "Abs y músculos +",
+        "equipo": "Straps",
+        "nota": "",
+        "ids": [
+          "pressIncMulti",
+          "femoralSentadoB",
+          "absMaquinaE",
+          "antebrazoPolea"
+        ]
+      }
+    ],
+    "exercises": {
+      "gemelo": {
+        "name": "Gemelo de pie",
+        "cat": "gemelos",
+        "comentario": "Pesado, técnica perfecta.",
+        "objetivo": {
+          "text": "120 kg",
+          "value": 120
+        },
+        "currentSets": [
+          {
+            "reps": 7,
+            "weight": 100,
+            "nota": null,
+            "tipo": "top"
+          },
+          {
+            "reps": 7,
+            "weight": 90,
+            "nota": null,
+            "tipo": "backoff"
+          },
+          {
+            "reps": 8,
+            "weight": 80,
+            "nota": null,
+            "tipo": "backoff"
+          }
+        ],
+        "altName": null
+      },
+      "aductores": {
+        "name": "Aductores",
+        "cat": "aductores",
+        "comentario": "Pies fuera, control en cada punto, lento.",
+        "objetivo": {
+          "text": "115 kg + minis, técnica perfecta",
+          "value": 115
+        },
+        "currentSets": [
+          {
+            "reps": 9,
+            "weight": 102.5,
+            "nota": "+ minis",
+            "tipo": "top"
+          },
+          {
+            "reps": 8,
+            "weight": 95.5,
+            "nota": "+ minis",
+            "tipo": "backoff"
+          }
+        ],
+        "altName": null
+      },
+      "extCuadricepsUni": {
+        "name": "Extensión de cuádriceps unilateral",
+        "cat": "cuadriceps",
+        "comentario": "Solo repeticiones completas, cincha.",
+        "objetivo": null,
+        "currentSets": [
+          {
+            "reps": 8,
+            "weight": 73,
+            "nota": null,
+            "tipo": "top"
+          },
+          {
+            "reps": 8,
+            "weight": 66,
+            "nota": null,
+            "tipo": "backoff"
+          }
+        ],
+        "altName": null
+      },
+      "beltSquat": {
+        "name": "Belt squat",
+        "cat": "cuadriceps",
+        "comentario": "Primer eslabón, máximo recorrido.",
+        "objetivo": {
+          "text": "120 kg",
+          "value": 120
+        },
+        "currentSets": [
+          {
+            "reps": 5,
+            "weight": 100,
+            "nota": null,
+            "tipo": "top"
+          },
+          {
+            "reps": 5,
+            "weight": 90,
+            "nota": null,
+            "tipo": "backoff"
+          }
+        ],
+        "altName": null
+      },
+      "prensaPlacas": {
+        "name": "Prensa de placas",
+        "cat": "cuadriceps",
+        "comentario": "Unilateral, técnica CBUM, tensión continua.",
+        "objetivo": {
+          "text": "100 kg",
+          "value": 100
+        },
+        "currentSets": [
+          {
+            "reps": 8,
+            "weight": 75.3,
+            "nota": null,
+            "tipo": "top"
+          },
+          {
+            "reps": 9,
+            "weight": 68.3,
+            "nota": null,
+            "tipo": "backoff"
+          }
+        ],
+        "altName": null
+      },
+      "extCuadricepsBi": {
+        "name": "Extensión de cuádriceps bilateral",
+        "cat": "cuadriceps",
+        "comentario": "Control, cincha.",
+        "objetivo": null,
+        "currentSets": [
+          {
+            "reps": null,
+            "weight": 73,
+            "nota": null,
+            "tipo": "rp",
+            "tandas": [
+              null,
+              null,
+              null
+            ]
+          }
+        ],
+        "altName": null
+      },
+      "aperturasMaq": {
+        "name": "Aperturas en máquina",
+        "cat": "pecho",
+        "comentario": "Calentamiento, control.",
+        "objetivo": {
+          "text": "134 kg",
+          "value": 134
+        },
+        "currentSets": [
+          {
+            "reps": 8,
+            "weight": 127,
+            "nota": null,
+            "tipo": "warm"
+          },
+          {
+            "reps": 9,
+            "weight": 113,
+            "nota": null,
+            "tipo": "warm"
+          }
+        ],
+        "altName": null
+      },
+      "pressIncMaq": {
+        "name": "Press inclinado en máquina",
+        "cat": "pecho",
+        "comentario": "Prono, técnica de Andoni, técnica antes que peso.",
+        "objetivo": {
+          "text": "70 kg",
+          "value": 70
+        },
+        "currentSets": [
+          {
+            "reps": 7,
+            "weight": 60,
+            "nota": null,
+            "tipo": "top"
+          },
+          {
+            "reps": 8,
+            "weight": 50,
+            "nota": null,
+            "tipo": "backoff"
+          }
+        ],
+        "altName": null
+      },
+      "elevLat": {
+        "name": "Elevaciones laterales",
+        "cat": "hombro",
+        "comentario": "Sin straps, control.",
+        "objetivo": {
+          "text": "30 kg",
+          "value": 30
+        },
+        "currentSets": [
+          {
+            "reps": 5,
+            "weight": 25,
+            "nota": null,
+            "tipo": "top"
+          },
+          {
+            "reps": 8,
+            "weight": 20,
+            "nota": null,
+            "tipo": "backoff"
+          },
+          {
+            "reps": 10,
+            "weight": 15,
+            "nota": null,
+            "tipo": "backoff"
+          }
+        ],
+        "altName": null
+      },
+      "pressMaq": {
+        "name": "Press en máquina",
+        "cat": "pecho",
+        "comentario": "Agarre neutro, técnica.",
+        "objetivo": {
+          "text": "80 kg",
+          "value": 80
+        },
+        "currentSets": [
+          {
+            "reps": 7,
+            "weight": 65,
+            "nota": null,
+            "tipo": "top"
+          },
+          {
+            "reps": 6,
+            "weight": 55,
+            "nota": null,
+            "tipo": "backoff"
+          }
+        ],
+        "altName": null
+      },
+      "curlBayesian": {
+        "name": "Curl bayesian en polea",
+        "cat": "biceps",
+        "comentario": "Sujetarse.",
+        "objetivo": {
+          "text": "50 kg",
+          "value": 50
+        },
+        "currentSets": [
+          {
+            "reps": 7,
+            "weight": 32,
+            "nota": null,
+            "tipo": "top"
+          },
+          {
+            "reps": 10,
+            "weight": 27,
+            "nota": null,
+            "tipo": "backoff"
+          }
+        ],
+        "altName": null
+      },
+      "curlPredicador": {
+        "name": "Curl predicador",
+        "cat": "biceps",
+        "comentario": "Técnica Nacho.",
+        "objetivo": null,
+        "currentSets": [
+          {
+            "reps": 8,
+            "weight": 32,
+            "nota": null,
+            "tipo": "top"
+          },
+          {
+            "reps": 8,
+            "weight": 23,
+            "nota": null,
+            "tipo": "backoff"
+          }
+        ],
+        "altName": null
+      },
+      "femoralSentadoA": {
+        "name": "Femoral sentado",
+        "cat": "isquios",
+        "comentario": "Cincha, control.",
+        "objetivo": {
+          "text": "108 kg",
+          "value": 108
+        },
+        "currentSets": [
+          {
+            "reps": 9,
+            "weight": 106.5,
+            "nota": null,
+            "tipo": "top"
+          },
+          {
+            "reps": 7,
+            "weight": 99.5,
+            "nota": null,
+            "tipo": "backoff"
+          },
+          {
+            "reps": 7,
+            "weight": 92.5,
+            "nota": null,
+            "tipo": "backoff"
+          }
+        ],
+        "altName": null
+      },
+      "pesoMuertoBelt": {
+        "name": "Peso muerto belt",
+        "cat": "lumbar",
+        "comentario": "",
+        "objetivo": {
+          "text": "200 kg",
+          "value": 200
+        },
+        "currentSets": [
+          {
+            "reps": 8,
+            "weight": 140,
+            "nota": null,
+            "tipo": "top"
+          },
+          {
+            "reps": 8,
+            "weight": 120,
+            "nota": null,
+            "tipo": "backoff"
+          }
+        ],
+        "altName": null
+      },
+      "hipThrust": {
+        "name": "Hip thrust",
+        "cat": "gluteo",
+        "comentario": "Control total.",
+        "objetivo": {
+          "text": "100 kg",
+          "value": 100
+        },
+        "currentSets": [
+          {
+            "reps": 8,
+            "weight": 95,
+            "nota": null,
+            "tipo": "top"
+          },
+          {
+            "reps": 8,
+            "weight": 75,
+            "nota": null,
+            "tipo": "backoff"
+          }
+        ],
+        "altName": null
+      },
+      "abduccion": {
+        "name": "Abducción de cadera",
+        "cat": "abductores",
+        "comentario": "Control total.",
+        "objetivo": {
+          "text": "Máquina entera",
+          "value": null
+        },
+        "currentSets": [
+          {
+            "reps": 8,
+            "weight": 93,
+            "nota": null,
+            "tipo": "top"
+          },
+          {
+            "reps": 8,
+            "weight": 79,
+            "nota": null,
+            "tipo": "backoff"
+          }
+        ],
+        "altName": null
+      },
+      "absMaquinaB": {
+        "name": "Abdominales en máquina",
+        "cat": "core",
+        "comentario": "Al fallo técnico.",
+        "objetivo": {
+          "text": "Maxearla",
+          "value": null
+        },
+        "currentSets": [
+          {
+            "reps": 9,
+            "weight": 77,
+            "nota": null,
+            "tipo": "top"
+          },
+          {
+            "reps": 10,
+            "weight": 68,
+            "nota": null,
+            "tipo": "backoff"
+          }
+        ],
+        "altName": null
+      },
+      "remoT": {
+        "name": "Remo T en máquina",
+        "cat": "espalda",
+        "comentario": "Técnica.",
+        "objetivo": null,
+        "currentSets": [
+          {
+            "reps": 8,
+            "weight": 100,
+            "nota": null,
+            "tipo": "top"
+          },
+          {
+            "reps": 8,
+            "weight": 90,
+            "nota": null,
+            "tipo": "backoff"
+          }
+        ],
+        "altName": null
+      },
+      "jalonPecho": {
+        "name": "Jalón al pecho",
+        "cat": "espalda",
+        "comentario": "Unilateral.",
+        "objetivo": null,
+        "currentSets": [
+          {
+            "reps": 7,
+            "weight": 59,
+            "nota": null,
+            "tipo": "top"
+          },
+          {
+            "reps": 7,
+            "weight": 50,
+            "nota": null,
+            "tipo": "backoff"
+          }
+        ],
+        "altName": null
+      },
+      "encogimientos": {
+        "name": "Encogimientos en remo",
+        "cat": "trapecio",
+        "comentario": "Técnica Josema, trapecio, al fallo.",
+        "objetivo": null,
+        "currentSets": [
+          {
+            "reps": 10,
+            "weight": 79,
+            "nota": null,
+            "tipo": "top"
+          },
+          {
+            "reps": 10,
+            "weight": 66,
+            "nota": null,
+            "tipo": "backoff"
+          },
+          {
+            "reps": 11,
+            "weight": 59,
+            "nota": null,
+            "tipo": "backoff"
+          }
+        ],
+        "altName": null
+      },
+      "remoGironda": {
+        "name": "Remo gironda",
+        "cat": "espalda",
+        "comentario": "Unilateral.",
+        "objetivo": null,
+        "currentSets": [
+          {
+            "reps": 7,
+            "weight": 50,
+            "nota": null,
+            "tipo": "top"
+          },
+          {
+            "reps": 8,
+            "weight": 41,
+            "nota": null,
+            "tipo": "backoff"
+          }
+        ],
+        "altName": null
+      },
+      "aperturasAtras": {
+        "name": "Aperturas hacia atrás",
+        "cat": "hombro",
+        "comentario": "Rango fijo de 12 repes entre las 2 series, máquina entera, buena técnica.",
+        "objetivo": {
+          "text": "Máquina entera con buena técnica",
+          "value": null
+        },
+        "currentSets": [
+          {
+            "reps": 12,
+            "weight": 66,
+            "nota": null,
+            "tipo": "top"
+          },
+          {
+            "reps": 12,
+            "weight": 52,
+            "nota": null,
+            "tipo": "backoff"
+          }
+        ],
+        "altName": null
+      },
+      "pressFrances": {
+        "name": "Press francés en máquina",
+        "cat": "triceps",
+        "comentario": "",
+        "objetivo": {
+          "text": "80 kg",
+          "value": 80
+        },
+        "currentSets": [
+          {
+            "reps": 8,
+            "weight": 60,
+            "nota": null,
+            "tipo": "top"
+          },
+          {
+            "reps": 9,
+            "weight": 50,
+            "nota": null,
+            "tipo": "backoff"
+          }
+        ],
+        "altName": null
+      },
+      "extTricepsPolea": {
+        "name": "Extensión de tríceps en polea",
+        "cat": "triceps",
+        "comentario": "Barra.",
+        "objetivo": {
+          "text": "36 kg",
+          "value": 36
+        },
+        "currentSets": [
+          {
+            "reps": 10,
+            "weight": 32,
+            "nota": null,
+            "tipo": "top"
+          },
+          {
+            "reps": 10,
+            "weight": 23,
+            "nota": null,
+            "tipo": "backoff"
+          }
+        ],
+        "altName": null
+      },
+      "pressIncMulti": {
+        "name": "Press inclinado en Multipower",
+        "cat": "pecho",
+        "comentario": "Sin barra.",
+        "objetivo": {
+          "text": "100 kg",
+          "value": 100
+        },
+        "currentSets": [
+          {
+            "reps": 7,
+            "weight": 85,
+            "nota": null,
+            "tipo": "top"
+          },
+          {
+            "reps": 8,
+            "weight": 75,
+            "nota": null,
+            "tipo": "backoff"
+          }
+        ],
+        "altName": null
+      },
+      "femoralSentadoB": {
+        "name": "Femoral sentado",
+        "cat": "isquios",
+        "comentario": "Cincha, control.",
+        "objetivo": {
+          "text": "104 kg",
+          "value": 104
+        },
+        "currentSets": [
+          {
+            "reps": 8,
+            "weight": 84,
+            "nota": null,
+            "tipo": "top"
+          },
+          {
+            "reps": 8,
+            "weight": 70,
+            "nota": null,
+            "tipo": "backoff"
+          }
+        ],
+        "altName": null
+      },
+      "absMaquinaE": {
+        "name": "Abdominales en máquina",
+        "cat": "core",
+        "comentario": "Al fallo técnico.",
+        "objetivo": null,
+        "currentSets": [
+          {
+            "reps": 8,
+            "weight": 73,
+            "nota": null,
+            "tipo": "top"
+          },
+          {
+            "reps": 8,
+            "weight": 64,
+            "nota": null,
+            "tipo": "backoff"
+          }
+        ],
+        "altName": null
+      },
+      "antebrazoPolea": {
+        "name": "Antebrazo en polea",
+        "cat": "antebrazo",
+        "comentario": "Barra recta, al fallo técnico.",
+        "objetivo": null,
+        "currentSets": [
+          {
+            "reps": null,
+            "weight": null,
+            "nota": null,
+            "tipo": "top"
+          },
+          {
+            "reps": null,
+            "weight": null,
+            "nota": null,
+            "tipo": "backoff"
+          }
+        ],
+        "altName": null
+      }
+    }
+  },
+  "extra": {
+    "cardio": [
+      {
+        "id": "cinta",
+        "name": "Cinta",
+        "frecuencia": "3 días / semana",
+        "detalle": "20 min · inclinación 12 · velocidad 4,5"
+      },
+      {
+        "id": "calle",
+        "name": "Por la calle",
+        "frecuencia": "2 días / semana",
+        "detalle": "10.000 pasos"
+      }
+    ],
+    "extras": {
+      "movilidad": {
+        "titulo": "Rutina de movilidad matutina",
+        "url": "https://www.youtube.com/watch?v=Pnbwyxh4LJs&t=160s"
+      },
+      "suplementos": [
+        {
+          "id": "creatina",
+          "nombre": "Creatina",
+          "nota": "Tomar durante un tiempo (3 meses) y luego descansar 2 semanas – 1 mes.",
+          "filas": [
+            {
+              "id": "a",
+              "label": "Lo recomendable",
+              "value": "3 g (1 scoop)",
+              "destacado": false
+            },
+            {
+              "id": "b",
+              "label": "Lo normal",
+              "value": "Entre 3–6 g",
+              "destacado": true
+            },
+            {
+              "id": "c",
+              "label": "Fase de carga (1ª semana)",
+              "value": "2 scoops / día",
+              "destacado": false
+            },
+            {
+              "id": "d",
+              "label": "Más avanzado (0,07 × tu peso, 80–85kg)",
+              "value": "6 g (2 scoops)",
+              "destacado": false
+            }
+          ]
+        },
+        {
+          "id": "proteina",
+          "nombre": "Proteína",
+          "nota": "",
+          "filas": [
+            {
+              "id": "a",
+              "label": "Dosis",
+              "value": "30 g (1 scoop)",
+              "destacado": false
+            }
+          ]
+        },
+        {
+          "id": "multi",
+          "nombre": "Multivitamínico",
+          "nota": "",
+          "filas": [
+            {
+              "id": "a",
+              "label": "Dosis",
+              "value": "1 pastilla al día",
+              "destacado": false
+            }
+          ]
+        },
+        {
+          "id": "omega3",
+          "nombre": "Omega 3",
+          "nota": "",
+          "filas": [
+            {
+              "id": "a",
+              "label": "Dosis",
+              "value": "1 pastilla al día",
+              "destacado": false
+            }
+          ]
+        },
+        {
+          "id": "magnesio",
+          "nombre": "Magnesio",
+          "nota": "",
+          "filas": [
+            {
+              "id": "a",
+              "label": "Dosis",
+              "value": "1 pastilla al día",
+              "destacado": false
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "recetas": [
+    {
+      "id": "r_avena_platano",
+      "nombre": "Avena proteica con plátano y canela",
+      "tipo": "desayuno",
+      "objetivos": [
+        "volumen",
+        "mantenimiento"
+      ],
+      "p": 41,
+      "c": 78,
+      "g": 10,
+      "ingredientes": [
+        {
+          "n": "Copos de avena",
+          "q": 60,
+          "u": "g"
+        },
+        {
+          "n": "Leche semidesnatada",
+          "q": 250,
+          "u": "ml"
+        },
+        {
+          "n": "Proteína whey",
+          "q": 30,
+          "u": "g"
+        },
+        {
+          "n": "Plátano",
+          "q": 1,
+          "u": "ud"
+        },
+        {
+          "n": "Canela",
+          "q": 1,
+          "u": "cdta"
+        }
+      ],
+      "pasos": [
+        "Calienta la leche con la avena 3 minutos removiendo.",
+        "Aparta del fuego y mezcla la proteína con un chorrito de leche fría.",
+        "Añade el plátano troceado y la canela."
+      ],
+      "propia": false
+    },
+    {
+      "id": "r_tortita_claras",
+      "nombre": "Tortitas de claras y avena con frutos rojos",
+      "tipo": "desayuno",
+      "objetivos": [
+        "definicion",
+        "mantenimiento"
+      ],
+      "p": 22,
+      "c": 39,
+      "g": 4,
+      "ingredientes": [
+        {
+          "n": "Claras de huevo",
+          "q": 150,
+          "u": "g"
+        },
+        {
+          "n": "Copos de avena",
+          "q": 40,
+          "u": "g"
+        },
+        {
+          "n": "Frutos rojos",
+          "q": 100,
+          "u": "g"
+        },
+        {
+          "n": "Miel",
+          "q": 1,
+          "u": "cdta"
+        }
+      ],
+      "pasos": [
+        "Tritura las claras con la avena hasta obtener una masa fina.",
+        "Cocina en sartén antiadherente 2 minutos por lado.",
+        "Sirve con los frutos rojos y la miel."
+      ],
+      "propia": false
+    },
+    {
+      "id": "r_tostada_aguacate",
+      "nombre": "Tostadas de aguacate y huevo",
+      "tipo": "desayuno",
+      "objetivos": [
+        "volumen",
+        "mantenimiento"
+      ],
+      "p": 23,
+      "c": 32,
+      "g": 26,
+      "ingredientes": [
+        {
+          "n": "Pan integral",
+          "q": 70,
+          "u": "g"
+        },
+        {
+          "n": "Aguacate",
+          "q": 70,
+          "u": "g"
+        },
+        {
+          "n": "Huevo",
+          "q": 2,
+          "u": "ud"
+        },
+        {
+          "n": "Sal y pimienta",
+          "q": 1,
+          "u": "pizca"
+        }
+      ],
+      "pasos": [
+        "Tuesta el pan.",
+        "Aplasta el aguacate con sal y pimienta y extiéndelo.",
+        "Cocina los huevos a la plancha y colócalos encima."
+      ],
+      "propia": false
+    },
+    {
+      "id": "r_yogur_granola",
+      "nombre": "Yogur griego con granola y manzana",
+      "tipo": "desayuno",
+      "objetivos": [
+        "definicion",
+        "mantenimiento"
+      ],
+      "p": 28,
+      "c": 54,
+      "g": 5,
+      "ingredientes": [
+        {
+          "n": "Yogur griego 0%",
+          "q": 250,
+          "u": "g"
+        },
+        {
+          "n": "Granola",
+          "q": 30,
+          "u": "g"
+        },
+        {
+          "n": "Manzana",
+          "q": 1,
+          "u": "ud"
+        }
+      ],
+      "pasos": [
+        "Pon el yogur en un bol.",
+        "Añade la manzana en dados y la granola justo antes de comer."
+      ],
+      "propia": false
+    },
+    {
+      "id": "r_revuelto_pavo",
+      "nombre": "Revuelto de huevos y pavo con pan",
+      "tipo": "desayuno",
+      "objetivos": [
+        "definicion",
+        "mantenimiento"
+      ],
+      "p": 42,
+      "c": 28,
+      "g": 16,
+      "ingredientes": [
+        {
+          "n": "Huevo",
+          "q": 2,
+          "u": "ud"
+        },
+        {
+          "n": "Claras de huevo",
+          "q": 90,
+          "u": "g"
+        },
+        {
+          "n": "Pavo en lonchas",
+          "q": 60,
+          "u": "g"
+        },
+        {
+          "n": "Pan integral",
+          "q": 60,
+          "u": "g"
+        }
+      ],
+      "pasos": [
+        "Corta el pavo en tiras y dóralo 1 minuto.",
+        "Añade los huevos y las claras y remueve a fuego medio.",
+        "Sirve con el pan tostado."
+      ],
+      "propia": false
+    },
+    {
+      "id": "r_batido_cacahuete",
+      "nombre": "Batido de plátano, avena y crema de cacahuete",
+      "tipo": "desayuno",
+      "objetivos": [
+        "volumen"
+      ],
+      "p": 44,
+      "c": 69,
+      "g": 17,
+      "ingredientes": [
+        {
+          "n": "Leche semidesnatada",
+          "q": 300,
+          "u": "ml"
+        },
+        {
+          "n": "Plátano",
+          "q": 1,
+          "u": "ud"
+        },
+        {
+          "n": "Copos de avena",
+          "q": 40,
+          "u": "g"
+        },
+        {
+          "n": "Proteína whey",
+          "q": 30,
+          "u": "g"
+        },
+        {
+          "n": "Crema de cacahuete",
+          "q": 15,
+          "u": "g"
+        }
+      ],
+      "pasos": [
+        "Pon todos los ingredientes en la batidora.",
+        "Tritura 40 segundos y bebe al momento."
+      ],
+      "propia": false
+    },
+    {
+      "id": "r_arroz_pollo",
+      "nombre": "Arroz con pollo y verduras",
+      "tipo": "comida",
+      "objetivos": [
+        "definicion",
+        "mantenimiento"
+      ],
+      "p": 40,
+      "c": 68,
+      "g": 17,
+      "ingredientes": [
+        {
+          "n": "Pechuga de pollo",
+          "q": 150,
+          "u": "g"
+        },
+        {
+          "n": "Arroz (peso en crudo)",
+          "q": 80,
+          "u": "g"
+        },
+        {
+          "n": "Pimiento y zanahoria",
+          "q": 100,
+          "u": "g"
+        },
+        {
+          "n": "Aceite de oliva",
+          "q": 1,
+          "u": "cda"
+        }
+      ],
+      "pasos": [
+        "Cuece el arroz 12 minutos.",
+        "Saltea el pollo en dados con las verduras y el aceite 8 minutos.",
+        "Mezcla con el arroz y sazona."
+      ],
+      "propia": false
+    },
+    {
+      "id": "r_pasta_atun",
+      "nombre": "Pasta integral con atún y tomate",
+      "tipo": "comida",
+      "objetivos": [
+        "definicion",
+        "mantenimiento"
+      ],
+      "p": 39,
+      "c": 66,
+      "g": 4,
+      "ingredientes": [
+        {
+          "n": "Pasta integral (peso en crudo)",
+          "q": 90,
+          "u": "g"
+        },
+        {
+          "n": "Atún al natural",
+          "q": 2,
+          "u": "lata"
+        },
+        {
+          "n": "Tomate triturado",
+          "q": 150,
+          "u": "g"
+        },
+        {
+          "n": "Ajo",
+          "q": 1,
+          "u": "diente"
+        }
+      ],
+      "pasos": [
+        "Cuece la pasta.",
+        "Sofríe el ajo, añade el tomate y cocina 5 minutos.",
+        "Incorpora el atún escurrido y mezcla con la pasta."
+      ],
+      "propia": false
+    },
+    {
+      "id": "r_pollo_curry",
+      "nombre": "Pollo al curry con arroz basmati",
+      "tipo": "comida",
+      "objetivos": [
+        "volumen"
+      ],
+      "p": 50,
+      "c": 82,
+      "g": 11,
+      "ingredientes": [
+        {
+          "n": "Pechuga de pollo",
+          "q": 180,
+          "u": "g"
+        },
+        {
+          "n": "Arroz basmati (peso en crudo)",
+          "q": 90,
+          "u": "g"
+        },
+        {
+          "n": "Leche de coco light",
+          "q": 100,
+          "u": "ml"
+        },
+        {
+          "n": "Curry en polvo",
+          "q": 1,
+          "u": "cda"
+        },
+        {
+          "n": "Cebolla",
+          "q": 0.5,
+          "u": "ud"
+        }
+      ],
+      "pasos": [
+        "Dora la cebolla y el pollo en dados.",
+        "Añade el curry y la leche de coco y cocina 10 minutos.",
+        "Sirve sobre el arroz cocido."
+      ],
+      "propia": false
+    },
+    {
+      "id": "r_bowl_ternera",
+      "nombre": "Bowl de ternera, boniato y brócoli",
+      "tipo": "comida",
+      "objetivos": [
+        "mantenimiento"
+      ],
+      "p": 40,
+      "c": 56,
+      "g": 21,
+      "ingredientes": [
+        {
+          "n": "Ternera magra",
+          "q": 150,
+          "u": "g"
+        },
+        {
+          "n": "Boniato",
+          "q": 250,
+          "u": "g"
+        },
+        {
+          "n": "Brócoli",
+          "q": 150,
+          "u": "g"
+        },
+        {
+          "n": "Aceite de oliva",
+          "q": 1,
+          "u": "cda"
+        }
+      ],
+      "pasos": [
+        "Asa el boniato en dados a 200 °C durante 25 minutos.",
+        "Cuece el brócoli al vapor 6 minutos.",
+        "Dora la ternera en tiras y monta el bowl."
+      ],
+      "propia": false
+    },
+    {
+      "id": "r_lentejas_huevo",
+      "nombre": "Lentejas con verduras y huevo",
+      "tipo": "comida",
+      "objetivos": [
+        "definicion"
+      ],
+      "p": 29,
+      "c": 51,
+      "g": 13,
+      "ingredientes": [
+        {
+          "n": "Lentejas (peso en seco)",
+          "q": 80,
+          "u": "g"
+        },
+        {
+          "n": "Verduras variadas",
+          "q": 150,
+          "u": "g"
+        },
+        {
+          "n": "Huevo",
+          "q": 1,
+          "u": "ud"
+        },
+        {
+          "n": "Aceite de oliva",
+          "q": 1,
+          "u": "cdta"
+        }
+      ],
+      "pasos": [
+        "Cuece las lentejas con las verduras 25 minutos.",
+        "Cuece el huevo 10 minutos.",
+        "Sirve las lentejas con el huevo troceado."
+      ],
+      "propia": false
+    },
+    {
+      "id": "r_burrito_pollo",
+      "nombre": "Burrito de pollo y arroz",
+      "tipo": "comida",
+      "objetivos": [
+        "volumen"
+      ],
+      "p": 52,
+      "c": 86,
+      "g": 12,
+      "ingredientes": [
+        {
+          "n": "Tortilla de trigo grande",
+          "q": 1,
+          "u": "ud"
+        },
+        {
+          "n": "Pechuga de pollo",
+          "q": 130,
+          "u": "g"
+        },
+        {
+          "n": "Arroz (peso en crudo)",
+          "q": 60,
+          "u": "g"
+        },
+        {
+          "n": "Queso rallado light",
+          "q": 40,
+          "u": "g"
+        },
+        {
+          "n": "Salsa de tomate",
+          "q": 50,
+          "u": "g"
+        }
+      ],
+      "pasos": [
+        "Cuece el arroz y plancha el pollo en tiras.",
+        "Rellena la tortilla con el arroz, el pollo, el queso y la salsa.",
+        "Enrolla y dóralo 1 minuto por lado."
+      ],
+      "propia": false
+    },
+    {
+      "id": "r_salmon_patata",
+      "nombre": "Salmón al horno con patata y espárragos",
+      "tipo": "comida",
+      "objetivos": [
+        "volumen",
+        "mantenimiento"
+      ],
+      "p": 37,
+      "c": 45,
+      "g": 23,
+      "ingredientes": [
+        {
+          "n": "Salmón",
+          "q": 150,
+          "u": "g"
+        },
+        {
+          "n": "Patata",
+          "q": 250,
+          "u": "g"
+        },
+        {
+          "n": "Espárragos",
+          "q": 100,
+          "u": "g"
+        },
+        {
+          "n": "Aceite de oliva",
+          "q": 1,
+          "u": "cdta"
+        }
+      ],
+      "pasos": [
+        "Corta la patata en rodajas y hornea a 200 °C 15 minutos.",
+        "Añade el salmón y los espárragos y hornea 12 minutos más."
+      ],
+      "propia": false
+    },
+    {
+      "id": "r_quinoa_pollo",
+      "nombre": "Ensalada de quinoa, garbanzos y pollo",
+      "tipo": "comida",
+      "objetivos": [
+        "definicion"
+      ],
+      "p": 45,
+      "c": 66,
+      "g": 13,
+      "ingredientes": [
+        {
+          "n": "Quinoa (peso en crudo)",
+          "q": 60,
+          "u": "g"
+        },
+        {
+          "n": "Garbanzos cocidos",
+          "q": 120,
+          "u": "g"
+        },
+        {
+          "n": "Pechuga de pollo",
+          "q": 120,
+          "u": "g"
+        },
+        {
+          "n": "Tomate",
+          "q": 1,
+          "u": "ud"
+        },
+        {
+          "n": "Aceite de oliva",
+          "q": 1,
+          "u": "cdta"
+        }
+      ],
+      "pasos": [
+        "Cuece la quinoa 12 minutos y deja enfriar.",
+        "Plancha el pollo y córtalo.",
+        "Mezcla todo con el tomate y el aceite."
+      ],
+      "propia": false
+    },
+    {
+      "id": "r_tortilla_ensalada",
+      "nombre": "Tortilla de 3 huevos con ensalada y pan",
+      "tipo": "cena",
+      "objetivos": [
+        "definicion",
+        "mantenimiento"
+      ],
+      "p": 29,
+      "c": 32,
+      "g": 26,
+      "ingredientes": [
+        {
+          "n": "Huevo",
+          "q": 3,
+          "u": "ud"
+        },
+        {
+          "n": "Lechuga y tomate",
+          "q": 150,
+          "u": "g"
+        },
+        {
+          "n": "Pan integral",
+          "q": 60,
+          "u": "g"
+        },
+        {
+          "n": "Aceite de oliva",
+          "q": 1,
+          "u": "cdta"
+        }
+      ],
+      "pasos": [
+        "Bate los huevos con una pizca de sal.",
+        "Cuaja la tortilla en sartén con el aceite.",
+        "Sirve con la ensalada y el pan."
+      ],
+      "propia": false
+    },
+    {
+      "id": "r_merluza_patata",
+      "nombre": "Merluza al horno con patata y judías verdes",
+      "tipo": "cena",
+      "objetivos": [
+        "definicion"
+      ],
+      "p": 41,
+      "c": 40,
+      "g": 7,
+      "ingredientes": [
+        {
+          "n": "Merluza",
+          "q": 200,
+          "u": "g"
+        },
+        {
+          "n": "Patata",
+          "q": 200,
+          "u": "g"
+        },
+        {
+          "n": "Judías verdes",
+          "q": 150,
+          "u": "g"
+        },
+        {
+          "n": "Aceite de oliva",
+          "q": 1,
+          "u": "cdta"
+        }
+      ],
+      "pasos": [
+        "Hornea la patata en rodajas 15 minutos a 200 °C.",
+        "Añade la merluza y las judías y hornea 12 minutos."
+      ],
+      "propia": false
+    },
+    {
+      "id": "r_wok_pavo",
+      "nombre": "Wok de pavo y verduras con fideos de arroz",
+      "tipo": "cena",
+      "objetivos": [
+        "mantenimiento",
+        "volumen"
+      ],
+      "p": 43,
+      "c": 61,
+      "g": 8,
+      "ingredientes": [
+        {
+          "n": "Pechuga de pavo (cruda)",
+          "q": 150,
+          "u": "g"
+        },
+        {
+          "n": "Fideos de arroz (peso en crudo)",
+          "q": 60,
+          "u": "g"
+        },
+        {
+          "n": "Verduras para wok",
+          "q": 200,
+          "u": "g"
+        },
+        {
+          "n": "Salsa de soja",
+          "q": 1,
+          "u": "cda"
+        },
+        {
+          "n": "Aceite de sésamo",
+          "q": 1,
+          "u": "cdta"
+        }
+      ],
+      "pasos": [
+        "Cuece los fideos según el envase.",
+        "Saltea el pavo en tiras y luego las verduras a fuego fuerte.",
+        "Añade los fideos y la soja y mezcla 1 minuto."
+      ],
+      "propia": false
+    },
+    {
+      "id": "r_hamburguesa_boniato",
+      "nombre": "Hamburguesa casera de ternera con boniato",
+      "tipo": "cena",
+      "objetivos": [
+        "mantenimiento"
+      ],
+      "p": 36,
+      "c": 43,
+      "g": 8,
+      "ingredientes": [
+        {
+          "n": "Carne picada de ternera 5%",
+          "q": 150,
+          "u": "g"
+        },
+        {
+          "n": "Boniato",
+          "q": 200,
+          "u": "g"
+        },
+        {
+          "n": "Lechuga y tomate",
+          "q": 100,
+          "u": "g"
+        }
+      ],
+      "pasos": [
+        "Forma la hamburguesa con sal y pimienta.",
+        "Hornea el boniato en gajos 25 minutos a 200 °C.",
+        "Plancha la hamburguesa 4 minutos por lado y sirve con ensalada."
+      ],
+      "propia": false
+    },
+    {
+      "id": "r_crema_calabacin",
+      "nombre": "Crema de calabacín con huevo duro y tostada",
+      "tipo": "cena",
+      "objetivos": [
+        "definicion"
+      ],
+      "p": 26,
+      "c": 35,
+      "g": 18,
+      "ingredientes": [
+        {
+          "n": "Calabacín",
+          "q": 300,
+          "u": "g"
+        },
+        {
+          "n": "Huevo",
+          "q": 2,
+          "u": "ud"
+        },
+        {
+          "n": "Pan integral",
+          "q": 60,
+          "u": "g"
+        },
+        {
+          "n": "Queso light para untar",
+          "q": 1,
+          "u": "porción"
+        }
+      ],
+      "pasos": [
+        "Cuece el calabacín con un poco de agua y tritúralo con el queso.",
+        "Cuece los huevos 10 minutos.",
+        "Sirve la crema con el huevo troceado y la tostada."
+      ],
+      "propia": false
+    },
+    {
+      "id": "r_pizza_wrap",
+      "nombre": "Pizza de wrap proteica",
+      "tipo": "cena",
+      "objetivos": [
+        "mantenimiento"
+      ],
+      "p": 34,
+      "c": 35,
+      "g": 11,
+      "ingredientes": [
+        {
+          "n": "Wrap integral",
+          "q": 1,
+          "u": "ud"
+        },
+        {
+          "n": "Pavo en lonchas",
+          "q": 100,
+          "u": "g"
+        },
+        {
+          "n": "Mozzarella light",
+          "q": 40,
+          "u": "g"
+        },
+        {
+          "n": "Tomate triturado",
+          "q": 60,
+          "u": "g"
+        }
+      ],
+      "pasos": [
+        "Unta el wrap con el tomate.",
+        "Añade el pavo y la mozzarella.",
+        "Hornea 8 minutos a 200 °C hasta que se dore."
+      ],
+      "propia": false
+    },
+    {
+      "id": "r_skyr_nueces",
+      "nombre": "Skyr con nueces",
+      "tipo": "snack",
+      "objetivos": [
+        "definicion"
+      ],
+      "p": 24,
+      "c": 9,
+      "g": 10,
+      "ingredientes": [
+        {
+          "n": "Skyr natural",
+          "q": 200,
+          "u": "g"
+        },
+        {
+          "n": "Nueces",
+          "q": 15,
+          "u": "g"
+        }
+      ],
+      "pasos": [
+        "Pon el skyr en un bol y añade las nueces troceadas."
+      ],
+      "propia": false
+    },
+    {
+      "id": "r_tortitas_pavo",
+      "nombre": "Tortitas de arroz con pavo y queso fresco",
+      "tipo": "snack",
+      "objetivos": [
+        "definicion"
+      ],
+      "p": 18,
+      "c": 25,
+      "g": 3,
+      "ingredientes": [
+        {
+          "n": "Tortitas de arroz",
+          "q": 3,
+          "u": "ud"
+        },
+        {
+          "n": "Pavo en lonchas",
+          "q": 60,
+          "u": "g"
+        },
+        {
+          "n": "Queso fresco batido 0%",
+          "q": 60,
+          "u": "g"
+        }
+      ],
+      "pasos": [
+        "Unta el queso fresco en las tortitas.",
+        "Añade una loncha de pavo encima de cada una."
+      ],
+      "propia": false
+    },
+    {
+      "id": "r_batido_proteina",
+      "nombre": "Batido de proteína con leche y plátano",
+      "tipo": "snack",
+      "objetivos": [
+        "volumen",
+        "mantenimiento"
+      ],
+      "p": 35,
+      "c": 43,
+      "g": 7,
+      "ingredientes": [
+        {
+          "n": "Proteína whey",
+          "q": 30,
+          "u": "g"
+        },
+        {
+          "n": "Leche semidesnatada",
+          "q": 300,
+          "u": "ml"
+        },
+        {
+          "n": "Plátano",
+          "q": 1,
+          "u": "ud"
+        }
+      ],
+      "pasos": [
+        "Tritura todo en la batidora hasta que quede cremoso."
+      ],
+      "propia": false
+    },
+    {
+      "id": "r_hummus_pita",
+      "nombre": "Hummus con zanahoria y pan de pita",
+      "tipo": "snack",
+      "objetivos": [
+        "mantenimiento"
+      ],
+      "p": 12,
+      "c": 52,
+      "g": 12,
+      "ingredientes": [
+        {
+          "n": "Hummus",
+          "q": 60,
+          "u": "g"
+        },
+        {
+          "n": "Zanahoria",
+          "q": 150,
+          "u": "g"
+        },
+        {
+          "n": "Pan de pita",
+          "q": 1,
+          "u": "ud"
+        }
+      ],
+      "pasos": [
+        "Corta la zanahoria en bastones.",
+        "Tuesta la pita y sírvela con el hummus."
+      ],
+      "propia": false
+    },
+    {
+      "id": "r_barrita_avena",
+      "nombre": "Barrita casera de avena y cacahuete",
+      "tipo": "snack",
+      "objetivos": [
+        "volumen"
+      ],
+      "p": 12,
+      "c": 55,
+      "g": 13,
+      "ingredientes": [
+        {
+          "n": "Copos de avena",
+          "q": 40,
+          "u": "g"
+        },
+        {
+          "n": "Crema de cacahuete",
+          "q": 20,
+          "u": "g"
+        },
+        {
+          "n": "Plátano",
+          "q": 1,
+          "u": "ud"
+        },
+        {
+          "n": "Canela",
+          "q": 1,
+          "u": "pizca"
+        }
+      ],
+      "pasos": [
+        "Machaca el plátano y mézclalo con la avena y la crema de cacahuete.",
+        "Forma una barrita y hornea 15 minutos a 180 °C."
+      ],
+      "propia": false
+    },
+    {
+      "id": "r_requeson_pina",
+      "nombre": "Requesón con piña",
+      "tipo": "snack",
+      "objetivos": [
+        "definicion"
+      ],
+      "p": 25,
+      "c": 19,
+      "g": 8,
+      "ingredientes": [
+        {
+          "n": "Requesón",
+          "q": 200,
+          "u": "g"
+        },
+        {
+          "n": "Piña natural",
+          "q": 100,
+          "u": "g"
+        }
+      ],
+      "pasos": [
+        "Pon el requesón en un bol y añade la piña en trozos."
+      ],
+      "propia": false
+    },
+    {
+      "id": "r_bocata_pavo",
+      "nombre": "Bocadillo de pavo y queso",
+      "tipo": "snack",
+      "objetivos": [
+        "volumen"
+      ],
+      "p": 32,
+      "c": 60,
+      "g": 10,
+      "ingredientes": [
+        {
+          "n": "Pan de barra",
+          "q": 100,
+          "u": "g"
+        },
+        {
+          "n": "Pavo en lonchas",
+          "q": 80,
+          "u": "g"
+        },
+        {
+          "n": "Queso en lonchas",
+          "q": 30,
+          "u": "g"
+        },
+        {
+          "n": "Tomate",
+          "q": 0.5,
+          "u": "ud"
+        }
+      ],
+      "pasos": [
+        "Abre el pan y coloca el pavo, el queso y el tomate.",
+        "Tuéstalo 2 minutos si quieres."
+      ],
+      "propia": false
+    },
+    {
+      "id": "r_tortilla_avena",
+      "nombre": "Tortilla de avena y plátano",
+      "tipo": "desayuno",
+      "objetivos": [
+        "volumen",
+        "mantenimiento"
+      ],
+      "p": 23,
+      "c": 59,
+      "g": 17,
+      "ingredientes": [
+        {
+          "n": "Copos de avena",
+          "q": 50,
+          "u": "g"
+        },
+        {
+          "n": "Plátano",
+          "q": 1,
+          "u": "ud"
+        },
+        {
+          "n": "Huevo",
+          "q": 2,
+          "u": "ud"
+        },
+        {
+          "n": "Canela",
+          "q": 1,
+          "u": "pizca"
+        }
+      ],
+      "pasos": [
+        "Tritura la avena con el plátano y los huevos.",
+        "Cuaja la mezcla en sartén antiadherente 3 minutos por lado.",
+        "Espolvorea la canela."
+      ],
+      "propia": false
+    },
+    {
+      "id": "r_poke_atun",
+      "nombre": "Poke bowl de atún y arroz",
+      "tipo": "comida",
+      "objetivos": [
+        "definicion",
+        "mantenimiento"
+      ],
+      "p": 38,
+      "c": 61,
+      "g": 10,
+      "ingredientes": [
+        {
+          "n": "Arroz (peso en crudo)",
+          "q": 70,
+          "u": "g"
+        },
+        {
+          "n": "Atún al natural",
+          "q": 2,
+          "u": "lata"
+        },
+        {
+          "n": "Aguacate",
+          "q": 40,
+          "u": "g"
+        },
+        {
+          "n": "Edamame",
+          "q": 50,
+          "u": "g"
+        },
+        {
+          "n": "Salsa de soja",
+          "q": 1,
+          "u": "cda"
+        }
+      ],
+      "pasos": [
+        "Cuece el arroz y déjalo templar.",
+        "Monta el bol con el atún, el aguacate en láminas y el edamame.",
+        "Aliña con la soja."
+      ],
+      "propia": false
+    },
+    {
+      "id": "r_gambas_arroz",
+      "nombre": "Salteado de gambas con verduras y arroz",
+      "tipo": "cena",
+      "objetivos": [
+        "definicion",
+        "mantenimiento"
+      ],
+      "p": 44,
+      "c": 53,
+      "g": 8,
+      "ingredientes": [
+        {
+          "n": "Gambas peladas",
+          "q": 200,
+          "u": "g"
+        },
+        {
+          "n": "Arroz (peso en crudo)",
+          "q": 50,
+          "u": "g"
+        },
+        {
+          "n": "Verduras para wok",
+          "q": 200,
+          "u": "g"
+        },
+        {
+          "n": "Ajo",
+          "q": 1,
+          "u": "diente"
+        },
+        {
+          "n": "Aceite de oliva",
+          "q": 1,
+          "u": "cdta"
+        }
+      ],
+      "pasos": [
+        "Cuece el arroz.",
+        "Saltea el ajo, las verduras y después las gambas 3 minutos.",
+        "Mezcla con el arroz y sirve."
+      ],
+      "propia": false
+    },
+    {
+      "id": "r_pudin_chia",
+      "nombre": "Pudin de chía con proteína",
+      "tipo": "snack",
+      "objetivos": [
+        "definicion",
+        "mantenimiento"
+      ],
+      "p": 35,
+      "c": 17,
+      "g": 13,
+      "ingredientes": [
+        {
+          "n": "Semillas de chía",
+          "q": 25,
+          "u": "g"
+        },
+        {
+          "n": "Leche semidesnatada",
+          "q": 200,
+          "u": "ml"
+        },
+        {
+          "n": "Proteína whey",
+          "q": 30,
+          "u": "g"
+        },
+        {
+          "n": "Frutos rojos",
+          "q": 50,
+          "u": "g"
+        }
+      ],
+      "pasos": [
+        "Mezcla la leche con la proteína y la chía.",
+        "Deja reposar en la nevera 4 horas o toda la noche.",
+        "Sirve con los frutos rojos."
+      ],
+      "propia": false
+    }
+  ],
+  "favoritos": []
+}

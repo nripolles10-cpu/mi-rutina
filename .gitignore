@@ -1,1 +1,6 @@
 node_modules/
+dist/
+*.jks
+*.keystore
+keystore.properties
+.env

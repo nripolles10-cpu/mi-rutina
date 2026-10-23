@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- allowBackup: Android guarda una copia de los datos de la app en la cuenta de Google del móvil
+         (si el usuario tiene activada la copia de seguridad). Ayuda a no perder datos al cambiar de móvil. -->
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+
+        <!-- Solo en vertical. adjustResize: el teclado encoge la pantalla y no tapa los campos. -->
+        <activity
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
+            android:name=".MainActivity"
+            android:label="@string/title_activity_main"
+            android:theme="@style/AppTheme.NoActionBarLaunch"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+        </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths"></meta-data>
+        </provider>
+    </application>
+
+    <!-- Para abrir la cámara del sistema (hacer la foto de un ejercicio) en Android 11 y posteriores -->
+    <queries>
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE" />
+        </intent>
+    </queries>
+
+    <!-- Permisos. La app funciona sin internet; INTERNET es el que trae la plantilla de Capacitor
+         y no se usa para enviar datos a ningún sitio (la app no tiene servidor). -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Aviso del descanso a la hora exacta aunque la pantalla esté apagada.
+         Android 13+: USE_EXACT_ALARM (se concede solo, la app es un temporizador).
+         Android 12: SCHEDULE_EXACT_ALARM (también concedido al instalar).
+         Lo añade el plugin de notificaciones sin límite de versión; aquí se sustituye por la versión limitada. -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission
+        android:name="android.permission.SCHEDULE_EXACT_ALARM"
+        android:maxSdkVersion="32"
+        tools:node="replace" />
+
+    <!-- El resto los añaden los plugins automáticamente:
+         POST_NOTIFICATIONS (avisos; Android 13+ lo pregunta la primera vez), VIBRATE (vibración),
+         WAKE_LOCK y RECEIVE_BOOT_COMPLETED (para que el aviso programado funcione con la pantalla apagada).
+         No se pide CÁMARA ni acceso a fotos ni a archivos: la foto se hace con la app de cámara del sistema,
+         la galería usa el selector de fotos de Android y los archivos se guardan con el menú Compartir. -->
+</manifest>

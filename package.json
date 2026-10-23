@@ -1,24 +1,59 @@
 {
-  "name": "mi-rutina-fase1",
+  "name": "mi-rutina",
+  "private": true,
   "version": "1.0.0",
-  "description": "Auditoría y pruebas de ultimo.html (Fase 1)",
+  "description": "Mi Rutina: app de gimnasio (React + Capacitor para Android)",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
-    "test": "vitest run tests",
-    "lint": "node tests/lint.cjs"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "lint": "eslint src tests scripts",
+    "make-default": "node scripts/make-default.mjs",
+    "assets": "node scripts/gen-icon-sources.mjs && capacitor-assets generate --android --splashBackgroundColor \"#060913\" --splashBackgroundColorDark \"#060913\" && node scripts/android-icons.mjs",
+    "android:sync": "npm run build && cap sync android"
   },
-  "license": "ISC",
+  "dependencies": {
+    "@capacitor-community/keep-awake": "8.0.1",
+    "@capacitor/android": "8.5.3",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/browser": "8.0.5",
+    "@capacitor/camera": "8.2.6",
+    "@capacitor/core": "8.5.3",
+    "@capacitor/filesystem": "8.1.5",
+    "@capacitor/haptics": "8.0.2",
+    "@capacitor/keyboard": "8.0.6",
+    "@capacitor/local-notifications": "8.3.1",
+    "@capacitor/preferences": "8.0.1",
+    "@capacitor/share": "8.0.3",
+    "@capacitor/splash-screen": "8.0.2",
+    "@fontsource/inter": "5.3.0",
+    "@fontsource/rajdhani": "5.3.0",
+    "docx": "9.14.0",
+    "fflate": "0.8.3",
+    "lz-string": "1.5.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
   "devDependencies": {
-    "@babel/standalone": "^7.23.5",
-    "@testing-library/dom": "^10.4.2",
-    "@testing-library/react": "^16.3.3",
-    "eslint": "^8.57.1",
-    "eslint-plugin-react": "^7.37.5",
-    "eslint-plugin-react-hooks": "^7.1.1",
-    "jsdom": "^25.0.1",
-    "lz-string": "^1.5.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "vitest": "^2.1.9"
-  },
-  "private": true
+    "@capacitor/assets": "3.0.5",
+    "@capacitor/cli": "8.5.3",
+    "@eslint/js": "9.39.5",
+    "@testing-library/dom": "10.4.2",
+    "@testing-library/react": "16.3.3",
+    "@vitejs/plugin-react": "6.1.2",
+    "acorn": "8.19.0",
+    "acorn-jsx": "5.3.2",
+    "eslint": "9.39.5",
+    "eslint-plugin-react": "7.37.5",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.13.0",
+    "jsdom": "29.1.1",
+    "vite": "8.3.5",
+    "vitest": "5.0.5"
+  }
 }

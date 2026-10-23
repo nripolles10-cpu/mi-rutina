@@ -1,11 +1,10 @@
-// Pruebas de las funciones puras de ultimo.html (se cargan del propio HTML, no de una copia)
+// Pruebas de las funciones puras de la app (se importan de los módulos de src/)
 import { describe, test, expect, beforeAll } from 'vitest';
 import { loadApp } from './loadApp.js';
 
 let A;
 beforeAll(() => { localStorage.clear(); A = loadApp(); });
 
-const set = (o) => o; // azúcar
 
 describe('series efectivas', () => {
   test('effectiveCount: calentamiento 0, normal 1, rest-pause y dropset suman 0,5 por tanda/descenso extra', () => {
