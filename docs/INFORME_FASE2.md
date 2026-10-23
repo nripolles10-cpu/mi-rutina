@@ -116,15 +116,25 @@ Todo lo que depende del móvil pasa por un único objeto `Native`. En el navegad
     notificación programada, permiso denegado, compartir archivos y cancelar.
   - Interfaz: sin botones de deshacer, trofeo con la mejor marca, exportaciones, botón Atrás (Escape),
     importar CSV, fotos y pantalla encendida en la web.
-- GitHub Actions instala, revisa, prueba, construye y prepara el proyecto Android.
+- **Compilación en GitHub Actions (comprobada de verdad):** instala, revisa, prueba, construye la web y compila
+  el proyecto Android sin errores.
+- **La firma, de punta a punta:** en una rama de prueba temporal creé una llave desechable con los mismos comandos
+  del flujo "Crear llave de firma" y compilé la versión release: el APK sale firmado, `apksigner` lo verifica y
+  sin llave la compilación se para con el mensaje claro. Ese APK de prueba **no se guardó** (llevaba una llave que
+  no vale). Dentro del APK comprobé: nombre "Mi Rutina", paquete `com.nripolles.mirutina`, número de versión
+  automático y que los permisos son exactamente los de la lista de arriba (con `SCHEDULE_EXACT_ALARM` limitado
+  a Android 12 y `USE_EXACT_ALARM` para Android 13+).
+- **Aspecto en pantalla de móvil:** abrí la app compilada en Chromium a 360 × 780 px (tamaño de un móvil pequeño)
+  y revisé Rutina, Progreso, Comida, Extras y Ajustes: mismo diseño que la web, nada se sale por los lados,
+  la cabecera solo tiene ⏱️ y ⚙️, las fuentes se cargan sin internet y no hay ni un error en la consola.
 
 **NO comprobado (no tengo un móvil Android en este entorno):**
 
 - Que el APK se instale y abra en un móvil real, y todo lo que depende del hardware: notificaciones con la pantalla
   apagada (y el ahorro de batería de cada marca), cámara, selector de fotos, menú de compartir, vibración,
   teclado, botón Atrás físico y márgenes de las barras del sistema.
-- El aspecto visual en una pantalla real (no he podido abrir un navegador de verdad aquí).
-- El APK firmado: hasta que estén los Secrets, GitHub solo comprueba que el proyecto compila.
+- El APK firmado con **tu** llave: hasta que estén los Secrets, el flujo de `main` comprueba que compila y se para
+  (por eso verás una ✗ roja en Actions con el mensaje "falta la llave de firma"; es lo esperado).
 
 Para eso está `docs/PRUEBAS_MOVIL.md`: una lista de comprobación para hacer en el móvil con cada APK.
 
@@ -135,6 +145,8 @@ Para eso está `docs/PRUEBAS_MOVIL.md`: una lista de comprobación para hacer en
    tienen que ser solo tuyas.
 3. Lanzar **APK de Android**, instalarlo y repasar `docs/PRUEBAS_MOVIL.md`.
 4. Pasar tus datos de la web a la app con una copia de seguridad completa (GUIA.md, paso 5).
+5. Borrar la rama `prueba-firma-temporal` (pestaña **Branches** → icono de la papelera). Era solo para la prueba
+   de la firma y no puedo borrarla yo (no tengo ese permiso). No afecta a nada.
 
 ## Problemas probables
 
