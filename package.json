@@ -1,0 +1,24 @@
+{
+  "name": "mi-rutina-fase1",
+  "version": "1.0.0",
+  "description": "Auditoría y pruebas de ultimo.html (Fase 1)",
+  "scripts": {
+    "test": "vitest run tests",
+    "lint": "node tests/lint.cjs"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/standalone": "^7.23.5",
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
+    "eslint": "^8.57.1",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "jsdom": "^25.0.1",
+    "lz-string": "^1.5.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "vitest": "^2.1.9"
+  },
+  "private": true
+}
