@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   llave:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - name: Comprobaciones
@@ -33,7 +33,7 @@ jobs:
           fi
 
       - name: Instalar Java 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
@@ -70,7 +70,7 @@ jobs:
           echo "Llave creada. Huella SHA-256: $HUELLA"
 
       - name: Dejar la llave para descargar (1 día)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: llave-mi-rutina-DESCARGAR-Y-GUARDAR
           path: llave/

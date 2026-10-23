@@ -17,22 +17,22 @@ concurrency:
 jobs:
   apk:
     name: Pruebas y APK
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
       - name: Descargar el código
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0 # hace falta el historial completo para el número de versión
 
       - name: Instalar Node 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
 
       - name: Instalar Java 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
@@ -119,7 +119,7 @@ jobs:
 
       - name: Guardar el APK
         if: steps.llave.outputs.hay == 'si'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: mi-rutina
           path: salida/*.apk
