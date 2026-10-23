@@ -1,11 +1,10 @@
 # Compila el APK de Mi Rutina cada vez que se sube algo a "main" (o a mano desde la pestaña Actions).
 # Resultado: un archivo "mi-rutina" en la parte de abajo de la ejecución, con el APK dentro.
-name: APK de Android
+name: PRUEBA TEMPORAL firma (se borrará)
 
 on:
   push:
-    branches: [main]
-  workflow_dispatch:
+    branches: [prueba-firma-temporal]
 
 permissions:
   contents: read
@@ -59,54 +58,37 @@ jobs:
           echo "MIRUTINA_VERSION_CODE=$N" >> "$GITHUB_ENV"
           echo "Versión 1.$N (código $N)"
 
-      - name: Comprobar la llave de firma
-        id: llave
-        env:
-          KS: ${{ secrets.MIRUTINA_KEYSTORE_BASE64 }}
-          KS_PASS: ${{ secrets.MIRUTINA_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.MIRUTINA_KEY_ALIAS }}
-          KEY_PASS: ${{ secrets.MIRUTINA_KEY_PASSWORD }}
-        run: |
-          if [ -n "$KS" ] && [ -n "$KS_PASS" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASS" ]; then
-            echo "hay=si" >> "$GITHUB_OUTPUT"
-            echo "Llave de firma encontrada."
-          else
-            echo "hay=no" >> "$GITHUB_OUTPUT"
-            echo "::warning::Todavía no hay llave de firma en los Secrets. Se comprueba que el proyecto compila, pero NO se genera el APK. Mira GUIA.md, paso 3."
-          fi
-
-      # Sin llave: solo se comprueba que el proyecto Android compila. No se publica ningún APK
-      # (uno firmado con otra llave no se podría instalar encima del bueno).
-      - name: Comprobar que compila (sin llave, no genera APK)
-        if: steps.llave.outputs.hay == 'no'
+      - name: Comprobar que sin llave la release se para
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
-
-      - name: Parar porque falta la llave
-        if: steps.llave.outputs.hay == 'no'
         run: |
-          echo "::error::El proyecto compila bien, pero falta la llave de firma. Sigue GUIA.md, paso 3 (crear la llave y guardarla en Settings → Secrets and variables → Actions) y vuelve a lanzar este flujo."
-          exit 1
+          if ./gradlew assembleRelease --no-daemon > ../sin-llave.log 2>&1; then echo "::error::La release se generó sin llave"; exit 1; fi
+          grep -q "FALTA LA LLAVE DE FIRMA" ../sin-llave.log && echo "OK: se para con el mensaje claro"
 
-      - name: Preparar la llave
-        if: steps.llave.outputs.hay == 'si'
-        env:
-          KS: ${{ secrets.MIRUTINA_KEYSTORE_BASE64 }}
+      - name: Llave desechable (mismos comandos que crear-llave.yml)
         run: |
+          set -e
+          PASS=$(openssl rand -base64 24 | tr -dc 'A-Za-z0-9' | head -c 24)
+          echo "::add-mask::$PASS"
+          mkdir -p llave
+          keytool -genkeypair -v -storetype PKCS12 -keystore llave/mirutina.jks -alias mirutina \
+            -keyalg RSA -keysize 4096 -validity 10000 -storepass "$PASS" -keypass "$PASS" \
+            -dname "CN=Mi Rutina, OU=Mi Rutina, O=Mi Rutina, C=ES" > /dev/null 2>&1
+          base64 -w 0 llave/mirutina.jks > llave/MIRUTINA_KEYSTORE_BASE64.txt
+          keytool -list -v -keystore llave/mirutina.jks -storepass "$PASS" | grep -m1 "SHA256"
+          KS=$(cat llave/MIRUTINA_KEYSTORE_BASE64.txt)
           printf '%s' "$KS" | tr -d ' \r\n' | base64 -d > "$RUNNER_TEMP/mirutina.jks"
+          cmp llave/mirutina.jks "$RUNNER_TEMP/mirutina.jks" && echo "OK: base64 ida y vuelta"
           echo "MIRUTINA_KEYSTORE_PATH=$RUNNER_TEMP/mirutina.jks" >> "$GITHUB_ENV"
+          echo "MIRUTINA_KEYSTORE_PASSWORD=$PASS" >> "$GITHUB_ENV"
+          echo "MIRUTINA_KEY_ALIAS=mirutina" >> "$GITHUB_ENV"
+          echo "MIRUTINA_KEY_PASSWORD=$PASS" >> "$GITHUB_ENV"
+          rm -rf llave
 
       - name: Compilar el APK firmado
-        if: steps.llave.outputs.hay == 'si'
         working-directory: android
-        env:
-          MIRUTINA_KEYSTORE_PASSWORD: ${{ secrets.MIRUTINA_KEYSTORE_PASSWORD }}
-          MIRUTINA_KEY_ALIAS: ${{ secrets.MIRUTINA_KEY_ALIAS }}
-          MIRUTINA_KEY_PASSWORD: ${{ secrets.MIRUTINA_KEY_PASSWORD }}
         run: ./gradlew assembleRelease --no-daemon --stacktrace
 
       - name: Comprobar la firma y preparar el archivo
-        if: steps.llave.outputs.hay == 'si'
         run: |
           APK=android/app/build/outputs/apk/release/app-release.apk
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)
@@ -117,14 +99,12 @@ jobs:
           cp "$APK" "salida/mi-rutina-1.${MIRUTINA_VERSION_CODE}.apk"
           ls -la salida
 
-      - name: Guardar el APK
-        if: steps.llave.outputs.hay == 'si'
-        uses: actions/upload-artifact@v5
-        with:
-          name: mi-rutina
-          path: salida/*.apk
-          retention-days: 30
-          if-no-files-found: error
+      - name: Permisos y datos del APK (sin subirlo)
+        run: |
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)
+          "$BT/aapt2" dump badging salida/*.apk | grep -E "package:|uses-permission|sdkVersion|application-label:|launchable"
+          "$BT/aapt2" dump xmltree salida/*.apk --file AndroidManifest.xml | grep -E -A2 "uses-permission|screenOrientation|windowSoftInputMode" | grep -E "name|maxSdk|screenOrientation|windowSoftInputMode" 
+          ls -la salida
 
       - name: Borrar la llave del servidor
         if: always()
