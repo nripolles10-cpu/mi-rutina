@@ -102,9 +102,11 @@ jobs:
       - name: Permisos y datos del APK (sin subirlo)
         run: |
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)
-          "$BT/aapt2" dump badging salida/*.apk | grep -E "package:|uses-permission|sdkVersion|application-label:|launchable"
-          "$BT/aapt2" dump xmltree salida/*.apk --file AndroidManifest.xml | grep -E -A2 "uses-permission|screenOrientation|windowSoftInputMode" | grep -E "name|maxSdk|screenOrientation|windowSoftInputMode" 
-          ls -la salida
+          "$BT/aapt2" dump badging salida/*.apk | grep -E "package:|uses-permission|sdkVersion|application-label:|launchable" | sed 's/^/::notice::/'
+          "$BT/aapt2" dump xmltree salida/*.apk --file AndroidManifest.xml | grep -E "maxSdkVersion|screenOrientation|windowSoftInputMode" | sed 's/^ */::notice::/'
+          "$BT/apksigner" verify --print-certs salida/*.apk | grep -E "Signer #1 certificate (DN|SHA-256)" | sed 's/^/::notice::/'
+          ls -la salida | sed 's/^/::notice::/'
+          unzip -l salida/*.apk | grep -E "assets/public/(index.html|assets/)" | head -5 | sed 's/^/::notice::/' 
 
       - name: Borrar la llave del servidor
         if: always()
