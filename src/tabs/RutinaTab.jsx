@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Chip, EditLockBar, Label, MiniBtn, NumField, TextField, chipStyle, useGym } from '../components/ui.jsx';
 import { CATS, CAT_IDS, SET_TYPES } from '../data/catalog.js';
 import { ACCENT, T } from '../data/theme.js';
@@ -10,6 +10,180 @@ import { bestSerie1, computeScore, ensureStruct } from '../utils/training.js';
    SECCIÓN 7 · PESTAÑAS
    Rutina · Cardio · Progreso · Diana física · Comida · Extras · Ajustes
    ========================================================================= */
+
+/* =========================================================================
+   EJERCICIOS ALTERNOS (una semana uno, otra semana el otro)
+   Dos ejercicios del mismo día se unen en UN solo bloque con dos pestañas. Cada uno conserva lo suyo
+   (series, pesos, objetivo, técnica, comentarios, historial). Tú eliges cuál toca tocando la pestaña:
+   nunca cambia solo.
+   Dónde se guarda: dentro de cada día, en day.alternos = [{ a, b, activo }]. Los ejercicios no cambian
+   y no se toca ninguna clave de localStorage. Los días antiguos, sin ese campo, funcionan igual.
+   ========================================================================= */
+
+// Pares válidos de un día: los dos ejercicios existen, están en el día y ninguno está en dos pares.
+export function paresValidos(day, exercises) {
+  const ids = (day && day.ids) || [];
+  const usados = {};
+  const out = [];
+  ((day && day.alternos) || []).forEach((p) => {
+    if (!p || p.a === p.b || usados[p.a] || usados[p.b]) return;
+    if (ids.indexOf(p.a) === -1 || ids.indexOf(p.b) === -1 || !exercises[p.a] || !exercises[p.b]) return;
+    usados[p.a] = true; usados[p.b] = true;
+    out.push({ a: p.a, b: p.b, activo: p.activo === p.b ? p.b : p.a });
+  });
+  return out;
+}
+
+// Devuelve el par al que pertenece un ejercicio (o null)
+export function parDe(pares, id) {
+  for (let i = 0; i < pares.length; i++) { if (pares[i].a === id || pares[i].b === id) return pares[i]; }
+  return null;
+}
+
+// Bloques visibles de un día: un ejercicio suelto, o un par (que se pinta una sola vez, en el sitio del principal)
+export function bloquesDelDia(day, exercises) {
+  const pares = paresValidos(day, exercises);
+  const secundarios = {};
+  pares.forEach((p) => { secundarios[p.b] = true; });
+  const out = [];
+  ((day && day.ids) || []).forEach((id) => {
+    if (secundarios[id]) return;
+    out.push({ id: id, par: parDe(pares, id) });
+  });
+  return out;
+}
+
+// Vuelve a la lista de ids del día: el alterno va justo detrás de su principal
+export function idsDesdeBloques(bloques) {
+  const ids = [];
+  bloques.forEach((b) => { ids.push(b.id); if (b.par) ids.push(b.par.b); });
+  return ids;
+}
+
+/* Opción de edición dentro de cada ejercicio: unirlo con otro, crear uno nuevo para alternar, o separarlos */
+export function AlternoPicker({ day, id }) {
+  const { state, updateDay, addExercise, showToast } = useGym();
+  const [modo, setModo] = useState(null); // null | 'nuevo' | 'existente'
+  const [nombre, setNombre] = useState('');
+  const [cat, setCat] = useState(state.exercises[id] ? state.exercises[id].cat : 'pecho');
+  const [pend, setPend] = useState(null); // ejercicio nuevo que se acaba de crear y falta unir
+
+  const pares = paresValidos(day, state.exercises);
+  const par = parDe(pares, id);
+  const otroId = par ? (par.a === id ? par.b : par.a) : null;
+  const otro = otroId ? state.exercises[otroId] : null;
+  const unidos = {};
+  pares.forEach((p) => { unidos[p.a] = true; unidos[p.b] = true; });
+  const libres = day.ids.filter((i) => i !== id && state.exercises[i] && !unidos[i]);
+
+  // Une `otro` con este ejercicio: queda justo detrás y este es el que se ve al principio
+  const unir = (otroEj) => {
+    const sin = day.ids.filter((i) => i !== otroEj);
+    const pos = sin.indexOf(id);
+    const ids = sin.slice(0, pos + 1).concat([otroEj]).concat(sin.slice(pos + 1));
+    updateDay(day.id, { ids: ids, alternos: pares.concat([{ a: id, b: otroEj, activo: id }]) });
+    showToast('Ejercicio alterno añadido ✓');
+  };
+
+  // Al crear un ejercicio nuevo, en cuanto aparece en el día se une a este
+  useEffect(() => {
+    if (!pend) return;
+    const nuevo = day.ids.find((i) => pend.idsAntes.indexOf(i) === -1);
+    if (!nuevo) return;
+    unir(nuevo);
+    setPend(null); setModo(null); setNombre('');
+  }, [day.ids, pend]);
+
+  const separar = () => {
+    updateDay(day.id, { alternos: pares.filter((p) => !(p.a === par.a && p.b === par.b)) });
+    showToast('Ejercicios separados');
+  };
+
+  if (par) {
+    return (
+      <div>
+        <div className="font-body" style={{ color: T.muted, fontSize: 12, lineHeight: 1.5 }}>
+          Alterna con <b style={{ color: T.text }}>{otro ? otro.name : '…'}</b>. Toca las dos pestañas de arriba del bloque para elegir cuál haces esta semana. Cada uno guarda sus propias series, pesos, objetivo y comentarios.
+        </div>
+        <button onClick={separar} className="font-body btn btn-ghost" style={{ marginTop: 8, padding: '8px 12px', fontSize: 12 }}>✂️ Separar (dejarlos como dos ejercicios)</button>
+      </div>
+    );
+  }
+
+  if (modo === 'nuevo') {
+    return (
+      <div className="card" style={{ padding: 12 }}>
+        <Label>Nombre del ejercicio alterno</Label>
+        <input type="text" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="ej. Abducción de cadera" className="font-body inp" style={{ marginBottom: 10, fontSize: 13 }} />
+        <Label>Músculo</Label>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+          {CAT_IDS.map((k) => <Chip key={k} active={cat === k} onClick={() => setCat(k)} accent={CATS[k].color} style={{ padding: '6px 12px', fontSize: 12 }}>{CATS[k].label}</Chip>)}
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => setModo(null)} className="font-body btn btn-ghost" style={{ flex: 1, fontSize: 12.5 }}>Cancelar</button>
+          <button disabled={!nombre.trim() || !!pend} onClick={() => { setPend({ idsAntes: day.ids.slice() }); addExercise(day.id, nombre.trim(), cat); }} className="font-body btn btn-primary" style={{ flex: 2 }}>Añadir alterno</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (modo === 'existente') {
+    return (
+      <div className="card" style={{ padding: 12 }}>
+        <div className="font-body" style={{ color: T.muted, fontSize: 12, marginBottom: 8 }}>Elige con cuál alterna:</div>
+        {libres.map((i) => (
+          <button key={i} onClick={() => unir(i)} className="font-body btn btn-ghost" style={{ width: '100%', textAlign: 'left', marginBottom: 6, padding: '9px 12px', fontSize: 13, borderStyle: 'solid', borderColor: CATS[state.exercises[i].cat].color + '88' }}>
+            {state.exercises[i].name} <span style={{ color: CATS[state.exercises[i].cat].color, fontWeight: 700, fontSize: 11.5 }}>· {CATS[state.exercises[i].cat].label}</span>
+          </button>
+        ))}
+        <button onClick={() => setModo(null)} className="font-body btn btn-ghost" style={{ width: '100%', padding: '8px', fontSize: 12.5 }}>Cancelar</button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <button onClick={() => setModo('nuevo')} className="font-body btn btn-ghost" style={{ padding: '9px 12px', fontSize: 12.5 }}>➕ Crear un ejercicio alterno</button>
+      {libres.length > 0 && <button onClick={() => setModo('existente')} className="font-body btn btn-ghost" style={{ padding: '9px 12px', fontSize: 12.5 }}>🔗 Usar uno que ya tengo en este día</button>}
+    </div>
+  );
+}
+
+/* Bloque de dos ejercicios alternos: pestañas arriba y debajo el ejercicio elegido, con todo lo suyo */
+export function AlternoCard({ day, par }) {
+  const { state, updateDay } = useGym();
+  const ex = state.exercises;
+  const activoId = par.activo === par.b ? par.b : par.a;
+  const cambiar = (id) => {
+    if (id === activoId) return;
+    updateDay(day.id, { alternos: paresValidos(day, ex).map((p) => (p.a === par.a && p.b === par.b ? { ...p, activo: id } : p)) });
+  };
+  return (
+    <div className="card" style={{ marginBottom: 12, padding: 0, overflow: 'hidden' }}>
+      <div style={{ padding: '12px 12px 10px' }}>
+        <div className="font-body" style={{ color: T.muted, fontSize: 11.5, marginBottom: 8 }}>🔁 Alternas cada semana · toca para elegir cuál toca esta semana</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {[par.a, par.b].map((id) => {
+            const e = ex[id];
+            const c = CATS[e.cat].color;
+            const on = id === activoId;
+            return (
+              <button key={id} onClick={() => cambiar(id)} className="font-body" style={{
+                flex: 1, minWidth: 0, textAlign: 'left', padding: '9px 10px', borderRadius: 12, cursor: 'pointer',
+                border: '1.5px solid ' + (on ? c : 'rgba(140,170,255,0.25)'), background: on ? c + '2E' : 'rgba(10,15,30,0.45)',
+                boxShadow: on ? '0 0 14px ' + c + '40' : 'none',
+              }}>
+                <div style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 13, lineHeight: 1.25 }}>{e.name}</div>
+                <div style={{ color: on ? c : T.muted, fontSize: 11, marginTop: 2, fontWeight: on ? 700 : 500 }}>{CATS[e.cat].label}{on ? ' · esta semana' : ''}</div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <ExerciseCard key={activoId} id={activoId} dayId={day.id} embedded />
+    </div>
+  );
+}
 
 /* =========================================================================
    SERIES: selector de tipo (emoticono + color) y huecos según el tipo
@@ -102,10 +276,11 @@ export function SetRow({ s, idx, onPatch, onRemove, canRemove, editMode }) {
 
 /* =========================================================================
    TARJETA DE EJERCICIO
+   `embedded` = la tarjeta va dentro de un bloque de ejercicios alternos (sin marco propio)
    ========================================================================= */
 
-export function ExerciseCard({ id, dayId }) {
-  const { state, updateExercise, saveEntry, suggestObjetivo, removeFromDay, moveExercise, addSerie, removeSerieAt, askConfirm, fotos, setFoto, delFoto, showToast } = useGym();
+export function ExerciseCard({ id, dayId, embedded }) {
+  const { state, updateExercise, updateDay, saveEntry, suggestObjetivo, removeFromDay, addSerie, removeSerieAt, askConfirm, fotos, setFoto, delFoto, showToast } = useGym();
   const [open, setOpen] = useState(false);
   const [fotoOcupada, setFotoOcupada] = useState(false);
   const ex = state.exercises[id];
@@ -113,9 +288,20 @@ export function ExerciseCard({ id, dayId }) {
 
   const editMode = state.meta.editMode;
   const day = dayId ? (state.days || []).find((d) => d.id === dayId) : null;
-  const pos = day ? day.ids.indexOf(id) : -1;
-  const isFirst = pos <= 0;
-  const isLast = pos === -1 || pos === day.ids.length - 1;
+  // Posición del bloque (un ejercicio suelto o un par de alternos) para subir y bajar
+  const bloques = day ? bloquesDelDia(day, state.exercises) : [];
+  const posBloque = bloques.findIndex((b) => b.id === id || (b.par && (b.par.a === id || b.par.b === id)));
+  const isFirst = posBloque <= 0;
+  const isLast = posBloque === -1 || posBloque === bloques.length - 1;
+  const par = day ? parDe(paresValidos(day, state.exercises), id) : null;
+
+  const moverBloque = (dir) => {
+    const j = posBloque + dir;
+    if (!day || posBloque === -1 || j < 0 || j >= bloques.length) return;
+    const nuevos = bloques.slice();
+    const tmp = nuevos[posBloque]; nuevos[posBloque] = nuevos[j]; nuevos[j] = tmp;
+    updateDay(day.id, { ids: idsDesdeBloques(nuevos) });
+  };
 
   const record = bestSerie1(ex); // el trofeo muestra la MEJOR marca de la serie 1 (no la última)
   const hist = ex.history || [];
@@ -153,19 +339,29 @@ export function ExerciseCard({ id, dayId }) {
     } finally { setFotoOcupada(false); }
   };
 
-  const askRemove = () => askConfirm({
-    title: '¿Quitar ejercicio?',
-    text: 'Se quitará "' + ex.name + '" de este día. Desaparecerá también de Progreso, de las series semanales y de tus objetivos.',
-    confirmLabel: 'Quitar', onConfirm: () => removeFromDay(dayId, id),
-  });
+  const askRemove = () => {
+    const otroEj = par ? state.exercises[par.a === id ? par.b : par.a] : null;
+    askConfirm({
+      title: '¿Quitar ejercicio?',
+      text: 'Se quitará "' + ex.name + '" de este día. Desaparecerá también de Progreso, de las series semanales y de tus objetivos.'
+        + (otroEj ? ' Su alterno "' + otroEj.name + '" se queda como ejercicio normal.' : ''),
+      confirmLabel: 'Quitar',
+      onConfirm: () => {
+        if (par) {
+          updateDay(day.id, { ids: day.ids.filter((i) => i !== id), alternos: paresValidos(day, state.exercises).filter((p) => !(p.a === par.a && p.b === par.b)) });
+          showToast('Ejercicio quitado (puedes deshacerlo)');
+        } else removeFromDay(dayId, id);
+      },
+    });
+  };
 
   return (
-    <div className="card" style={{ marginBottom: 12, padding: 0, overflow: 'hidden' }}>
+    <div className={embedded ? '' : 'card'} style={embedded ? { borderTop: '1px solid rgba(140,170,255,0.14)' } : { marginBottom: 12, padding: 0, overflow: 'hidden' }}>
       <div onClick={() => setOpen(!open)} style={{ textAlign: 'left', padding: '14px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
         {editMode && dayId && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
-            <MiniBtn title="Subir" disabled={isFirst} onClick={() => moveExercise(dayId, id, -1)}>▲</MiniBtn>
-            <MiniBtn title="Bajar" disabled={isLast} onClick={() => moveExercise(dayId, id, 1)}>▼</MiniBtn>
+            <MiniBtn title="Subir" disabled={isFirst} onClick={() => moverBloque(-1)}>▲</MiniBtn>
+            <MiniBtn title="Bajar" disabled={isLast} onClick={() => moverBloque(1)}>▼</MiniBtn>
           </div>
         )}
         <div style={{ width: 4, alignSelf: 'stretch', borderRadius: 4, background: mc, minHeight: 34, flexShrink: 0, boxShadow: '0 0 12px ' + mc + '99' }} />
@@ -176,7 +372,7 @@ export function ExerciseCard({ id, dayId }) {
             {trend === 'down' && <span title="Ha bajado">📉</span>}
             {ex.comentario ? <span title="Tiene comentarios" style={{ fontSize: 12 }}>📝</span> : null}
           </div>
-          <div className="font-body" style={{ color: T.muted, fontSize: 11.5, marginTop: 2 }}><b style={{ color: mc }}>{CATS[ex.cat].label}</b>{ex.altName ? ' · 🔁 o ' + ex.altName : ''}</div>
+          <div className="font-body" style={{ color: T.muted, fontSize: 11.5, marginTop: 2 }}><b style={{ color: mc }}>{CATS[ex.cat].label}</b></div>
           <div style={{ display: 'flex', gap: 6, marginTop: 7, flexWrap: 'wrap' }}>
             {record !== null && <span className="font-body" style={{ ...chipSt, fontWeight: 700 }}>🏆 {fmt(record)} kg</span>}
             {ex.objetivo && <span className="font-body" style={chipSt}>🎯 {ex.objetivo.text}</span>}
@@ -194,8 +390,12 @@ export function ExerciseCard({ id, dayId }) {
             <div style={{ marginTop: 12 }}>
               <Label>Nombre del ejercicio</Label>
               <TextField value={ex.name} onChange={(v) => updateExercise(id, { name: v }, 'ex:' + id + ':name')} placeholder="Nombre del ejercicio" />
-              <Label style={{ marginTop: 10 }}>Ejercicio alternativo (por si el gimnasio está lleno)</Label>
-              <TextField value={ex.altName || ''} onChange={(v) => updateExercise(id, { altName: v || null }, 'ex:' + id + ':alt')} placeholder="ej. Press banco con mancuernas" />
+              {day && (
+                <div style={{ marginTop: 10 }}>
+                  <Label>🔁 Alternar con otro ejercicio (una semana uno y otra semana el otro)</Label>
+                  <AlternoPicker day={day} id={id} />
+                </div>
+              )}
               <Label style={{ marginTop: 10 }}>Músculo (el ejercicio cuenta solo para este)</Label>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {CAT_IDS.map((k) => (
@@ -400,7 +600,11 @@ export function RutinaTab() {
       )}
 
       <div>
-        {day.ids.map((id) => <ExerciseCard key={id} id={id} dayId={day.id} />)}
+        {bloquesDelDia(day, state.exercises).map((b) => (
+          b.par
+            ? <AlternoCard key={b.id} day={day} par={b.par} />
+            : <ExerciseCard key={b.id} id={b.id} dayId={day.id} />
+        ))}
         {editMode && <AddExerciseForm dayId={day.id} />}
         {editMode && <AddDayForm />}
         {editMode && (
