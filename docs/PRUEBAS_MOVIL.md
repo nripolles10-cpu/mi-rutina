@@ -5,6 +5,32 @@ del móvil, la versión de Android (Ajustes → Información del teléfono) y qu
 
 Antes de empezar: **⚙️ Ajustes → Compartir y copias → 💾 Copia de seguridad completa** y guárdala fuera del móvil.
 
+## 0. Mejoras de la versión 8 (hazlas primero)
+- [ ] Antes de actualizar: copia de seguridad completa guardada fuera del móvil.
+- [ ] Instala el APK nuevo **encima** (sin desinstalar). Abre la app: tu rutina, tus registros, tu peso, tus fotos,
+      tus alternos y tus recetas siguen ahí.
+- [ ] Ajustes → Copias de rescate: hay una copia "premigracion_v7" (se hizo sola antes de convertir los datos).
+- [ ] **Objetivo de peso:** Progreso → toca "🎯 80 kg" → escribe 78,5 → Guardar. Sale el aviso con "↩ Deshacer"
+      (pruébalo). Ajustes → "¿A qué peso quieres llegar?" muestra el mismo número. Prueba "Quitar objetivo" y
+      un valor raro (abc, 5) → mensaje de error, no se guarda.
+- [ ] **Calorías:** Extras → calculadora con tu edad y altura. Cambia a Mujer: las calorías bajan (≈ 250 kcal
+      menos con actividad moderada). Ve a Ajustes: aparece Mujer. Vuelve a Hombre en Ajustes → la calculadora
+      vuelve a lo de antes. Con % de grasa sale una nota azul explicando el cálculo por masa magra.
+- [ ] Ritmo "Rápido" con poco peso y sedentario: aparece el aviso de "mínimo seguro".
+- [ ] **Músculos:** Diana → "✏️ Crear, renombrar o quitar músculos". Crea "Pecho superior" con zona Pecho.
+      Renombra Core → Abdomen. Quita Pecho: te pide a qué músculo pasan sus ejercicios; elige uno; prueba
+      "↩ Deshacer". Vuelve a quitarlo pasando sus ejercicios a "Pecho superior".
+- [ ] En la Diana marca Pecho superior como Punto fuerte, otro como Intermedio y otro como Punto débil:
+      cada uno aparece en su grupo de la lista y el mapa se pinta (a franjas si una zona tiene varios músculos).
+- [ ] Rutina → modo edición → el selector de músculo de un ejercicio muestra los músculos nuevos.
+      Progreso → "Series efectivas por semana" los muestra.
+- [ ] Exporta Excel/CSV/Word/texto: aparecen los nombres de tus músculos.
+- [ ] **Recetas:** Comida → Recetas: hay 60 (antes 31). Abre una nueva (por ejemplo "Bacalao con garbanzos y
+      espinacas"): ingredientes con cantidades y pasos. Tus recetas propias y editadas siguen igual.
+- [ ] **iPhone:** abre la web en Safari, "Añadir a pantalla de inicio", ábrela desde el icono. Arranca con la
+      rutina por defecto y sin tus datos. Apunta algo, ciérrala y vuelve a abrirla: sigue ahí. Pon el móvil en modo
+      avión y ábrela: funciona. Comprueba en tu Android que no ha cambiado nada (los datos son independientes).
+
 ## 1. Instalación y arranque
 - [ ] El icono aparece en el escritorio con la mancuerna y el degradado; el nombre es "Mi Rutina".
 - [ ] Al abrir sale la pantalla de carga oscura y después la app, sin pantallazo blanco.

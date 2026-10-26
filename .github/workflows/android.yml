@@ -112,7 +112,7 @@ jobs:
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)
           "$BT/apksigner" verify --verbose "$APK"
           echo "Huella de la llave (debe ser SIEMPRE la misma en todas las versiones):"
-          "$BT/apksigner" verify --print-certs "$APK" | grep -i "SHA-256"
+          "$BT/apksigner" verify --print-certs "$APK" | grep -i "SHA-256" | sed 's/^/::notice title=Huella de la llave (siempre la misma)::/'
           mkdir -p salida
           cp "$APK" "salida/mi-rutina-1.${MIRUTINA_VERSION_CODE}.apk"
           ls -la salida

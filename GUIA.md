@@ -1,7 +1,7 @@
-# Guía de Mi Rutina para Android (paso a paso, sin saber programar)
+# Guía de Mi Rutina: Android y versión web para iPhone (paso a paso, sin saber programar)
 
 Esta guía explica cómo conseguir el APK (el instalador de la app), instalarlo en el móvil,
-actualizarlo sin perder datos y prepararlo para tus amigos. Todo se hace desde la web de GitHub;
+actualizarlo sin perder datos, prepararlo para tus amigos y publicar la versión web para iPhone. Todo se hace desde la web de GitHub;
 no hace falta instalar nada en el ordenador.
 
 **Lo más importante de toda la guía:**
@@ -113,10 +113,14 @@ Los datos de la web están en el navegador y la app no puede leerlos sola. Una v
 
 ## Paso 6. Actualizar la app
 
-1. Cuando haya cambios en `main`, GitHub crea un APK nuevo solo (paso 4).
-2. Por si acaso, haz antes una **copia de seguridad completa** desde la app.
+1. Cuando haya cambios en `main`, GitHub crea un APK nuevo solo (paso 4). Se firma con la misma llave de siempre
+   (la de los Secrets) y el número de versión sube solo, así que Android lo acepta encima del que tienes.
+2. Por si acaso, haz antes una **copia de seguridad completa** desde la app y guárdala fuera del móvil.
 3. Instala el APK nuevo **encima**, sin desinstalar. Android dirá *"¿Quieres actualizar esta app?"* → **Actualizar**.
-   Tus datos siguen ahí.
+   Tus datos siguen ahí. Al abrirla, la app convierte tus datos a la versión nueva sin tocar tu rutina ni tus
+   registros (y antes guarda una copia de rescate por si acaso: Ajustes → Copias de rescate).
+4. Comprueba que la huella SHA-256 que sale en el paso *Comprobar la firma* de la compilación es la misma que la
+   de tu `LEEME-DATOS-DE-LA-LLAVE.txt`.
 
 Si Android dice **"La app no se ha instalado porque el paquete entra en conflicto con un paquete existente"**:
 el APK está firmado con otra llave. **No desinstales.** Revisa que los Secrets son los de tu llave
@@ -150,6 +154,57 @@ A ti no te afecta: `defaultData.json` solo se usa cuando la app no tiene ningún
 
 (Para programadores: `npm run make-default -- <código GYMR1… o archivo>` hace lo mismo desde un código de la app.)
 
+## Paso 9. Publicar la versión web (para amigos con iPhone)
+
+Además del APK, el mismo código se publica como una **web instalable** (PWA). Un amigo con iPhone (o con
+cualquier móvil) la abre en el navegador, la añade a su pantalla de inicio y tiene **su propia copia con sus
+propios datos**: no ve los tuyos ni tú los suyos. Se publica sola con el flujo **Web (PWA) en GitHub Pages**,
+que es independiente del APK (no usa la llave y no lo toca).
+
+**Importante:** GitHub Pages gratis solo funciona con repositorios **públicos**. Tu repositorio es privado,
+así que tienes que elegir una de estas opciones:
+
+- **A. Hacer público el repositorio (gratis, lo más sencillo).** No contiene contraseñas: la llave está en los
+  Secrets, que siguen siendo secretos. Lo que sí se vería: el código, la rutina de serie y el historial de cambios
+  (con los correos de quien hizo cada cambio). Settings → General → abajo del todo, *Danger Zone* →
+  **Change repository visibility** → **Make public**.
+- **B. GitHub Pro (de pago, unos 4 $/mes).** El repositorio sigue privado y Pages funciona igual.
+- **C. Otro sitio gratuito (Netlify, Cloudflare Pages…).** Funciona con repositorios privados, pero hay que crear
+  una cuenta allí y conectarla. Si lo prefieres, pídemelo y lo preparo.
+
+Con la opción A o B:
+
+1. **Settings → Pages**. En **Build and deployment → Source** elige **GitHub Actions**.
+2. **Actions → Web (PWA) en GitHub Pages → Run workflow**. Tarda 2–3 minutos.
+3. Al terminar, la dirección de la web aparece en **Settings → Pages** (algo como
+   `https://nripolles10-cpu.github.io/mi-rutina/`). Desde entonces se actualiza sola con cada cambio en `main`.
+
+Mientras Pages no esté activado, el flujo termina en verde con el aviso *"GitHub Pages no está activado
+todavía"*: es normal y no afecta al APK.
+
+## Paso 10. Pasarle la web a un amigo con iPhone
+
+1. Mándale la dirección de la web (paso 9).
+2. Que la abra en **Safari** (en iPhone es mejor Safari para poder instalarla).
+3. Botón **Compartir** (el cuadrado con la flecha) → **Añadir a pantalla de inicio** → **Añadir**.
+4. Que la abra siempre desde ese icono: así funciona a pantalla completa y **sin internet**.
+5. La primera vez arranca con la rutina de `defaultData.json` (paso 8) y su nombre vacío para que lo ponga él.
+   Todo lo puede editar: rutina, músculos, vídeo de movilidad, suplementos, recetas, cardio y nutrición.
+
+**Lo que no funciona igual en iPhone** (es una limitación de iOS con las webs, no de la app):
+
+- El aviso del descanso **solo suena con la app abierta** y en primer plano: iOS no deja programar avisos a una web.
+  Tampoco vibra.
+- **Mantener la pantalla encendida** depende de la versión de iOS; si no funciona, que suba el tiempo de bloqueo.
+- **Safari puede borrar los datos** de una web que no se usa durante un tiempo (sobre todo si no está añadida a
+  la pantalla de inicio). La app pide al navegador que no los borre y **le recuerda hacer una copia de seguridad**
+  cada 14 días (Ajustes → Copia de seguridad completa → guardar el código en Notas, correo…).
+- Guardar archivos (Excel, Word…) abre el menú de compartir del iPhone → **Guardar en Archivos**.
+
+**Pasar datos entre móviles** (de Android a iPhone, de un iPhone a otro, o al cambiar de móvil):
+Ajustes → **Copia de seguridad completa** → copiar el código → en el otro móvil, Ajustes →
+**Importar rutina o restaurar copia** → pegar → **Reemplazar todo lo que trae**.
+
 ## Problemas frecuentes
 
 | Qué pasa | Qué hacer |
@@ -161,5 +216,8 @@ A ti no te afecta: `defaultData.json` solo se usa cuando la app no tiene ningún
 | No aparece **Run workflow** | Falta el paso 1 (rama principal `main`). |
 | No suena el aviso del descanso | Paso 7. |
 | La app se abre en blanco | Cierra la app del todo y ábrela otra vez. Si sigue, apunta el modelo de móvil y la versión de Android. |
+| El flujo de la web dice *"GitHub Pages no está activado"* | Falta el paso 9. El APK no se ve afectado. |
+| En iPhone no aparece "Añadir a pantalla de inicio" | Ábrela en Safari (no dentro de WhatsApp o Instagram) y busca la opción bajando en el menú Compartir. |
+| En iPhone han desaparecido los datos | Safari los borró. Restaura la última copia de seguridad (paso 10). Por eso la app recuerda hacerla. |
 
 En `docs/PRUEBAS_MOVIL.md` tienes una lista para comprobar la app en el móvil después de instalar cada versión.
