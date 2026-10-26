@@ -14,7 +14,7 @@
     "test": "vitest run",
     "lint": "eslint src tests scripts",
     "make-default": "node scripts/make-default.mjs",
-    "assets": "node scripts/gen-icon-sources.mjs && capacitor-assets generate --android --splashBackgroundColor \"#060913\" --splashBackgroundColorDark \"#060913\" && node scripts/android-icons.mjs",
+    "assets": "node scripts/gen-icon-sources.mjs && node scripts/pwa-icons.mjs && capacitor-assets generate --android --splashBackgroundColor \"#060913\" --splashBackgroundColorDark \"#060913\" && node scripts/android-icons.mjs",
     "android:sync": "npm run build && cap sync android"
   },
   "dependencies": {

@@ -21,3 +21,6 @@ Native.init()
   .catch(() => { /* si algo falla al preparar el móvil, la app arranca igualmente con lo que pueda leer */ })
   .then(() => { createRoot(document.getElementById('root')).render(<App />); })
   .catch(pintarError);
+
+// Versión web: que funcione sin internet (en la app Android no hace nada)
+if (import.meta.env.PROD) Native.registrarWebOffline();

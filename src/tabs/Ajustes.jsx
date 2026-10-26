@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CheckRow, Chip, Label, LabeledNum, Modal, SectionTitle, SupRow, useGym } from '../components/ui.jsx';
 import { ACTIVIDADES } from '../data/catalog.js';
 import { T } from '../data/theme.js';
-import { Native } from '../native/index.js';
+import { Native, esIOS, esWebInstalada } from '../native/index.js';
 import { RECOVERY_PREFIX, listRescueKeys } from '../state/storage.js';
 import { copyText, toastResult } from '../utils/clipboard.js';
 import { buildCsv, buildTxt } from '../utils/exportar.js';
@@ -10,7 +10,8 @@ import { buildXlsx, bytesToBase64, readXlsxRows } from '../utils/excel.js';
 import { buildDocxBase64 } from '../utils/word.js';
 import { PLANTILLA_CSV, parseCsv, rowsToRutina } from '../utils/importar.js';
 import { buildDefaultData } from '../utils/defaults.js';
-import { fmt } from '../utils/format.js';
+import { fmt, fmtDateLong } from '../utils/format.js';
+import { diasDesde } from '../utils/copias.js';
 import { calcCalorias, estimaGrasaCorporal } from '../utils/health.js';
 import { buildShareObject, decodeShare, describeShare, encodeShare } from '../utils/share.js';
 
@@ -81,8 +82,10 @@ export function FormularioCard({ onDone }) {
 /* ---------- Generar un código para compartir o guardar ---------- */
 
 export function CodeModal({ modo, onClose }) {
-  const { state, fotos, showToast } = useGym();
+  const { state, fotos, showToast, setPreferencia } = useGym();
   const backup = modo === 'backup';
+  // Fecha de la última copia de seguridad (para el recordatorio de la versión web)
+  const marcarCopia = (ok) => { if (backup && ok && setPreferencia) setPreferencia({ ultimaCopia: new Date().toISOString(), avisoCopiaHasta: null }); return ok; };
   const [op, setOp] = useState({ historial: false, peso: false, recetas: false, nutricion: false, fotos: false });
   const [code, setCode] = useState(null);
   const tog = (k) => { setOp({ ...op, [k]: !op[k] }); setCode(null); };
@@ -114,10 +117,10 @@ export function CodeModal({ modo, onClose }) {
           <div className="font-body" style={{ color: T.muted, fontSize: 12, marginBottom: 6 }}>{fmt(code.length, 0)} caracteres. Toca el texto para seleccionarlo.</div>
           <textarea readOnly value={code} rows={6} onFocus={(e) => e.target.select()} onClick={(e) => e.target.select()} className="font-body inp" style={{ fontSize: 11, wordBreak: 'break-all' }} />
           <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-            <button onClick={() => toastResult(showToast, copyText(code), 'Código copiado ✓', 'Selecciona el texto y cópialo a mano')} className="font-body btn btn-ghost" style={{ flex: 1 }}>📋 Copiar</button>
-            <button onClick={async () => { if (!(await Native.share({ title: titulo, text: code }))) showToast('No se pudo compartir: copia el código a mano', 'warn'); }} className="font-body btn btn-primary" style={{ flex: 1 }}>📤 Enviar</button>
+            <button onClick={() => toastResult(showToast, marcarCopia(copyText(code)), 'Código copiado ✓', 'Selecciona el texto y cópialo a mano')} className="font-body btn btn-ghost" style={{ flex: 1 }}>📋 Copiar</button>
+            <button onClick={async () => { if (!marcarCopia(await Native.share({ title: titulo, text: code }))) showToast('No se pudo compartir: copia el código a mano', 'warn'); }} className="font-body btn btn-primary" style={{ flex: 1 }}>📤 Enviar</button>
           </div>
-          <button onClick={async () => toastResult(showToast, await Native.saveFile(backup ? 'copia_seguridad_rutina.txt' : 'mi_rutina_codigo.txt', code, 'text/plain;charset=utf-8'), 'Archivo preparado ✓', 'No se pudo guardar el archivo')} className="font-body btn btn-ghost" style={{ width: '100%', marginTop: 8, fontSize: 12.5 }}>💾 Guardar en un archivo de texto</button>
+          <button onClick={async () => toastResult(showToast, marcarCopia(await Native.saveFile(backup ? 'copia_seguridad_rutina.txt' : 'mi_rutina_codigo.txt', code, 'text/plain;charset=utf-8')), 'Archivo preparado ✓', 'No se pudo guardar el archivo')} className="font-body btn btn-ghost" style={{ width: '100%', marginTop: 8, fontSize: 12.5 }}>💾 Guardar en un archivo de texto</button>
         </Card>
       )}
     </Modal>
@@ -322,7 +325,7 @@ export function PantallaAvisosCard() {
       <div className="font-body" style={{ color: T.dim, fontSize: 11, lineHeight: 1.5, margin: '2px 0 12px' }}>Útil durante el entreno. Gasta algo más de batería y deja de aplicarse al salir de la app.</div>
       <div className="font-body" style={{ color: T.text, fontWeight: 800, fontSize: 13.5, marginBottom: 4 }}>⏱️ Avisos del descanso</div>
       {!nativo ? (
-        <div className="font-body" style={{ color: T.muted, fontSize: 12, lineHeight: 1.5 }}>Los avisos con la pantalla bloqueada o la app cerrada funcionan en la app instalada en el móvil.</div>
+        <div className="font-body" style={{ color: T.muted, fontSize: 12, lineHeight: 1.5 }}>{esIOS() ? 'En iPhone (versión web) el aviso del descanso solo suena con la app abierta: iOS no deja programar avisos a una web.' : 'Los avisos con la pantalla bloqueada o la app cerrada funcionan en la app instalada en el móvil (Android).'}</div>
       ) : (
         <div>
           <SupRow label="Permiso de notificaciones" value={txtPermiso} />
@@ -354,6 +357,39 @@ export function PantallaAvisosCard() {
 
 /* ---------- Pantalla de ajustes ---------- */
 
+/* ---------- Versión web (PWA): dónde están los datos y qué no funciona en iPhone ---------- */
+export function WebInfoCard({ onCopia }) {
+  const { state, persistencia, pedirPersistencia } = useGym();
+  const ios = esIOS();
+  const p = state.preferencias || {};
+  const dias = diasDesde(p.ultimaCopia);
+  const txtPers = !persistencia ? 'Comprobando…' : !persistencia.soportado ? 'No disponible en este navegador' : persistencia.persistente ? '✅ Sí' : '⚠️ No (el navegador decide)';
+  return (
+    <Card style={{ marginBottom: 18 }}>
+      <div className="font-body" style={{ color: T.muted, fontSize: 12, lineHeight: 1.55, marginBottom: 10 }}>
+        Estás usando la versión web{esWebInstalada() ? ' instalada' : ''}. Tus datos se guardan <b style={{ color: T.text }}>solo en este navegador de este dispositivo</b>: cada persona tiene los suyos y nadie más los ve.
+        {ios ? ' En iPhone, Safari puede borrar los datos de una web que no usas durante un tiempo, sobre todo si no la has añadido a la pantalla de inicio.' : ' Si borras los datos del navegador, se borran también.'}
+      </div>
+      <SupRow label="Protección contra borrado" value={txtPers} />
+      <SupRow label="Última copia de seguridad" value={p.ultimaCopia ? (dias === 0 ? 'hoy' : 'hace ' + dias + ' día' + (dias === 1 ? '' : 's')) + ' (' + fmtDateLong(p.ultimaCopia) + ')' : 'nunca'} highlight={!p.ultimaCopia || dias > 14} />
+      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+        <button onClick={onCopia} className="font-body btn btn-primary" style={{ flex: 2, fontSize: 12.5 }}>💾 Hacer copia ahora</button>
+        {persistencia && persistencia.soportado && !persistencia.persistente && <button onClick={pedirPersistencia} className="font-body btn btn-ghost" style={{ flex: 1, fontSize: 12 }}>Pedir protección</button>}
+      </div>
+      {ios && (
+        <div className="font-body" style={{ color: T.muted, fontSize: 11.5, lineHeight: 1.55, marginTop: 12 }}>
+          <b style={{ color: T.text }}>En iPhone (versión web):</b><br />
+          • Instálala: Safari → Compartir → «Añadir a pantalla de inicio». Así funciona sin internet y a pantalla completa.<br />
+          • El aviso del descanso solo suena con la app abierta (iOS no deja programar avisos a una web) y no vibra.<br />
+          • «Mantener la pantalla encendida» depende de la versión de iOS: si no funciona, súbele el tiempo de bloqueo durante el entreno.<br />
+          • Compartir y guardar archivos abre el menú de compartir del iPhone («Guardar en Archivos»).<br />
+          • Para pasar tus datos a otro móvil: Copia de seguridad completa → pega el código en el otro.
+        </div>
+      )}
+    </Card>
+  );
+}
+
 export function AjustesScreen({ onClose }) {
   const { state, askConfirm, resetAll, restoreBackup, hasBackup } = useGym();
   const [modal, setModal] = useState(null);
@@ -366,6 +402,13 @@ export function AjustesScreen({ onClose }) {
 
       <SectionTitle emoji="📱">Pantalla y avisos</SectionTitle>
       <PantallaAvisosCard />
+
+      {!Native.isNative() && (
+        <>
+          <SectionTitle emoji="🌐">Versión web</SectionTitle>
+          <WebInfoCard onCopia={() => setModal('backup')} />
+        </>
+      )}
 
       <SectionTitle emoji="🔄">Compartir y copias</SectionTitle>
       <Card style={{ marginBottom: 18 }}>

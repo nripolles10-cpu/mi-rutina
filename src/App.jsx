@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { AvisoCopiaWeb } from './components/AvisoCopia.jsx';
 import { GlobalStyle } from './components/GlobalStyle.jsx';
 import { TimerModal } from './components/TimerModal.jsx';
 import { ConfirmDialog, GymContext, Toast } from './components/ui.jsx';
@@ -33,6 +34,8 @@ export function App() {
   const [hasBackup, setHasBackup] = useState(() => { try { return !!localStorage.getItem(BACKUP_KEY); } catch (e) { return false; } });
   const [timer, setTimer] = useState(null);
   const [timerOpen, setTimerOpen] = useState(false);
+  const [persistencia, setPersistencia] = useState(null); // versión web: ¿el navegador protege los datos contra borrado?
+  const pedirPersistencia = useCallback(async () => { const r = await Native.pedirAlmacenamientoPersistente(); setPersistencia(r); return r; }, []);
   const [nowMs, setNowMs] = useState(Date.now());
   const timerRef = useRef(null);
   const backupRef = useRef(null);
@@ -83,6 +86,7 @@ export function App() {
       })();
     }
     Native.ocultarSplash();
+    if (!Native.isNative()) pedirPersistencia();
   }, []);
 
   const scheduleSave = useCallback(() => {
@@ -424,7 +428,7 @@ export function App() {
     setActiveDay, setActiveTab, toggleEditMode, updateDay, addDay, removeDay, moveDay,
     addExercise, removeFromDay, moveExercise, addSerie, removeSerieAt,
     saveEntry, logPeso, guardarFormulario, resetAll, importObj, restoreBackup, hasBackup,
-    suggestObjetivo, rellenarObjetivosFaltantes, setPreferencia, setObjetivoPeso, commitDeshacible,
+    suggestObjetivo, rellenarObjetivosFaltantes, setPreferencia, setObjetivoPeso, commitDeshacible, persistencia, pedirPersistencia,
   };
 
   const TABS = [
@@ -466,6 +470,7 @@ export function App() {
             </div>
 
             <div className="gt-scroll" style={{ position: 'relative', zIndex: 1, padding: '4px 16px calc(84px + var(--kb-pad, 0px))', overflowY: 'auto', flex: 1, minHeight: 0 }}>
+              <AvisoCopiaWeb />
               {tab === 'rutina' && <RutinaTab />}
               {tab === 'cardio' && <CardioTab />}
               {tab === 'progreso' && <ProgresoTab />}

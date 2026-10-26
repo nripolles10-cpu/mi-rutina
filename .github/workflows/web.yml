@@ -1,0 +1,74 @@
+# Publica la versión web instalable (PWA) en GitHub Pages. Es independiente del APK:
+# no usa la llave de firma ni toca nada del flujo "APK de Android".
+# Para activarla: GUIA.md, paso 9 (Settings → Pages → Source: GitHub Actions).
+name: Web (PWA) en GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: Pruebas y publicar la web
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment:
+      name: github-pages
+      url: ${{ steps.publicar.outputs.page_url }}
+    steps:
+      - name: ¿Está activado GitHub Pages?
+        id: pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          CODIGO=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${{ github.repository }}/pages")
+          if [ "$CODIGO" = "200" ]; then
+            echo "activo=si" >> "$GITHUB_OUTPUT"
+          else
+            echo "activo=no" >> "$GITHUB_OUTPUT"
+            echo "::notice::GitHub Pages no está activado todavía (respuesta $CODIGO), así que no se publica la web. Para activarlo sigue GUIA.md, paso 9. El APK no se ve afectado."
+          fi
+
+      - name: Descargar el código
+        if: steps.pages.outputs.activo == 'si'
+        uses: actions/checkout@v5
+
+      - name: Instalar Node 22
+        if: steps.pages.outputs.activo == 'si'
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        if: steps.pages.outputs.activo == 'si'
+        run: npm ci
+
+      - name: Pruebas automáticas
+        if: steps.pages.outputs.activo == 'si'
+        run: npm test
+
+      - name: Construir la web
+        if: steps.pages.outputs.activo == 'si'
+        run: npm run build
+
+      - name: Preparar la web
+        if: steps.pages.outputs.activo == 'si'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+
+      - name: Publicar
+        id: publicar
+        if: steps.pages.outputs.activo == 'si'
+        uses: actions/deploy-pages@v4

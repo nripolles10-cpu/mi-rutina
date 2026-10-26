@@ -28,6 +28,20 @@ export const NOTIF_ID_DESCANSO = 1001;
 
 export const isNative = () => { try { return Capacitor.isNativePlatform(); } catch (e) { return false; } };
 
+// Navegador de iPhone / iPad (Safari y los demás navegadores de iOS, que usan el mismo motor)
+export function esIOS() {
+  try {
+    const ua = navigator.userAgent || '';
+    return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  } catch (e) { return false; }
+}
+// Web abierta desde el icono de la pantalla de inicio (PWA instalada)
+export function esWebInstalada() {
+  try { return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; } catch (e) { return false; }
+}
+// 'android' (APK), 'ios' (web en iPhone/iPad) o 'web' (cualquier otro navegador)
+export function plataforma() { return isNative() ? 'android' : esIOS() ? 'ios' : 'web'; }
+
 // Reduce una imagen (File, Blob o URL) a un máximo de px y la devuelve como dataURL JPEG
 export function compressImage(input, maxDim, quality) {
   return new Promise((resolve, reject) => {
@@ -359,6 +373,13 @@ export const Native = {
         for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
         blob = new Blob([bytes], { type: mime || 'application/octet-stream' });
       } else blob = new Blob([content], { type: mime || 'text/plain;charset=utf-8' });
+      // iPhone: el menú de compartir con el archivo deja "Guardar en Archivos" (descargar desde una web instalada falla a veces)
+      if (esIOS() && typeof File !== 'undefined' && navigator.canShare && navigator.share) {
+        try {
+          const file = new File([blob], filename, { type: blob.type });
+          if (navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: filename }); return true; }
+        } catch (e) { if (e && e.name === 'AbortError') return true; /* si falla, se intenta la descarga normal */ }
+      }
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url; a.download = filename; document.body.appendChild(a); a.click();
@@ -421,6 +442,26 @@ export const Native = {
     } catch (e) { return { ok: false }; }
   },
   _lock: null,
+
+  /* ---------- Versión web (PWA) ---------- */
+  // Funcionar sin internet: registra el service worker (solo en la web publicada, nunca dentro del APK)
+  registrarWebOffline() {
+    if (isNative()) return false;
+    try {
+      if (!('serviceWorker' in navigator) || !/^https?:$/.test(location.protocol) || location.hostname === 'localhost') return false;
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+      return true;
+    } catch (e) { return false; }
+  },
+  // Pide al navegador que no borre los datos de la app (Safari y Chrome lo deciden ellos). Devuelve { soportado, persistente }.
+  async pedirAlmacenamientoPersistente() {
+    if (isNative()) return { soportado: true, persistente: true };
+    try {
+      if (!navigator.storage || !navigator.storage.persist) return { soportado: false, persistente: false };
+      if (navigator.storage.persisted && await navigator.storage.persisted()) return { soportado: true, persistente: true };
+      return { soportado: true, persistente: !!(await navigator.storage.persist()) };
+    } catch (e) { return { soportado: false, persistente: false }; }
+  },
 
   /* ---------- Botón Atrás y ciclo de vida ---------- */
   onBackButton(fn) {

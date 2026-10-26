@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { Bar, Card, LabeledNum, Modal } from '../components/ui.jsx';
 import { ACCENT, T } from '../data/theme.js';
 import { fmtMS } from '../utils/format.js';
-import { isNative } from '../native/index.js';
+import { esIOS, isNative } from '../native/index.js';
 
 // Texto que explica si el aviso con la pantalla bloqueada está programado de verdad
 function avisoTexto(timer) {
+  if (!isNative() && esIOS()) return 'En iPhone el aviso solo suena con la app abierta y en primer plano (iOS no deja programar avisos a una web, y tampoco vibra). Deja la pantalla encendida durante el descanso.';
   if (!isNative()) return 'En el navegador solo vibra y suena con la app abierta; el aviso con la pantalla apagada funciona en la app instalada.';
   if (!timer) return 'Al empezar se programa un aviso que suena aunque bloquees la pantalla o cierres la app.';
   const n = timer.notif;
