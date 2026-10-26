@@ -31,7 +31,7 @@ export function BodyMap({ view, onSelect, selected }) {
       <g key={key} data-region={regionId}>
         {cols.length > 1 && (
           <defs>
-            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="0">
               {cols.map((c, i) => [<stop key={i + 'a'} offset={(i / cols.length) * 100 + '%'} stopColor={c} />, <stop key={i + 'b'} offset={((i + 1) / cols.length) * 100 + '%'} stopColor={c} />])}
             </linearGradient>
           </defs>

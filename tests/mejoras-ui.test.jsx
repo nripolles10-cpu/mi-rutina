@@ -70,7 +70,7 @@ describe('1) objetivo de peso en la tarjeta de Progreso', () => {
     await tab('Progreso');
     await click(screen.getByTitle('Cambiar el objetivo de peso'));
     await click(btn('Quitar objetivo'));
-    expect(screen.getByTitle('Cambiar el objetivo de peso').textContent).toContain('Poner objetivo');
+    expect(screen.getByTitle('Cambiar el objetivo de peso').textContent).toContain('🎯 Objetivo');
     await click(screen.getByTitle('Cambiar el objetivo de peso'));
     await type(screen.getByLabelText('Objetivo de peso en kg'), '90');
     await click(btn('Guardar'));

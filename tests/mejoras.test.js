@@ -338,3 +338,32 @@ describe('recetas nuevas', () => {
     expect(res.comida.recetas.length).toBe(60);
   });
 });
+
+/* ---------------------------------------------------------------- 5) versión web (PWA) */
+describe('versión web: recordatorio de copia y plataforma', () => {
+  const ahora = new Date('2026-11-20T10:00:00Z').getTime();
+  test('sin datos propios no molesta; con datos y sin copia, sí', () => {
+    const st = A.buildInitialState();
+    expect(A.tieneDatosPropios(st)).toBe(false);
+    expect(A.necesitaRecordatorioCopia(st, ahora)).toBe(false);
+    st.peso.historial.push({ id: 'b', date: '2026-11-01T10:00:00Z', kg: 83 });
+    expect(A.necesitaRecordatorioCopia(st, ahora)).toBe(true);
+  });
+  test('copia reciente o aviso pospuesto: no se enseña; copia de hace más de 14 días: sí', () => {
+    const st = A.buildInitialState();
+    st.exercises.gemelo.history.push({ date: '2026-11-10T10:00:00Z', sets: [] });
+    st.preferencias = { ...st.preferencias, ultimaCopia: '2026-11-15T10:00:00Z' };
+    expect(A.necesitaRecordatorioCopia(st, ahora)).toBe(false);
+    st.preferencias.ultimaCopia = '2026-11-01T10:00:00Z';
+    expect(A.necesitaRecordatorioCopia(st, ahora)).toBe(true);
+    st.preferencias.avisoCopiaHasta = '2026-11-25T10:00:00Z';
+    expect(A.necesitaRecordatorioCopia(st, ahora)).toBe(false);
+    expect(A.diasDesde('2026-11-01T10:00:00Z', ahora)).toBe(19);
+  });
+  test('en el navegador: plataforma web, no se registra el modo sin internet en localhost y el almacenamiento persistente degrada sin errores', async () => {
+    expect(A.plataforma()).toBe('web');
+    expect(A.esIOS()).toBe(false);
+    expect(A.Native.registrarWebOffline()).toBe(false); // jsdom: sin service worker
+    expect(await A.Native.pedirAlmacenamientoPersistente()).toEqual({ soportado: false, persistente: false });
+  });
+});

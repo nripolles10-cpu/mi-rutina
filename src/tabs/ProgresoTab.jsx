@@ -174,10 +174,10 @@ export function PesoCard() {
     <Card style={{ marginBottom: 18 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, gap: 8, flexWrap: 'wrap' }}>
         <div className="font-body" style={{ color: T.text, fontWeight: 700, fontSize: 15, whiteSpace: 'nowrap' }}>⚖️ Peso corporal</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <button onClick={() => setEditObj(!editObj)} title="Cambiar el objetivo de peso" className="font-body"
-            style={{ background: 'rgba(34,211,238,0.10)', border: '1px solid rgba(34,211,238,0.4)', borderRadius: 999, padding: '5px 10px', color: '#7DE9FA', fontSize: 11.5, fontWeight: 700, cursor: 'pointer' }}>
-            {peso.objetivoKg ? '🎯 ' + fmt(peso.objetivoKg, 2) + ' kg ✎' : '🎯 Poner objetivo'}
+            style={{ background: 'rgba(34,211,238,0.08)', border: '1px dashed rgba(34,211,238,0.45)', borderRadius: 999, padding: '3px 8px', color: '#7DE9FA', fontSize: 11.5, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            {peso.objetivoKg ? '🎯 ' + fmt(peso.objetivoKg, 2) + ' kg' : '🎯 Objetivo'}
           </button>
           <button onClick={() => setBig(true)} className="font-body btn btn-ghost" style={{ padding: '6px 10px', fontSize: 12 }}>⤢ Ampliar</button>
         </div>

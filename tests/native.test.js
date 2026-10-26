@@ -246,3 +246,11 @@ describe('avisos y compartir en el móvil', () => {
     expect(await N.saveFile('rutina.csv', 'x', 'text/csv')).toBe(true); // cancelar no es un error
   });
 });
+
+describe('versión web dentro del APK', () => {
+  test('en el móvil no se registra el service worker y los datos ya están protegidos', async () => {
+    const N = await cargarNative();
+    expect(N.registrarWebOffline()).toBe(false);
+    expect(await N.pedirAlmacenamientoPersistente()).toEqual({ soportado: true, persistente: true });
+  });
+});
