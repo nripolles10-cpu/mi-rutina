@@ -67,7 +67,7 @@ describe('códigos GYMR1', () => {
     const d = A.describeShare(obj);
     expect(d[0]).toMatch(/5 días/);
     expect(d.some((x) => /Peso corporal/.test(x))).toBe(true);
-    expect(d.some((x) => /Recetas \(31\)/.test(x))).toBe(true);
+    expect(d.some((x) => /Recetas \(60\)/.test(x))).toBe(true);
   });
 });
 

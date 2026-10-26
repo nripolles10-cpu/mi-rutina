@@ -18,7 +18,7 @@ function estadoEditado(version) {
 }
 
 describe('migrateState', () => {
-  test('versión actual (7): la rutina del usuario se mantiene intacta', () => {
+  test('versión actual: la rutina del usuario se mantiene intacta', () => {
     const st = estadoEditado(7);
     const m = A.migrateState(JSON.parse(JSON.stringify(st)));
     expect(m.days.map((d) => d.id)).toEqual(['dia_propio']);
@@ -28,7 +28,7 @@ describe('migrateState', () => {
     expect(m.peso.historial.some((r) => r.kg === 82.4)).toBe(true);
     expect(m.comida.diario['2026-10-20'].length).toBe(1);
     expect(m.formulario.nombre).toBe('Nacho');
-    expect(m.version).toBe(7);
+    expect(m.version).toBe(A.APP_VERSION);
   });
 
   test('versión 6: migración incremental, NO sustituye la rutina y pasa peso muerto → lumbar y abducción → abductores', () => {
@@ -40,7 +40,7 @@ describe('migrateState', () => {
     expect(m.exercises.miPress.name).toBe('Press de Nacho');
     expect(m.exercises.pesoMuertoBelt.cat).toBe('lumbar');
     expect(m.exercises.abduccion.cat).toBe('abductores');
-    expect(m.version).toBe(7);
+    expect(m.version).toBe(A.APP_VERSION);
   });
 
   test('v6 → v7 respeta un músculo cambiado a mano por el usuario', () => {
@@ -50,12 +50,12 @@ describe('migrateState', () => {
     expect(m.exercises.pesoMuertoBelt.cat).toBe('espalda');
   });
 
-  test('ACTUALIZACIÓN FUTURA: si se sube APP_VERSION a 8, un usuario en 7 conserva su rutina', () => {
-    const st = estadoEditado(7);
-    const m = A.migrateState(JSON.parse(JSON.stringify(st)), 8);
+  test('ACTUALIZACIÓN FUTURA: si se sube APP_VERSION otra vez, un usuario en la actual conserva su rutina', () => {
+    const st = estadoEditado(A.APP_VERSION);
+    const m = A.migrateState(JSON.parse(JSON.stringify(st)), A.APP_VERSION + 1);
     expect(m.days.map((d) => d.label)).toEqual(['Mi día']);
     expect(m.exercises.miPress.history.length).toBe(1);
-    expect(m.version).toBe(8);
+    expect(m.version).toBe(A.APP_VERSION + 1);
   });
 
   test('version guardada como texto ("7") no se trata como app antigua', () => {
@@ -154,7 +154,7 @@ describe('arranque: los datos guardados nunca se pisan sin copia', () => {
   });
 
   test('datos de la versión actual: no se hacen copias innecesarias', () => {
-    localStorage.setItem(A.STORAGE_KEY, JSON.stringify(estadoEditado(7)));
+    localStorage.setItem(A.STORAGE_KEY, JSON.stringify(estadoEditado(A.APP_VERSION)));
     A.readInitialState();
     expect(A.listRescueKeys().length).toBe(0);
   });

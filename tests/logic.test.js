@@ -60,7 +60,7 @@ describe('progreso hacia objetivos por músculo', () => {
 
 describe('nutrición', () => {
   test('Mifflin-St Jeor (hombre y mujer) y Katch-McArdle con % de grasa', () => {
-    expect(A.calcBMRInfo({ kg: 80, cm: 180, edad: 30, sexo: 'M' })).toEqual({ bmr: 1780, metodo: 'Mifflin-St Jeor' });
+    expect(A.calcBMRInfo({ kg: 80, cm: 180, edad: 30, sexo: 'M' })).toMatchObject({ bmr: 1780, metodo: 'Mifflin-St Jeor' });
     expect(A.calcBMRInfo({ kg: 80, cm: 180, edad: 30, sexo: 'F' }).bmr).toBe(1614);
     const k = A.calcBMRInfo({ kg: 80, cm: 180, edad: 30, sexo: 'M', grasaPct: 15 });
     expect(k.metodo).toBe('Katch-McArdle');
@@ -147,9 +147,11 @@ describe('recetas e ingredientes', () => {
     expect(A.ingMacros('No existe', 100, 'g')).toEqual([0, 0, 0]);
   });
 
-  test('las 31 recetas de serie: cada ingrediente existe en NUTRI_DB con una unidad válida, y los macros salen de las cantidades', () => {
+  test('las 60 recetas de serie (31 de siempre + 29 nuevas): cada ingrediente existe en NUTRI_DB con una unidad válida, y los macros salen de las cantidades', () => {
     const recetas = A.mkRecetas();
-    expect(recetas.length).toBe(31);
+    expect(recetas.length).toBe(60);
+    expect(A.mkRecetasOriginales().length).toBe(31);
+    expect(A.RECETAS_NUEVAS_V8().length).toBe(29);
     const ids = new Set();
     recetas.forEach((r) => {
       expect(ids.has(r.id)).toBe(false); ids.add(r.id);

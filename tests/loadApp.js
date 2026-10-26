@@ -14,6 +14,8 @@ import * as excel from '../src/utils/excel.js';
 import * as importar from '../src/utils/importar.js';
 import * as defaults from '../src/utils/defaults.js';
 import * as word from '../src/utils/word.js';
+import * as peso from '../src/utils/peso.js';
+import * as musculos from '../src/utils/musculos.js';
 import * as migrate from '../src/state/migrate.js';
 import * as storage from '../src/state/storage.js';
 import * as native from '../src/native/index.js';
@@ -24,7 +26,7 @@ import defaultData from '../src/data/defaultData.json';
 export function loadApp() {
   return {
     ...catalog, ...seed, ...recetas, ...format, ...training, ...health, ...comida, ...clipboard,
-    ...share, ...exportar, ...excel, ...importar, ...defaults, ...word, ...migrate, ...storage, ...native, ...back,
+    ...share, ...exportar, ...excel, ...importar, ...defaults, ...word, ...peso, ...musculos, ...migrate, ...storage, ...native, ...back,
     App, defaultData,
   };
 }
