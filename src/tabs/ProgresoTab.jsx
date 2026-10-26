@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { LineChartSVG } from '../components/LineChart.jsx';
 import { Bar, Card, Chip, Label, LabeledNum, MiniBtn, Modal, NumField, SectionTitle, SupRow, useGym, useSwipe } from '../components/ui.jsx';
-import { CATS, CAT_IDS } from '../data/catalog.js';
+import { CATS, CAT_IDS, catInfo } from '../data/catalog.js';
 import { T } from '../data/theme.js';
-import { fmt, fmtDateLong, fmtDateShort, groupByMonth, mean, monthLabel, ymd } from '../utils/format.js';
+import { fmt, fmtDateLong, fmtDateShort, formatDecimal, groupByMonth, mean, monthLabel, ymd } from '../utils/format.js';
 import { bmiCategory, calcBMI } from '../utils/health.js';
+import { OBJETIVO_PESO_MAX, OBJETIVO_PESO_MIN, validarObjetivoPeso } from '../utils/peso.js';
 import { activeExerciseIds, muscleProgress, weeklySets } from '../utils/training.js';
 
 /* ---------- Peso corporal ---------- */
@@ -110,8 +111,47 @@ export function PesoChartPanel({ big, st, setSt }) {
   );
 }
 
+// Editor del objetivo de peso dentro de la tarjeta (el mismo dato que en Ajustes y en la calculadora)
+export function ObjetivoPesoEditor({ actual, onClose }) {
+  const { state, setObjetivoPeso } = useGym();
+  const [txt, setTxt] = useState(formatDecimal(state.peso.objetivoKg));
+  const [error, setError] = useState(null);
+  const guardar = (valor) => {
+    const r = validarObjetivoPeso(valor);
+    if (!r.ok) { setError(r.error); return; }
+    setObjetivoPeso(r.kg);
+    onClose();
+  };
+  const v = validarObjetivoPeso(txt);
+  let pista = null;
+  if (v.ok && v.kg && actual) pista = v.kg < actual ? 'Bajar ' + fmt(Math.round((actual - v.kg) * 10) / 10) + ' kg' : v.kg > actual ? 'Subir ' + fmt(Math.round((v.kg - actual) * 10) / 10) + ' kg' : 'Es tu peso actual';
+  return (
+    <div data-testid="objetivo-peso-editor" style={{ background: 'rgba(7,11,22,0.7)', border: '1px solid rgba(34,211,238,0.35)', borderRadius: 14, padding: 12, marginBottom: 12 }}>
+      <div className="font-body" style={{ color: T.text, fontWeight: 800, fontSize: 13, marginBottom: 8 }}>🎯 ¿A qué peso quieres llegar?</div>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div style={{ position: 'relative', flex: 1 }}>
+          <input type="text" inputMode="decimal" autoFocus value={txt} placeholder="ej. 78,5" aria-label="Objetivo de peso en kg"
+            onChange={(e) => { setTxt(e.target.value); setError(null); }}
+            onKeyDown={(e) => { if (e.key === 'Enter') guardar(txt); }}
+            className="font-body inp" style={{ fontSize: 15, paddingRight: 36 }} />
+          <span className="font-body" style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: T.dim, fontSize: 12 }}>kg</span>
+        </div>
+        <button onClick={() => guardar(txt)} className="font-body btn btn-primary" style={{ padding: '10px 14px' }}>Guardar</button>
+      </div>
+      <div className="font-body" style={{ fontSize: 11.5, marginTop: 6, color: error ? '#FCA5A5' : T.dim, lineHeight: 1.4 }}>
+        {error || pista || ('Entre ' + OBJETIVO_PESO_MIN + ' y ' + OBJETIVO_PESO_MAX + ' kg. Se usa también en Ajustes y en la calculadora.')}
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+        {state.peso.objetivoKg ? <button onClick={() => guardar(null)} className="font-body btn btn-ghost" style={{ flex: 1, fontSize: 12.5, color: '#FCA5A5' }}>Quitar objetivo</button> : null}
+        <button onClick={onClose} className="font-body btn btn-ghost" style={{ flex: 1, fontSize: 12.5 }}>Cancelar</button>
+      </div>
+    </div>
+  );
+}
+
 export function PesoCard() {
   const { state, logPeso } = useGym();
+  const [editObj, setEditObj] = useState(false);
   const [draft, setDraft] = useState('');
   const [st, setSt] = useState({ range: 'mes', monthIdx: null, selId: null });
   const [big, setBig] = useState(false);
@@ -135,10 +175,15 @@ export function PesoCard() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, gap: 8, flexWrap: 'wrap' }}>
         <div className="font-body" style={{ color: T.text, fontWeight: 700, fontSize: 15, whiteSpace: 'nowrap' }}>⚖️ Peso corporal</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {peso.objetivoKg && <div className="font-body" style={{ color: '#7DE9FA', fontSize: 11.5, fontWeight: 700 }}>{'🎯 ' + fmt(peso.objetivoKg, 2) + ' kg'}</div>}
+          <button onClick={() => setEditObj(!editObj)} title="Cambiar el objetivo de peso" className="font-body"
+            style={{ background: 'rgba(34,211,238,0.10)', border: '1px solid rgba(34,211,238,0.4)', borderRadius: 999, padding: '5px 10px', color: '#7DE9FA', fontSize: 11.5, fontWeight: 700, cursor: 'pointer' }}>
+            {peso.objetivoKg ? '🎯 ' + fmt(peso.objetivoKg, 2) + ' kg ✎' : '🎯 Poner objetivo'}
+          </button>
           <button onClick={() => setBig(true)} className="font-body btn btn-ghost" style={{ padding: '6px 10px', fontSize: 12 }}>⤢ Ampliar</button>
         </div>
       </div>
+
+      {editObj && <ObjetivoPesoEditor actual={actual} onClose={() => setEditObj(false)} />}
 
       <div style={{ display: 'flex', gap: 22, marginBottom: 8 }}>
         <div>
@@ -234,12 +279,12 @@ export function ObjetivosMusculoCard() {
           return (
             <div key={k}>
               <div className="font-body" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: 12.5, marginBottom: 4, gap: 8 }}>
-                <span style={{ color: T.text, fontWeight: 600 }}>{CATS[k].emoji} {CATS[k].label}</span>
+                <span style={{ color: T.text, fontWeight: 600 }}>{catInfo(CATS, k).emoji} {catInfo(CATS, k).label}</span>
                 {p.pct === null
                   ? <span style={{ color: T.dim, fontWeight: 600 }}>sin objetivos</span>
-                  : <span style={{ color: CATS[k].color, fontWeight: 800 }}>{Math.round(p.pct)} % <span style={{ color: T.muted, fontWeight: 600 }}>· faltan {p.falta > 0 ? fmt(p.falta) + ' kg' : '0 kg'}</span></span>}
+                  : <span style={{ color: catInfo(CATS, k).color, fontWeight: 800 }}>{Math.round(p.pct)} % <span style={{ color: T.muted, fontWeight: 600 }}>· faltan {p.falta > 0 ? fmt(p.falta) + ' kg' : '0 kg'}</span></span>}
               </div>
-              {p.pct !== null && <Bar pct={p.pct} color={CATS[k].color} height={10} />}
+              {p.pct !== null && <Bar pct={p.pct} color={catInfo(CATS, k).color} height={10} />}
             </div>
           );
         })}
@@ -283,11 +328,11 @@ export function ProgresoTab() {
         <div style={{ marginBottom: 18 }}>
           <div className="gt-scroll" style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 6, marginBottom: 12 }}>
             {allIds.map((id) => (
-              <Chip key={id} active={id === selected} onClick={() => setSelected(id)} accent={CATS[state.exercises[id].cat].color}>{state.exercises[id].name}</Chip>
+              <Chip key={id} active={id === selected} onClick={() => setSelected(id)} accent={catInfo(CATS, state.exercises[id].cat).color}>{state.exercises[id].name}</Chip>
             ))}
           </div>
           <Card style={{ padding: '14px 6px 10px' }}>
-            {ex && chartData.length >= 2 ? <LineChartSVG points={chartData} color={CATS[ex.cat].color} height={200} /> : (
+            {ex && chartData.length >= 2 ? <LineChartSVG points={chartData} color={catInfo(CATS, ex.cat).color} height={200} /> : (
               <div className="font-body" style={{ color: T.dim, fontSize: 13, textAlign: 'center', padding: '30px 10px' }}>
                 Aún no hay suficientes registros de <b style={{ color: T.muted }}>{ex ? ex.name : ''}</b>. Guarda tu registro de hoy en varios entrenamientos para ver la curva.
               </div>

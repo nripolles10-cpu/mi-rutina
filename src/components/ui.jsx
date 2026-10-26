@@ -29,12 +29,19 @@ export function Chip({ active, onClick, children, accent, style }) {
 export function Toast({ toast }) {
   if (!toast) return null;
   const bg = toast.kind === 'pr' ? '#A3E635' : toast.kind === 'warn' ? '#FBBF24' : 'rgba(30,40,70,0.96)';
+  const accion = toast.accion;
   return (
-    <div style={{
+    <div role="status" style={{
       position: 'fixed', top: 'calc(14px + var(--safe-top))', left: '50%', transform: 'translateX(-50%)', zIndex: 130,
       background: bg, color: toast.kind ? '#060913' : '#F5F7FF', fontWeight: 700, fontSize: 13,
-      padding: '10px 18px', borderRadius: 14, boxShadow: '0 10px 30px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.08)', maxWidth: '88%', textAlign: 'center',
-    }} className="font-body">{toast.msg}</div>
+      padding: accion ? '8px 8px 8px 16px' : '10px 18px', borderRadius: 14, boxShadow: '0 10px 30px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.08)', maxWidth: '88%', textAlign: 'center',
+      display: accion ? 'flex' : 'block', alignItems: 'center', gap: 10,
+    }} className="font-body">
+      <span>{toast.msg}</span>
+      {accion && (
+        <button onClick={accion.fn} className="font-body" style={{ flexShrink: 0, background: 'rgba(34,211,238,0.16)', color: '#7DE9FA', border: '1px solid rgba(34,211,238,0.55)', borderRadius: 10, padding: '6px 10px', fontWeight: 800, fontSize: 12.5, cursor: 'pointer' }}>{accion.label}</button>
+      )}
+    </div>
   );
 }
 
