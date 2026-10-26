@@ -4,25 +4,82 @@
    MÚSCULOS (cada ejercicio cuenta solo para el músculo que le asignas)
    ========================================================================= */
 
-export const CATS = {
-  pecho:      { label: 'Pecho',       color: '#F43F5E', emoji: '🎯' },
-  espalda:    { label: 'Espalda',     color: '#14B8A6', emoji: '🎯' },
-  hombro:     { label: 'Hombro',      color: '#38BDF8', emoji: '🎯' },
-  biceps:     { label: 'Bíceps',      color: '#8B5CF6', emoji: '💪' },
-  triceps:    { label: 'Tríceps',     color: '#E879F9', emoji: '💪' },
-  cuadriceps: { label: 'Cuádriceps',  color: '#F97316', emoji: '🦵' },
-  aductores:  { label: 'Aductores',   color: '#FACC15', emoji: '🦵' },
-  isquios:    { label: 'Isquios',     color: '#A3E635', emoji: '🦵' },
-  gluteo:     { label: 'Glúteo',      color: '#EC4899', emoji: '🍑' },
-  gemelos:    { label: 'Gemelos',     color: '#22C55E', emoji: '🦵' },
-  core:       { label: 'Core',        color: '#94A3B8', emoji: '🧘' },
-  antebrazo:  { label: 'Antebrazo',   color: '#FDBA74', emoji: '💪' },
-  trapecio:   { label: 'Trapecio',    color: '#3B82F6', emoji: '🎯' },
-  lumbar:     { label: 'Lumbar',      color: '#C084FC', emoji: '🎯' },
-  abductores: { label: 'Abductores',  color: '#FDA4AF', emoji: '🦵' },
-};
+// Catálogo de serie (los 15 músculos de siempre, con sus ids y colores). "region" = zona del mapa de la Diana física.
+export const MUSCULOS_POR_DEFECTO = [
+  { id: 'pecho',      label: 'Pecho',       color: '#F43F5E', emoji: '🎯', region: 'pecho' },
+  { id: 'espalda',    label: 'Espalda',     color: '#14B8A6', emoji: '🎯', region: 'espalda' },
+  { id: 'hombro',     label: 'Hombro',      color: '#38BDF8', emoji: '🎯', region: 'hombro' },
+  { id: 'biceps',     label: 'Bíceps',      color: '#8B5CF6', emoji: '💪', region: 'biceps' },
+  { id: 'triceps',    label: 'Tríceps',     color: '#E879F9', emoji: '💪', region: 'triceps' },
+  { id: 'cuadriceps', label: 'Cuádriceps',  color: '#F97316', emoji: '🦵', region: 'cuadriceps' },
+  { id: 'aductores',  label: 'Aductores',   color: '#FACC15', emoji: '🦵', region: 'aductores' },
+  { id: 'isquios',    label: 'Isquios',     color: '#A3E635', emoji: '🦵', region: 'isquios' },
+  { id: 'gluteo',     label: 'Glúteo',      color: '#EC4899', emoji: '🍑', region: 'gluteo' },
+  { id: 'gemelos',    label: 'Gemelos',     color: '#22C55E', emoji: '🦵', region: 'gemelos' },
+  { id: 'core',       label: 'Core',        color: '#94A3B8', emoji: '🧘', region: 'core' },
+  { id: 'antebrazo',  label: 'Antebrazo',   color: '#FDBA74', emoji: '💪', region: 'antebrazo' },
+  { id: 'trapecio',   label: 'Trapecio',    color: '#3B82F6', emoji: '🎯', region: 'trapecio' },
+  { id: 'lumbar',     label: 'Lumbar',      color: '#C084FC', emoji: '🎯', region: 'lumbar' },
+  { id: 'abductores', label: 'Abductores',  color: '#FDA4AF', emoji: '🦵', region: 'abductores' },
+];
 
-export const CAT_IDS = Object.keys(CATS);
+// Zonas que se pueden pintar en el mapa del cuerpo (son fijas: es el dibujo)
+export const REGIONES_MAPA = MUSCULOS_POR_DEFECTO.map((m) => [m.id, m.label]);
+const REGION_IDS = REGIONES_MAPA.map((r) => r[0]);
+
+// Colores para músculos nuevos (se elige el primero que no esté usado)
+export const PALETA_MUSCULOS = ['#F43F5E', '#14B8A6', '#38BDF8', '#8B5CF6', '#E879F9', '#F97316', '#FACC15', '#A3E635', '#EC4899', '#22C55E',
+  '#94A3B8', '#FDBA74', '#3B82F6', '#C084FC', '#FDA4AF', '#2DD4BF', '#FB7185', '#60A5FA', '#FCD34D', '#4ADE80', '#F0ABFC', '#FDE047', '#67E8F9', '#FCA5A5'];
+
+const COLOR_OK = /^#[0-9A-Fa-f]{6}$/;
+
+// Limpia una lista de músculos guardada. Si no hay ninguno válido, devuelve el catálogo de serie.
+export function normalizarMusculos(list) {
+  if (!Array.isArray(list)) return MUSCULOS_POR_DEFECTO.map((m) => ({ ...m }));
+  const vistos = {};
+  const out = [];
+  list.forEach((m) => {
+    if (!m || typeof m !== 'object' || typeof m.id !== 'string' || !m.id || vistos[m.id]) return;
+    const base = MUSCULOS_POR_DEFECTO.find((d) => d.id === m.id);
+    const label = typeof m.label === 'string' && m.label.trim() ? m.label.trim().slice(0, 40) : (base ? base.label : 'Músculo');
+    vistos[m.id] = true;
+    out.push({
+      id: m.id, label,
+      color: COLOR_OK.test(m.color || '') ? m.color : (base ? base.color : '#94A3B8'),
+      emoji: typeof m.emoji === 'string' && m.emoji ? m.emoji : (base ? base.emoji : '🎯'),
+      region: m.region === null ? null : REGION_IDS.indexOf(m.region) !== -1 ? m.region : (base ? base.region : null),
+    });
+  });
+  return out.length ? out : MUSCULOS_POR_DEFECTO.map((m) => ({ ...m }));
+}
+
+const CACHE_MAPAS = new WeakMap();
+export function mapaMusculos(list) {
+  if (!Array.isArray(list)) return CATS;
+  let m = CACHE_MAPAS.get(list);
+  if (!m) { m = {}; list.forEach((x) => { m[x.id] = x; }); CACHE_MAPAS.set(list, m); }
+  return m;
+}
+
+/* El catálogo que usa la pantalla. CATS y CAT_IDS son los de siempre, pero ahora se rellenan con los músculos
+   del usuario (state.musculos) cada vez que cambian (aplicarCatalogo). */
+export const CATS = {};
+export const CAT_IDS = [];
+export function aplicarCatalogo(list) {
+  const l = Array.isArray(list) && list.length ? list : MUSCULOS_POR_DEFECTO;
+  Object.keys(CATS).forEach((k) => { delete CATS[k]; });
+  CAT_IDS.length = 0;
+  l.forEach((m) => { CATS[m.id] = m; CAT_IDS.push(m.id); });
+}
+aplicarCatalogo(MUSCULOS_POR_DEFECTO);
+
+// Catálogo de un estado concreto (para funciones que reciben el estado: exportaciones, cálculos…)
+export function catsDe(state) { return state && Array.isArray(state.musculos) ? mapaMusculos(state.musculos) : CATS; }
+export function catIdsDe(state) { return state && Array.isArray(state.musculos) ? state.musculos.map((m) => m.id) : CAT_IDS.slice(); }
+// Datos de un músculo; si no existe (no debería pasar), uno neutro para no romper la pantalla
+export function catInfo(cats, id) { return (cats && cats[id]) || { id, label: 'Sin músculo', color: '#94A3B8', emoji: '🎯', region: null }; }
+// Músculo de reserva cuando uno no existe: Core si sigue en tu lista; si no, el primero
+export function catReserva(cats) { return cats.core ? 'core' : Object.keys(cats)[0]; }
 
 // Tipos de serie. Back-off ya no usa 📉 (ahora 📐) y Calentamiento pasa a gris neutro (sin color propio).
 export const SET_TYPES = {
@@ -50,7 +107,7 @@ export const ACTIVIDAD_FACTOR = { sedentario: 1.2, ligero: 1.35, moderado: 1.5, 
 
 export const ACTIVIDADES = [['sedentario', 'Sedentario'], ['ligero', 'Ligero'], ['moderado', 'Moderado'], ['intenso', 'Intenso']];
 
-export const APP_VERSION = 7;
+export const APP_VERSION = 8;
 
 export const MOMENTOS = [['desayuno', '🌅 Desayuno'], ['comida', '🍽️ Comida'], ['cena', '🌙 Cena'], ['snack', '🍎 Snack']];
 

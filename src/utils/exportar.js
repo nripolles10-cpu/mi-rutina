@@ -1,4 +1,4 @@
-import { CATS, CAT_IDS } from '../data/catalog.js';
+import { catIdsDe, catInfo, catsDe } from '../data/catalog.js';
 import { escHtml, fmt } from '../utils/format.js';
 import { effNutri } from '../utils/health.js';
 import { describeSet } from '../utils/training.js';
@@ -30,7 +30,7 @@ export function buildCsv(state) {
         if (s.tipo === 'rp') { reps = (s.tandas || []).map((r) => csvNum(r) || '–').join(' · '); peso = csvNum(s.weight); }
         else if (s.tipo === 'drop') { reps = (s.drops || []).map((x) => csvNum(x.reps) || '–').join(' · '); peso = (s.drops || []).map((x) => csvNum(x.weight) || '–').join(' · '); }
         else { reps = csvNum(s.reps); peso = csvNum(s.weight); }
-        lines.push([d.label, d.equipo, ex.name, CATS[ex.cat].label, i + 1, TIPO_CSV[s.tipo] || 'top set', reps, peso, s.nota || '',
+        lines.push([d.label, d.equipo, ex.name, catInfo(catsDe(state), ex.cat).label, i + 1, TIPO_CSV[s.tipo] || 'top set', reps, peso, s.nota || '',
           ex.objetivo ? ex.objetivo.text : '', ex.objetivo && ex.objetivo.value !== null && ex.objetivo.value !== undefined ? csvNum(ex.objetivo.value) : '',
           ex.comentario || ''].map(csvEsc).join(';'));
       });
@@ -54,7 +54,7 @@ export function buildDocHtml(state) {
     (d.ids || []).forEach((id) => {
       const ex = state.exercises[id];
       if (!ex) return;
-      h += '<tr><td>' + escHtml(ex.name) + (ex.altName ? '<br><i>o ' + escHtml(ex.altName) + '</i>' : '') + '</td><td>' + escHtml(CATS[ex.cat].label) + '</td><td>'
+      h += '<tr><td>' + escHtml(ex.name) + (ex.altName ? '<br><i>o ' + escHtml(ex.altName) + '</i>' : '') + '</td><td>' + escHtml(catInfo(catsDe(state), ex.cat).label) + '</td><td>'
         + (ex.currentSets || []).map((s, i) => (i + 1) + '. ' + escHtml(describeSet(s)) + (s.nota ? ' (' + escHtml(s.nota) + ')' : '')).join('<br>')
         + '</td><td>' + escHtml(ex.objetivo ? ex.objetivo.text : '') + '</td><td>' + escHtml(ex.comentario || '').replace(/\n/g, '<br>') + '</td></tr>';
     });
@@ -79,7 +79,7 @@ export function buildTxt(state) {
     (d.ids || []).forEach((id, j) => {
       const ex = state.exercises[id];
       if (!ex) return;
-      L.push((j + 1) + '. ' + ex.name + '  [' + CATS[ex.cat].label + ']');
+      L.push((j + 1) + '. ' + ex.name + '  [' + catInfo(catsDe(state), ex.cat).label + ']');
       if (ex.altName) L.push('   Alternativa: ' + ex.altName);
       (ex.currentSets || []).forEach((s, k) => L.push('   Serie ' + (k + 1) + ': ' + describeSet(s) + (s.nota ? ' (' + s.nota + ')' : '')));
       if (ex.objetivo) L.push('   Objetivo: ' + ex.objetivo.text);
@@ -103,8 +103,8 @@ export function buildTxt(state) {
   }
   L.push(raya); L.push('DIANA FÍSICA'); L.push(raya);
   [['fuerte', 'Puntos fuertes'], ['intermedio', 'Intermedios'], ['debil', 'Puntos débiles']].forEach((g) => {
-    const lista = CAT_IDS.filter((k) => state.diana.estados[k] === g[0]);
-    L.push(g[1] + ': ' + (lista.length ? lista.map((k) => CATS[k].label + (state.diana.titulos[k] ? ' (' + state.diana.titulos[k] + ')' : '')).join(', ') : '—'));
+    const lista = catIdsDe(state).filter((k) => state.diana.estados[k] === g[0]);
+    L.push(g[1] + ': ' + (lista.length ? lista.map((k) => catsDe(state)[k].label + (state.diana.titulos[k] ? ' (' + state.diana.titulos[k] + ')' : '')).join(', ') : '—'));
   });
   L.push('');
   const hist = (state.peso.historial || []).slice().sort((a, b) => new Date(a.date) - new Date(b.date));

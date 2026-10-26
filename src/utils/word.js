@@ -2,7 +2,7 @@
    WORD (.docx) con la librería "docx" (funciona sin internet).
    Se carga solo cuando se pide el documento, para que la app arranque rápido.
    ========================================================================= */
-import { CATS } from '../data/catalog.js';
+import { catInfo, catsDe } from '../data/catalog.js';
 import { describeSet } from './training.js';
 
 // Devuelve el .docx en base64
@@ -27,7 +27,7 @@ export async function buildDocxBase64(state) {
       if (!ex) return;
       filas.push(new TableRow({ children: [
         celda(ex.name + (ex.altName ? '\no ' + ex.altName : '')),
-        celda(CATS[ex.cat] ? CATS[ex.cat].label : ''),
+        celda(catInfo(catsDe(state), ex.cat).label),
         celda((ex.currentSets || []).map((s, i) => (i + 1) + '. ' + describeSet(s) + (s.nota ? ' (' + s.nota + ')' : '')).join('\n')),
         celda(ex.objetivo ? ex.objetivo.text : ''),
         celda(ex.comentario || ''),

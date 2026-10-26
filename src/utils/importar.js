@@ -5,7 +5,7 @@
    Solo "Dia" y "Ejercicio" son obligatorias. Separador ";" (también vale "," o tabulador).
    Decimales con coma o punto. En rest-pause y dropset las cifras van separadas por " · " o "/".
    ========================================================================= */
-import { APP_VERSION, CATS } from '../data/catalog.js';
+import { APP_VERSION, catReserva, catsDe } from '../data/catalog.js';
 import { parseDecimal, parseNum, stripAcc, uid } from './format.js';
 import { normalizeSet } from './training.js';
 
@@ -52,10 +52,10 @@ const COLS = {
 };
 const TIPOS = { topset: 'top', top: 'top', backoff: 'backoff', restpause: 'rp', rp: 'rp', dropset: 'drop', drop: 'drop', calentamiento: 'warm', warm: 'warm' };
 
-function musculoDe(txt) {
+function musculoDe(txt, cats) {
   const n = norm(txt);
   if (!n) return null;
-  const id = Object.keys(CATS).find((k) => norm(k) === n || norm(CATS[k].label) === n);
+  const id = Object.keys(cats).find((k) => norm(k) === n || norm(cats[k].label) === n);
   return id || null;
 }
 const lista = (v) => String(v === null || v === undefined ? '' : v).split(/[·|/]/).map((x) => x.trim()).filter((x) => x !== '');
@@ -78,6 +78,8 @@ export function rowsToRutina(rows, prevState) {
   if (idx.dia < 0 || idx.ejercicio < 0) return { ok: false, error: 'Faltan las columnas obligatorias "Dia" y "Ejercicio" en la primera fila. Usa la plantilla.' };
   const get = (r, k) => (idx[k] >= 0 ? r[idx[k]] : null);
   const avisos = [];
+  const cats = catsDe(prevState); // tus músculos (también los que hayas creado)
+  const reserva = catReserva(cats);
   const days = [];
   const dayByLabel = {};
   const exByKey = {}; // día|nombre → datos
@@ -93,9 +95,9 @@ export function rowsToRutina(rows, prevState) {
     const key = dia + '|' + nombre;
     let ex = exByKey[key];
     if (!ex) {
-      const mus = musculoDe(get(r, 'musculo'));
-      if (!mus && get(r, 'musculo')) avisos.push('Fila ' + fila + ': músculo "' + get(r, 'musculo') + '" desconocido, se pone Core (cámbialo en modo edición).');
-      ex = { name: nombre, cat: mus || 'core', comentario: '', objetivo: null, sets: [] };
+      const mus = musculoDe(get(r, 'musculo'), cats);
+      if (!mus && get(r, 'musculo')) avisos.push('Fila ' + fila + ': músculo "' + get(r, 'musculo') + '" desconocido, se pone ' + cats[reserva].label + ' (cámbialo en modo edición).');
+      ex = { name: nombre, cat: mus || reserva, comentario: '', objetivo: null, sets: [] };
       exByKey[key] = ex; d.keys.push(key);
     }
     const com = String(get(r, 'comentarios') || '').trim();

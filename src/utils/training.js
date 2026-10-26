@@ -1,4 +1,4 @@
-import { CAT_IDS, DISCOS_KG, SET_TYPES, TABLA_1RM } from '../data/catalog.js';
+import { DISCOS_KG, SET_TYPES, TABLA_1RM, catIdsDe } from '../data/catalog.js';
 import { fmt, mean, num, numOrNull, nz } from '../utils/format.js';
 
 /* =========================================================================
@@ -99,7 +99,7 @@ export function activeExerciseIds(state) {
 // Un ejercicio compartido entre dos días (como el gemelo) cuenta en cada día en que aparece.
 export function weeklySets(state) {
   const totals = {};
-  CAT_IDS.forEach((k) => { totals[k] = 0; });
+  catIdsDe(state).forEach((k) => { totals[k] = 0; });
   (state.days || []).forEach((day) => {
     (day.ids || []).forEach((id) => {
       const ex = state.exercises[id];
@@ -114,16 +114,17 @@ export function weeklySets(state) {
 // y kg que faltan de media. Se ignoran los ejercicios sin objetivo numérico.
 export function muscleProgress(state) {
   const out = {};
-  CAT_IDS.forEach((k) => { out[k] = { items: [], pct: null, falta: null, ignorados: 0 }; });
+  const ids = catIdsDe(state);
+  ids.forEach((k) => { out[k] = { items: [], pct: null, falta: null, ignorados: 0 }; });
   activeExerciseIds(state).forEach((id) => {
     const ex = state.exercises[id];
-    const o = out[ex.cat];
+    const o = out[ex.cat] || (out[ex.cat] = { items: [], pct: null, falta: null, ignorados: 0 });
     const val = ex.objetivo && typeof ex.objetivo.value === 'number' && ex.objetivo.value > 0 ? ex.objetivo.value : null;
     const best = bestSerie1(ex);
     if (val === null || best === null) { o.ignorados += 1; return; }
     o.items.push({ id, name: ex.name, best, objetivo: val, pct: Math.min(1, best / val), falta: Math.max(0, val - best) });
   });
-  CAT_IDS.forEach((k) => {
+  Object.keys(out).forEach((k) => {
     const o = out[k];
     if (o.items.length) { o.pct = mean(o.items.map((i) => i.pct)) * 100; o.falta = mean(o.items.map((i) => i.falta)); }
   });

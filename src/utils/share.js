@@ -1,6 +1,6 @@
 import LZString from 'lz-string';
-import { APP_VERSION } from '../data/catalog.js';
-import { migrateState } from '../state/migrate.js';
+import { APP_VERSION, MUSCULOS_POR_DEFECTO, normalizarMusculos } from '../data/catalog.js';
+import { anadirRecetasNuevas, migrateState } from '../state/migrate.js';
 
 /* =========================================================================
    SECCIÓN 5 · COMPARTIR Y EXPORTAR
@@ -63,6 +63,8 @@ export function buildShareObject(state, opts, fotos) {
   const defs = {};
   Object.keys(state.exercises).forEach((id) => { const e = { ...state.exercises[id] }; delete e.history; defs[id] = e; });
   o.rutina = { days: state.days, exercises: defs };
+  // Tus músculos (para que quien lo importe vea los mismos, también los que hayas creado tú)
+  if (Array.isArray(state.musculos)) o.musculos = state.musculos;
   if (opts.historial) { o.historial = {}; Object.keys(state.exercises).forEach((id) => { o.historial[id] = state.exercises[id].history; }); }
   if (opts.peso) o.peso = state.peso;
   if (opts.recetas) { o.recetas = state.comida.recetas; o.favoritos = state.comida.favoritos; }
@@ -101,6 +103,18 @@ export function applyImport(prev, obj, mode) {
   Object.keys(obj.rutina.exercises).forEach((id) => { exercises[id] = { ...obj.rutina.exercises[id], history: histOf(id) }; });
   next.exercises = exercises;
   next.days = obj.rutina.days;
+  // Músculos: con "todo" se usan los del código; con "solo la rutina" se añaden los que te falten (por id)
+  const mios = normalizarMusculos(prev.musculos);
+  if (Array.isArray(obj.musculos) && obj.musculos.length) {
+    const suyos = normalizarMusculos(obj.musculos);
+    if (mode === 'todo') next.musculos = suyos;
+    else next.musculos = mios.concat(suyos.filter((m) => !mios.some((x) => x.id === m.id)));
+  } else if (mode === 'todo') {
+    // Código antiguo (sin músculos): los de serie, más los tuyos que usen sus ejercicios
+    const usados = {};
+    Object.keys(exercises).forEach((id) => { usados[exercises[id].cat] = true; });
+    next.musculos = MUSCULOS_POR_DEFECTO.map((m) => ({ ...m })).concat(mios.filter((m) => usados[m.id] && !MUSCULOS_POR_DEFECTO.some((d) => d.id === m.id)));
+  } else next.musculos = mios;
   next.meta = { ...prev.meta, activeDay: obj.rutina.days.length ? obj.rutina.days[0].id : null };
   if (mode === 'todo') {
     if (obj.peso) next.peso = obj.peso;
@@ -109,7 +123,11 @@ export function applyImport(prev, obj, mode) {
       next.formulario = { ...(obj.nutricion.formulario || prev.formulario), nombre: prev.formulario.nombre };
       next.comida = { ...prev.comida, plan: obj.nutricion.plan || prev.comida.plan };
     }
-    if (obj.recetas) next.comida = { ...next.comida, recetas: obj.recetas, favoritos: obj.favoritos || [] };
+    if (obj.recetas) {
+      // Un código de antes de la versión 8 no trae las recetas nuevas: se añaden (sin tocar las suyas)
+      const antiguo = !(Number(obj.appVersion) >= 8);
+      next.comida = { ...next.comida, recetas: antiguo ? anadirRecetasNuevas(obj.recetas) : obj.recetas, favoritos: obj.favoritos || [] };
+    }
     if (obj.extra) {
       const x = obj.extra;
       if (x.cardio) next.cardio = x.cardio;

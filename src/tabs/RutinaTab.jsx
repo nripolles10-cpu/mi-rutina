@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Chip, EditLockBar, Label, MiniBtn, NumField, TextField, chipStyle, useGym } from '../components/ui.jsx';
-import { CATS, CAT_IDS, SET_TYPES } from '../data/catalog.js';
+import { CATS, CAT_IDS, SET_TYPES, catInfo } from '../data/catalog.js';
 import { ACCENT, T } from '../data/theme.js';
 import { Native } from '../native/index.js';
 import { fmt, fmtDateShort, parseNum } from '../utils/format.js';
@@ -117,7 +117,7 @@ export function AlternoPicker({ day, id }) {
         <input type="text" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="ej. Abducción de cadera" className="font-body inp" style={{ marginBottom: 10, fontSize: 13 }} />
         <Label>Músculo</Label>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
-          {CAT_IDS.map((k) => <Chip key={k} active={cat === k} onClick={() => setCat(k)} accent={CATS[k].color} style={{ padding: '6px 12px', fontSize: 12 }}>{CATS[k].label}</Chip>)}
+          {CAT_IDS.map((k) => <Chip key={k} active={cat === k} onClick={() => setCat(k)} accent={catInfo(CATS, k).color} style={{ padding: '6px 12px', fontSize: 12 }}>{catInfo(CATS, k).label}</Chip>)}
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={() => setModo(null)} className="font-body btn btn-ghost" style={{ flex: 1, fontSize: 12.5 }}>Cancelar</button>
@@ -132,8 +132,8 @@ export function AlternoPicker({ day, id }) {
       <div className="card" style={{ padding: 12 }}>
         <div className="font-body" style={{ color: T.muted, fontSize: 12, marginBottom: 8 }}>Elige con cuál alterna:</div>
         {libres.map((i) => (
-          <button key={i} onClick={() => unir(i)} className="font-body btn btn-ghost" style={{ width: '100%', textAlign: 'left', marginBottom: 6, padding: '9px 12px', fontSize: 13, borderStyle: 'solid', borderColor: CATS[state.exercises[i].cat].color + '88' }}>
-            {state.exercises[i].name} <span style={{ color: CATS[state.exercises[i].cat].color, fontWeight: 700, fontSize: 11.5 }}>· {CATS[state.exercises[i].cat].label}</span>
+          <button key={i} onClick={() => unir(i)} className="font-body btn btn-ghost" style={{ width: '100%', textAlign: 'left', marginBottom: 6, padding: '9px 12px', fontSize: 13, borderStyle: 'solid', borderColor: catInfo(CATS, state.exercises[i].cat).color + '88' }}>
+            {state.exercises[i].name} <span style={{ color: catInfo(CATS, state.exercises[i].cat).color, fontWeight: 700, fontSize: 11.5 }}>· {catInfo(CATS, state.exercises[i].cat).label}</span>
           </button>
         ))}
         <button onClick={() => setModo(null)} className="font-body btn btn-ghost" style={{ width: '100%', padding: '8px', fontSize: 12.5 }}>Cancelar</button>
@@ -165,7 +165,7 @@ export function AlternoCard({ day, par }) {
         <div style={{ display: 'flex', gap: 8 }}>
           {[par.a, par.b].map((id) => {
             const e = ex[id];
-            const c = CATS[e.cat].color;
+            const c = catInfo(CATS, e.cat).color;
             const on = id === activoId;
             return (
               <button key={id} onClick={() => cambiar(id)} className="font-body" style={{
@@ -174,7 +174,7 @@ export function AlternoCard({ day, par }) {
                 boxShadow: on ? '0 0 14px ' + c + '40' : 'none',
               }}>
                 <div style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 13, lineHeight: 1.25 }}>{e.name}</div>
-                <div style={{ color: on ? c : T.muted, fontSize: 11, marginTop: 2, fontWeight: on ? 700 : 500 }}>{CATS[e.cat].label}{on ? ' · esta semana' : ''}</div>
+                <div style={{ color: on ? c : T.muted, fontSize: 11, marginTop: 2, fontWeight: on ? 700 : 500 }}>{catInfo(CATS, e.cat).label}{on ? ' · esta semana' : ''}</div>
               </button>
             );
           })}
@@ -314,7 +314,7 @@ export function ExerciseCard({ id, dayId, embedded }) {
     if (a > 0 && b > 0) trend = a > b ? 'up' : a < b ? 'down' : 'same';
   }
   const foto = fotos && fotos[id] ? Native.photoSrc(fotos[id]) : null;
-  const mc = CATS[ex.cat].color; // cada músculo tiene su color; todos los ejercicios del mismo músculo comparten color
+  const mc = catInfo(CATS, ex.cat).color; // cada músculo tiene su color; todos los ejercicios del mismo músculo comparten color
   const chipSt = chipStyle(mc);
 
   const setSet = (idx, patch) => {
@@ -372,7 +372,7 @@ export function ExerciseCard({ id, dayId, embedded }) {
             {trend === 'down' && <span title="Ha bajado">📉</span>}
             {ex.comentario ? <span title="Tiene comentarios" style={{ fontSize: 12 }}>📝</span> : null}
           </div>
-          <div className="font-body" style={{ color: T.muted, fontSize: 11.5, marginTop: 2 }}><b style={{ color: mc }}>{CATS[ex.cat].label}</b></div>
+          <div className="font-body" style={{ color: T.muted, fontSize: 11.5, marginTop: 2 }}><b style={{ color: mc }}>{catInfo(CATS, ex.cat).label}</b></div>
           <div style={{ display: 'flex', gap: 6, marginTop: 7, flexWrap: 'wrap' }}>
             {record !== null && <span className="font-body" style={{ ...chipSt, fontWeight: 700 }}>🏆 {fmt(record)} kg</span>}
             {ex.objetivo && <span className="font-body" style={chipSt}>🎯 {ex.objetivo.text}</span>}
@@ -399,7 +399,7 @@ export function ExerciseCard({ id, dayId, embedded }) {
               <Label style={{ marginTop: 10 }}>Músculo (el ejercicio cuenta solo para este)</Label>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {CAT_IDS.map((k) => (
-                  <Chip key={k} active={ex.cat === k} onClick={() => updateExercise(id, { cat: k })} accent={CATS[k].color} style={{ padding: '6px 12px', fontSize: 12 }}>{CATS[k].label}</Chip>
+                  <Chip key={k} active={ex.cat === k} onClick={() => updateExercise(id, { cat: k })} accent={catInfo(CATS, k).color} style={{ padding: '6px 12px', fontSize: 12 }}>{catInfo(CATS, k).label}</Chip>
                 ))}
               </div>
             </div>
@@ -489,7 +489,7 @@ export function AddExerciseForm({ dayId }) {
       <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="ej. Press militar" className="font-body inp" style={{ marginBottom: 12, fontSize: 13 }} />
       <Label>Músculo (el ejercicio cuenta solo para este)</Label>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
-        {CAT_IDS.map((k) => <Chip key={k} active={cat === k} onClick={() => setCat(k)} accent={CATS[k].color}>{CATS[k].label}</Chip>)}
+        {CAT_IDS.map((k) => <Chip key={k} active={cat === k} onClick={() => setCat(k)} accent={catInfo(CATS, k).color}>{catInfo(CATS, k).label}</Chip>)}
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
         <button onClick={() => setOpen(false)} className="font-body btn btn-ghost" style={{ flex: 1, fontSize: 12.5 }}>Cancelar</button>

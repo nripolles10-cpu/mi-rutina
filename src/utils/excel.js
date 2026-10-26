@@ -5,7 +5,7 @@
    está desactualizada y tiene fallos de seguridad conocidos al LEER archivos.
    ========================================================================= */
 import { zipSync, unzipSync, strToU8, strFromU8 } from 'fflate';
-import { CATS, SET_TYPES } from '../data/catalog.js';
+import { SET_TYPES, catInfo, catsDe } from '../data/catalog.js';
 import { TIPO_CSV } from './exportar.js';
 
 const xmlEsc = (s) => String(s === null || s === undefined ? '' : s)
@@ -94,7 +94,7 @@ export function buildXlsx(state) {
         if (s.tipo === 'rp') { reps = (s.tandas || []).map(v).join(' · '); peso = typeof s.weight === 'number' ? s.weight : null; }
         else if (s.tipo === 'drop') { reps = (s.drops || []).map((x) => v(x.reps)).join(' · '); peso = (s.drops || []).map((x) => v(x.weight)).join(' · '); }
         else { reps = typeof s.reps === 'number' ? s.reps : null; peso = typeof s.weight === 'number' ? s.weight : null; }
-        rows.push([d.label, d.equipo || '', ex.name, CATS[ex.cat] ? CATS[ex.cat].label : ex.cat, i + 1, TIPO_CSV[s.tipo] || (SET_TYPES[s.tipo] && SET_TYPES[s.tipo].label) || 'top set',
+        rows.push([d.label, d.equipo || '', ex.name, catInfo(catsDe(state), ex.cat).label, i + 1, TIPO_CSV[s.tipo] || (SET_TYPES[s.tipo] && SET_TYPES[s.tipo].label) || 'top set',
           reps, peso, s.nota || '', ex.objetivo ? ex.objetivo.text : '', ex.objetivo && typeof ex.objetivo.value === 'number' ? ex.objetivo.value : null, ex.comentario || '']);
       });
     });

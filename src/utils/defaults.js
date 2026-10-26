@@ -24,6 +24,7 @@ export function buildDefaultData(source, opts) {
     rutina: { days: clone(days).map((d) => ({ id: d.id, label: d.label, equipo: d.equipo || '', nota: d.nota || '', ids: d.ids.filter((id) => exercises[id]) })), exercises: clone(exercises) },
     extra: {},
   };
+  if (Array.isArray(source.musculos)) out.musculos = clone(source.musculos);
   const cardio = source.cardio || (source.extra && source.extra.cardio);
   const extras = source.extras || (source.extra && source.extra.extras);
   if (Array.isArray(cardio)) out.extra.cardio = clone(cardio);
