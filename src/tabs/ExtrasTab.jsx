@@ -4,7 +4,8 @@ import { ACTIVIDADES, ACTIVIDAD_FACTOR, OBJETIVOS, RITMOS } from '../data/catalo
 import { T } from '../data/theme.js';
 import { Native } from '../native/index.js';
 import { fmt, formatDecimal, safeUrl, uid } from '../utils/format.js';
-import { effNutri, gastoReal } from '../utils/health.js';
+import { GRASA_PCT_MIN, GRASA_REFERENCIA, KCAL_MINIMAS, RANGO_GRASA, effNutri, gastoReal } from '../utils/health.js';
+import { aplicarObjetivoPeso, validarObjetivoPeso } from '../utils/peso.js';
 import { calc1RM, calcDiscos } from '../utils/training.js';
 
 /* =========================================================================
@@ -49,19 +50,26 @@ export function NutricionCard() {
   const { n, eff, plan, obj } = effNutri(state);
   const mant = n.objetivo === 'mantenimiento';
   const upd = (patch) => commit((prev) => ({ ...prev, nutricion: { ...prev.nutricion, ...patch } }), { key: 'nut:' + Object.keys(patch).join() });
+  // El sexo es un único dato (el de Ajustes): cambiarlo aquí lo cambia también allí
+  const setSexo = (sexo) => commit((prev) => ({ ...prev, formulario: { ...prev.formulario, sexo }, nutricion: { ...prev.nutricion, sexo: null } }));
+  // El objetivo de peso es el mismo que en Progreso y Ajustes. Mientras escribes solo se guarda si es un peso válido.
+  const setObjetivo = (v) => { if (v === null || validarObjetivoPeso(v).ok) commit((prev) => aplicarObjetivoPeso(prev, v === null ? null : validarObjetivoPeso(v).kg)); };
 
   const avisos = [];
   if (!plan.falta) {
     if (n.objetivo === 'definicion' && eff.objetivoKg && eff.objetivoKg >= eff.kg) avisos.push('Tu peso objetivo (' + fmt(eff.objetivoKg) + ' kg) no es menor que tu peso actual: para definir tendría que ser más bajo.');
     if (n.objetivo === 'volumen' && eff.objetivoKg && eff.objetivoKg <= eff.kg) avisos.push('Tu peso objetivo (' + fmt(eff.objetivoKg) + ' kg) no es mayor que tu peso actual: para volumen tendría que ser más alto.');
-    if (plan.kcal < plan.bmr) avisos.push('Estas calorías quedan por debajo de tu metabolismo basal (' + plan.bmr + ' kcal). Conviene un ritmo más suave.');
+    if (plan.ajustadoAlSuelo) avisos.push('Con este ritmo bajarías a ' + plan.kcalSinSuelo + ' kcal, por debajo del mínimo seguro (' + plan.suelo + ' kcal: ' + (plan.suelo > KCAL_MINIMAS[plan.sexo] ? 'tu metabolismo basal' : fmt(KCAL_MINIMAS[plan.sexo]) + ' kcal para ' + (plan.sexo === 'F' ? 'mujer' : 'hombre')) + '). Te dejo en ese mínimo.');
+    else if (plan.kcal < plan.bmr) avisos.push('Estas calorías quedan por debajo de tu metabolismo basal (' + plan.bmr + ' kcal). Conviene un ritmo más suave.');
+    if (plan.deficitExcesivo) avisos.push('El déficit es grande (' + Math.abs(plan.delta) + ' kcal/día, unos ' + fmt(Math.abs(plan.semanal), 2) + ' kg/semana). Lo recomendable es no pasar del 25 % de tu gasto ni perder más del 1 % de tu peso por semana: elige un ritmo más suave.');
+    if (plan.grasaIgnorada) avisos.push('El % de grasa que has puesto (' + fmt(eff.grasaPct) + ' %) no es creíble para ' + (plan.sexo === 'F' ? 'una mujer' : 'un hombre') + ' (entre ' + RANGO_GRASA[plan.sexo][0] + ' y ' + RANGO_GRASA[plan.sexo][1] + ' %): no lo uso y calculo con Mifflin-St Jeor.');
     if (plan.carbBajo) avisos.push('Con estas calorías no llegan ni la proteína ni la grasa recomendadas: sube calorías o elige un ritmo más suave.');
   }
 
   const macros = plan.falta ? [] : [
     { key: 'carb', label: 'Hidratos', emoji: '🍚', color: '#A3E635', g: plan.carbG, kcal: plan.carbKcal, extra: 'el resto de las calorías' },
-    { key: 'prot', label: 'Proteína', emoji: '🥩', color: '#22D3EE', g: plan.protG, kcal: plan.protKcal, extra: fmt(plan.protF, 1) + ' g por kg' },
-    { key: 'fat', label: 'Grasas', emoji: '🥑', color: '#F472B6', g: plan.fatG, kcal: plan.fatKcal, extra: fmt(plan.fatF, 1) + ' g por kg' },
+    { key: 'prot', label: 'Proteína', emoji: '🥩', color: '#22D3EE', g: plan.protG, kcal: plan.protKcal, extra: fmt(plan.protF, 1) + ' g por kg' + (plan.pesoRef < eff.kg ? ' (de ' + fmt(plan.pesoRef) + ' kg)' : '') },
+    { key: 'fat', label: 'Grasas', emoji: '🥑', color: '#F472B6', g: plan.fatG, kcal: plan.fatKcal, extra: plan.fatG > Math.round(plan.fatF * plan.pesoRef) ? 'mínimo ' + Math.round(GRASA_PCT_MIN[plan.sexo] * 100) + ' % de las kcal' : fmt(plan.fatF, 1) + ' g por kg' },
   ];
   const totalK = plan.falta ? 1 : Math.max(1, plan.protKcal + plan.carbKcal + plan.fatKcal);
 
@@ -81,7 +89,7 @@ export function NutricionCard() {
 
         <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
           <LabeledNum label="Peso actual" suffix="kg" value={n.pesoActual} placeholder={eff.kg ? formatDecimal(eff.kg) : 'kg'} onChange={(v) => upd({ pesoActual: v })} />
-          {!mant && <LabeledNum label="¿A qué peso quieres llegar?" suffix="kg" value={n.pesoObjetivo} placeholder={eff.objetivoKg ? formatDecimal(eff.objetivoKg) : 'kg'} onChange={(v) => upd({ pesoObjetivo: v })} />}
+          {!mant && <LabeledNum label="¿A qué peso quieres llegar?" suffix="kg" value={state.peso.objetivoKg || null} placeholder="kg" onChange={setObjetivo} />}
         </div>
 
         {!mant && (
@@ -101,12 +109,12 @@ export function NutricionCard() {
         </div>
         <div style={{ display: 'flex', gap: 10, marginBottom: 12, alignItems: 'flex-end' }}>
           <LabeledNum label="% de grasa corporal (opcional)" suffix="%" value={n.grasaPct} placeholder={eff.grasaPct ? formatDecimal(eff.grasaPct) : '—'} onChange={(v) => upd({ grasaPct: v })} />
-          <div className="font-body" style={{ flex: 1, color: T.dim, fontSize: 10.5, lineHeight: 1.4, paddingBottom: 10 }}>Si lo pones, uso Katch-McArdle (mejor para gente musculada).</div>
+          <div className="font-body" style={{ flex: 1, color: T.dim, fontSize: 10.5, lineHeight: 1.4, paddingBottom: 10 }}>Si lo pones (y es creíble para tu sexo), uso Katch-McArdle, por masa magra (mejor para gente musculada).</div>
         </div>
         <Label>Sexo</Label>
         <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
-          <Chip active={eff.sexo === 'M'} onClick={() => upd({ sexo: 'M' })}>Hombre</Chip>
-          <Chip active={eff.sexo === 'F'} onClick={() => upd({ sexo: 'F' })}>Mujer</Chip>
+          <Chip active={eff.sexo === 'M'} onClick={() => setSexo('M')}>Hombre</Chip>
+          <Chip active={eff.sexo === 'F'} onClick={() => setSexo('F')}>Mujer</Chip>
         </div>
         <Label>Nivel de actividad</Label>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
@@ -129,7 +137,7 @@ export function NutricionCard() {
 
             <div style={{ marginBottom: 4 }}>
               <SupRow label={n.tdeeReal ? 'Tu gasto en mantenimiento (real, de tus datos)' : 'Tu gasto en mantenimiento (estimado)'} value={plan.tdee + ' kcal'} />
-              <SupRow label={'Metabolismo basal (' + plan.metodo + ')'} value={plan.bmr + ' kcal'} />
+              <SupRow label={'Metabolismo basal (' + plan.metodo + (plan.lbm ? ', masa magra ' + fmt(plan.lbm) + ' kg' : '') + ')'} value={plan.bmr + ' kcal'} />
               <SupRow label="Objetivo de calorías" value={plan.kcal + ' kcal'} highlight />
               {plan.semanas !== null && <SupRow label={'Ritmo orientativo (' + fmt(Math.abs(plan.semanal), 2) + ' kg/semana)'} value={fmt(eff.objetivoKg) + ' kg en ~' + plan.semanas + ' semanas'} />}
             </div>
@@ -150,6 +158,11 @@ export function NutricionCard() {
               {macros.map((m) => <div key={m.key} style={{ width: (m.kcal / totalK) * 100 + '%', background: m.color }} />)}
             </div>
 
+            {plan.lbm && plan.mifflin !== null && (
+              <div data-testid="nota-masa-magra" className="font-body" style={{ color: '#BAE6FD', fontSize: 12, lineHeight: 1.5, marginTop: 10, padding: '10px 12px', borderRadius: 12, background: 'rgba(56,189,248,0.10)', border: '1px solid rgba(56,189,248,0.35)' }}>
+                ℹ️ Con tu % de grasa calculo por <b>masa magra</b> ({fmt(plan.lbm)} kg), que ya refleja tu sexo; la edad no entra en esta fórmula. Con la fórmula estándar (sexo, edad, altura y peso) tu metabolismo basal sería <b>{plan.mifflin} kcal</b> en vez de {plan.bmr}. Los macros sí se ajustan a tu sexo{plan.sexo === 'F' ? ' (más grasa en la dieta)' : ''} y a tu peso de referencia ({fmt(plan.pesoRef)} kg, con un {GRASA_REFERENCIA[plan.sexo]} % de grasa).
+              </div>
+            )}
             {avisos.map((a, i) => (
               <div key={i} className="font-body" style={{ color: '#FCD34D', fontSize: 12, lineHeight: 1.5, marginTop: 10, padding: '10px 12px', borderRadius: 12, background: 'rgba(251,191,36,0.10)', border: '1px solid rgba(251,191,36,0.35)' }}>⚠️ {a}</div>
             ))}
