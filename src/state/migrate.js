@@ -1,4 +1,5 @@
-import { APP_VERSION, CATS, TAB_IDS } from '../data/catalog.js';
+import { APP_VERSION, CATS, MUSCULOS_POR_DEFECTO, TAB_IDS, catReserva, mapaMusculos, normalizarMusculos } from '../data/catalog.js';
+import { RECETAS_NUEVAS_V8 } from '../data/recetas.js';
 import { CARDIO, DAYS_SEED, SEED_EXERCISES } from '../data/seed.js';
 import { defaultComida, normalizeAgua, normalizeRecetas } from '../utils/comida.js';
 import { clone, stripAcc, uid } from '../utils/format.js';
@@ -13,13 +14,15 @@ import { normalizeSet } from '../utils/training.js';
    EJERCICIOS, DÍAS Y ESTADO
    ========================================================================= */
 
-export function normalizeExercise(ex) {
+// cats (opcional): catálogo de músculos con el que validar ex.cat (por defecto, el que está en pantalla)
+export function normalizeExercise(ex, cats) {
+  const catalogo = cats || CATS;
   const rawSets = Array.isArray(ex.currentSets) ? ex.currentSets : Array.isArray(ex.sets) ? ex.sets : [];
   const sets = rawSets.map((s, i) => normalizeSet(s, i));
   const out = {
     ...ex,
     name: typeof ex.name === 'string' && ex.name ? ex.name : 'Ejercicio',
-    cat: CATS[ex.cat] ? ex.cat : 'core',
+    cat: catalogo[ex.cat] ? ex.cat : catReserva(catalogo),
     altName: ex.altName || null,
     objetivo: ex.objetivo || null,
     marcaAntigua: ex.marcaAntigua || null,
@@ -51,6 +54,7 @@ export function buildInitialState() {
     exercises,
     days: clone(DAYS_SEED).map(normalizeDay),
     diana: { estados: {}, titulos: {} },
+    musculos: MUSCULOS_POR_DEFECTO.map((m) => ({ ...m })),
     cardio: CARDIO.map((c) => ({ ...c })),
     formulario: { nombre: '', edad: null, sexo: 'M', alturaCm: null, pesoInicialKg: 84, actividad: 'intenso', grasaPct: null, objetivoPesoKg: 80, objetivoPasosDiarios: 10000 },
     peso: { historial: [{ id: uid(), date: new Date().toISOString(), kg: 84 }], objetivoKg: 80, direccion: 'bajar', objetivoAlcanzado: false },
@@ -82,14 +86,17 @@ export function normalizeCurrent(loaded, seed, appVersion) {
   const objetivo = appVersion || APP_VERSION;
   const lv = Number(loaded.version);
   const next = { ...seed, ...loaded, version: isFinite(lv) && lv > objetivo ? lv : objetivo };
+  // Catálogo de músculos del usuario (los datos antiguos, sin catálogo propio, cargan el de serie)
+  next.musculos = normalizarMusculos(loaded.musculos);
+  const cats = mapaMusculos(next.musculos);
   const rawEx = loaded.exercises && typeof loaded.exercises === 'object' ? loaded.exercises : seed.exercises;
   const exercises = {};
-  Object.keys(rawEx).forEach((id) => { if (rawEx[id] && typeof rawEx[id] === 'object') exercises[id] = normalizeExercise(rawEx[id]); });
+  Object.keys(rawEx).forEach((id) => { if (rawEx[id] && typeof rawEx[id] === 'object') exercises[id] = normalizeExercise(rawEx[id], cats); });
   const rawDays = Array.isArray(loaded.days) ? loaded.days : seed.days;
   const days = rawDays.filter((d) => d && typeof d === 'object').map(normalizeDay);
   // Un día que apunta a un ejercicio que no existe: se recupera de la semilla si está ahí; si no, se quita la referencia rota.
   days.forEach((d) => {
-    d.ids.forEach((id) => { if (!exercises[id] && seed.exercises[id]) exercises[id] = seed.exercises[id]; });
+    d.ids.forEach((id) => { if (!exercises[id] && seed.exercises[id]) exercises[id] = normalizeExercise(seed.exercises[id], cats); });
     d.ids = d.ids.filter((id) => !!exercises[id]);
   });
   next.exercises = exercises;
@@ -108,6 +115,12 @@ export function normalizeCurrent(loaded, seed, appVersion) {
     suplementos: Array.isArray(ex.suplementos) ? ex.suplementos.filter((s) => s && typeof s === 'object').map((s) => ({ ...s, id: s.id || 'sup_' + uid(), filas: Array.isArray(s.filas) ? s.filas : [] })) : seed.extras.suplementos,
   };
   next.nutricion = { ...seed.nutricion, ...(loaded.nutricion || {}) };
+  // Un solo dato para el sexo y para el objetivo de peso (antes la calculadora podía tener los suyos y no
+  // coincidir con Ajustes). Manda el de Ajustes; desde ahora la calculadora cambia ese mismo dato.
+  if (next.formulario.sexo !== 'F') next.formulario = { ...next.formulario, sexo: 'M' };
+  next.nutricion = { ...next.nutricion, sexo: null, pesoObjetivo: null };
+  if (next.peso.objetivoKg === undefined || (next.peso.objetivoKg !== null && !(typeof next.peso.objetivoKg === 'number' && next.peso.objetivoKg > 0))) next.peso = { ...next.peso, objetivoKg: null, direccion: null };
+  if (next.formulario.objetivoPesoKg !== next.peso.objetivoKg) next.formulario = { ...next.formulario, objetivoPesoKg: next.peso.objetivoKg };
   const c = loaded.comida || {};
   next.comida = {
     recetas: normalizeRecetas(c.recetas, seed.comida.recetas),
@@ -170,9 +183,10 @@ export function upgradeLegacy(loaded, seed) {
   });
   const diana = { estados: {}, titulos: {} };
   const prof = loaded.profile || {};
-  (prof.fuertes || []).forEach((x) => { if (CATS[x.region]) { diana.estados[x.region] = 'fuerte'; if (x.titulo) diana.titulos[x.region] = x.titulo; } });
-  (prof.prioridad || []).forEach((x) => { if (CATS[x.region]) { diana.estados[x.region] = 'debil'; if (x.titulo) diana.titulos[x.region] = x.titulo; } });
-  (prof.equilibrio || []).forEach((x) => { if (CATS[x.region] && x.titulo) diana.titulos[x.region] = x.titulo; });
+  const catsSerie = mapaMusculos(MUSCULOS_POR_DEFECTO); // los datos antiguos usan los músculos de serie
+  (prof.fuertes || []).forEach((x) => { if (catsSerie[x.region]) { diana.estados[x.region] = 'fuerte'; if (x.titulo) diana.titulos[x.region] = x.titulo; } });
+  (prof.prioridad || []).forEach((x) => { if (catsSerie[x.region]) { diana.estados[x.region] = 'debil'; if (x.titulo) diana.titulos[x.region] = x.titulo; } });
+  (prof.equilibrio || []).forEach((x) => { if (catsSerie[x.region] && x.titulo) diana.titulos[x.region] = x.titulo; });
   PENDING_PHOTOS = Object.keys(photos).length ? photos : null;
   const lm = loaded.meta || {};
   const next = {
@@ -207,7 +221,23 @@ export const MIGRATIONS = {
     if (exercises.abduccion && exercises.abduccion.cat === 'gluteo') exercises.abduccion = { ...exercises.abduccion, cat: 'abductores' };
     return { ...st, exercises };
   },
+  // v7 → v8: catálogo de músculos editable (lo rellena normalizeCurrent con los 15 de serie), sexo y objetivo de
+  // peso unificados (normalizeCurrent) y recetas nuevas: se añaden las que no tengas ya (por id), sin tocar las tuyas.
+  8: (st) => {
+    const c = st.comida && typeof st.comida === 'object' ? st.comida : null;
+    if (!c || !Array.isArray(c.recetas)) return st; // sin lista guardada: se usará la de serie, que ya las trae
+    return { ...st, comida: { ...c, recetas: anadirRecetasNuevas(c.recetas) } };
+  },
 };
+
+// Añade las recetas nuevas de la versión 8 que falten (por id). No cambia ni duplica ninguna.
+export function anadirRecetasNuevas(lista) {
+  const arr = Array.isArray(lista) ? lista : [];
+  const ids = {};
+  arr.forEach((r) => { if (r && r.id) ids[r.id] = true; });
+  const faltan = RECETAS_NUEVAS_V8().filter((r) => !ids[r.id]);
+  return faltan.length ? arr.concat(faltan) : arr;
+}
 
 // appVersion: versión de destino (por defecto la de la app; las pruebas la cambian para simular una actualización)
 export function migrateState(loaded, appVersion) {

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GlobalStyle } from './components/GlobalStyle.jsx';
 import { TimerModal } from './components/TimerModal.jsx';
 import { ConfirmDialog, GymContext, Toast } from './components/ui.jsx';
+import { aplicarCatalogo } from './data/catalog.js';
 import { ACCENT, BG_IMAGE, T } from './data/theme.js';
 import defaultData from './data/defaultData.json';
 import { Native, NOTIF_ID_DESCANSO } from './native/index.js';
@@ -17,6 +18,7 @@ import { ProgresoTab } from './tabs/ProgresoTab.jsx';
 import { RutinaTab } from './tabs/RutinaTab.jsx';
 import { stateFromDefaults } from './utils/defaults.js';
 import { clone, fmt, fmtMS, uid } from './utils/format.js';
+import { aplicarObjetivoPeso } from './utils/peso.js';
 import { applyImport } from './utils/share.js';
 import { activeExerciseIds, bestSerie1, computeScore, normalizeSet } from './utils/training.js';
 
@@ -42,11 +44,13 @@ export function App() {
   const toastTimer = useRef(null);
   useEffect(() => { stateRef.current = state; }, [state]);
 
-  const showToast = useCallback((msg, kind, ms) => {
+  // accion (opcional): { label, fn } → botón dentro del aviso (por ejemplo "↩ Deshacer")
+  const showToast = useCallback((msg, kind, ms, accion) => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    setToast({ msg, kind });
-    toastTimer.current = setTimeout(() => { toastTimer.current = null; setToast(null); }, ms || 2800);
+    setToast({ msg, kind, accion: accion || null });
+    toastTimer.current = setTimeout(() => { toastTimer.current = null; setToast(null); }, ms || (accion ? 6000 : 2800));
   }, []);
+  const hideToast = useCallback(() => { if (toastTimer.current) clearTimeout(toastTimer.current); toastTimer.current = null; setToast(null); }, []);
   const askConfirm = useCallback((opts) => setConfirmDlg(opts), []);
 
   /* ---------- guardado ---------- */
@@ -119,6 +123,21 @@ export function App() {
     scheduleSave();
     return true;
   }, [scheduleSave]);
+
+  // Cambio con "↩ Deshacer" durante unos segundos (sustituye a los antiguos botones de la cabecera).
+  // Solo deshace si no ha habido otro cambio después, para no pisar nada.
+  const commitDeshacible = useCallback((fn, msg) => {
+    const prev = stateRef.current;
+    if (!commit(fn)) return false;
+    const hecho = stateRef.current;
+    showToast(msg, undefined, 6000, { label: '↩ Deshacer', fn: () => {
+      hideToast();
+      if (stateRef.current !== hecho) { showToast('Ya has hecho otros cambios: no se puede deshacer', 'warn'); return; }
+      stateRef.current = prev; setState(prev); scheduleSave();
+      showToast('Deshecho ✓');
+    } });
+    return true;
+  }, [commit, showToast, hideToast, scheduleSave]);
 
   /* ---------- botón Atrás de Android y Escape en el PC ---------- */
   useBackHandler(screen === 'settings', () => setScreen('main'));
@@ -270,14 +289,19 @@ export function App() {
   const guardarFormulario = useCallback((draft) => {
     commit((prev) => {
       const pesoHistorial = prev.peso.historial.length ? prev.peso.historial : [{ id: uid(), date: new Date().toISOString(), kg: draft.pesoInicialKg }];
-      let direccion = null;
-      if (draft.objetivoPesoKg) direccion = draft.pesoInicialKg > draft.objetivoPesoKg ? 'bajar' : draft.pesoInicialKg < draft.objetivoPesoKg ? 'subir' : null;
-      const objetivoCambio = prev.peso.objetivoKg !== draft.objetivoPesoKg;
-      return { ...prev, formulario: { ...prev.formulario, ...draft },
-        peso: { ...prev.peso, historial: pesoHistorial, objetivoKg: draft.objetivoPesoKg, direccion, objetivoAlcanzado: objetivoCambio ? false : prev.peso.objetivoAlcanzado } };
+      const base = { ...prev, formulario: { ...prev.formulario, ...draft }, peso: { ...prev.peso, historial: pesoHistorial } };
+      // El objetivo de peso es el mismo dato que se edita en Progreso (aplicarObjetivoPeso lo mantiene sincronizado)
+      const objetivo = draft.objetivoPesoKg === undefined ? prev.peso.objetivoKg : draft.objetivoPesoKg;
+      return aplicarObjetivoPeso(base, objetivo === undefined ? null : objetivo);
     });
     showToast('Datos guardados ✓');
   }, [commit, showToast]);
+
+  // Objetivo de peso desde la tarjeta de Progreso (o la calculadora). kg = null lo quita.
+  const setObjetivoPeso = useCallback((kg) => {
+    const ok = commitDeshacible((prev) => aplicarObjetivoPeso(prev, kg), kg === null ? 'Objetivo de peso quitado' : 'Objetivo: ' + fmt(kg, 2) + ' kg ✓');
+    if (!ok) showToast('El objetivo no ha cambiado');
+  }, [commitDeshacible, showToast]);
 
   /* ---------- importar / restaurar / reiniciar (antes guardan una copia del estado anterior) ---------- */
   const backupPrev = (prev) => {
@@ -391,13 +415,16 @@ export function App() {
     return <div style={{ background: T.bg, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div className="font-display" style={{ color: T.text, fontSize: 24, fontWeight: 700, letterSpacing: '0.06em' }}>CARGANDO TU RUTINA…</div></div>;
   }
 
+  // Los músculos del usuario son el catálogo que usa toda la pantalla (selector, colores, Diana…)
+  aplicarCatalogo(state.musculos);
+
   const ctx = {
     state, commit, fotos, setFoto, delFoto, showToast, askConfirm,
     updateExercise, updateCardio, addCardio, removeCardio,
     setActiveDay, setActiveTab, toggleEditMode, updateDay, addDay, removeDay, moveDay,
     addExercise, removeFromDay, moveExercise, addSerie, removeSerieAt,
     saveEntry, logPeso, guardarFormulario, resetAll, importObj, restoreBackup, hasBackup,
-    suggestObjetivo, rellenarObjetivosFaltantes, setPreferencia,
+    suggestObjetivo, rellenarObjetivosFaltantes, setPreferencia, setObjetivoPeso, commitDeshacible,
   };
 
   const TABS = [
