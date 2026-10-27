@@ -137,6 +137,11 @@ Si el aviso no llega:
 - En la misma tarjeta tienes las instrucciones para tu marca (**🔋 Si el aviso no suena con la app cerrada**).
   En general: Ajustes del móvil → Apps → Mi Rutina → Batería → **Sin restricciones**.
 - Opción *Mantener la pantalla encendida mientras uses la app*: útil en el gimnasio si prefieres no bloquear.
+- Lo mismo vale para los **recordatorios de entrenamiento** (Ajustes → 🔔). Se programan para las próximas
+  8 semanas y se renuevan cada vez que abres la app.
+
+En `docs/INFORME_FASE3.md` tienes explicadas todas las funciones nuevas (modo en vivo, calendario, logros, medidas,
+fotos de progreso, tema de color…).
 
 ## Paso 8. Rutina para tus amigos (que la app arranque con tu rutina)
 

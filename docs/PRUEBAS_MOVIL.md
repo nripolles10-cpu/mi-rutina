@@ -5,7 +5,32 @@ del móvil, la versión de Android (Ajustes → Información del teléfono) y qu
 
 Antes de empezar: **⚙️ Ajustes → Compartir y copias → 💾 Copia de seguridad completa** y guárdala fuera del móvil.
 
-## 0. Mejoras de la versión 8 (hazlas primero)
+## Fase 3 (versión de datos 9): hazlas primero
+- [ ] Antes de actualizar: copia de seguridad completa guardada fuera del móvil. Instala encima y comprueba que
+      todo sigue (rutina, registros, músculos, recetas, alternos). En Copias de rescate hay una "premigracion_v8".
+- [ ] **Entreno en vivo:** Rutina → "▶ Empezar entreno en vivo". Sube y baja peso y reps con los botones grandes
+      y escribiendo. Marca una serie: arranca el descanso; **bloquea el móvil** y comprueba que avisa. Al marcar la
+      última serie de un ejercicio pasa al siguiente y queda guardado (Progreso → Calendario lo muestra hoy).
+      La pantalla no se apaga mientras estás en esa pantalla.
+- [ ] Un ejercicio con rest-pause y otro con dropset en el modo en vivo: se ven y se cambian las tandas y descensos.
+- [ ] **💡 Sugerencia:** con un registro de 10 reps sugiere subir; el botón "Poner … kg" cambia la serie 1 (y solo
+      si lo tocas).
+- [ ] **📈 Historial, récords y 1RM** de un ejercicio con varios registros: gráfica y lista con 🏆.
+- [ ] **Duplicar** (modo edición): un día y un ejercicio; las copias no tienen historial; "↩ Deshacer" funciona.
+- [ ] **Progreso → 📅 Calendario:** días entrenados en color, tocar un día, racha, resumen de la semana, volumen
+      de 8 semanas. Tu historial anterior ya aparece.
+- [ ] **Progreso → 📏 Cuerpo:** pasos, sueño y energía de hoy y de ayer (flechas); medidas (apuntar, gráfica,
+      editar, borrar); fotos de progreso con cámara y galería, y el comparador con dos fotos.
+- [ ] **Progreso → 🏅 Logros:** los conseguidos con ✓, el resto con barra.
+- [ ] **Ajustes → 🔔 Recordatorios:** elige hoy y una hora dentro de 2–3 minutos → Activar. Cierra la app del todo
+      y bloquea el móvil: llega el aviso. Desactívalos y comprueba que ya no llegan.
+- [ ] **Ajustes → 🏋️ Entreno:** semana de descarga cada 4 semanas → "Empezar el ciclo esta semana"; cambia el número
+      y mira el texto. Si toca descarga, la Rutina lo avisa arriba.
+- [ ] **Ajustes → 🎨 Apariencia:** cada color y cada tamaño de letra; recorre las pestañas en "Muy grande" y mira que
+      nada se corte. Vuelve a Cian y Normal.
+- [ ] **Extras → 📖 Glosario:** se abren las explicaciones.
+
+## 0. Mejoras de la versión 8
 - [ ] Antes de actualizar: copia de seguridad completa guardada fuera del móvil.
 - [ ] Instala el APK nuevo **encima** (sin desinstalar). Abre la app: tu rutina, tus registros, tu peso, tus fotos,
       tus alternos y tus recetas siguen ahí.
