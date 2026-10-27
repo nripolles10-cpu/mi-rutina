@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext, createContext, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { useBackHandler } from '../native/back.js';
-import { ACCENT, T } from '../data/theme.js';
+import { T } from '../data/theme.js';
 import { fmt, formatDecimal, num, nz, parseDecimal } from '../utils/format.js';
 
 /* =========================================================================
@@ -39,7 +39,7 @@ export function Toast({ toast }) {
     }} className="font-body">
       <span>{toast.msg}</span>
       {accion && (
-        <button onClick={accion.fn} className="font-body" style={{ flexShrink: 0, background: 'rgba(34,211,238,0.16)', color: '#7DE9FA', border: '1px solid rgba(34,211,238,0.55)', borderRadius: 10, padding: '6px 10px', fontWeight: 800, fontSize: 12.5, cursor: 'pointer' }}>{accion.label}</button>
+        <button onClick={accion.fn} className="font-body" style={{ flexShrink: 0, background: 'rgba(var(--ac-rgb),0.16)', color: 'var(--ac-claro)', border: '1px solid rgba(var(--ac-rgb),0.55)', borderRadius: 10, padding: '6px 10px', fontWeight: 800, fontSize: 12.5, cursor: 'pointer' }}>{accion.label}</button>
       )}
     </div>
   );
@@ -102,9 +102,9 @@ export function TextField({ value, onChange, placeholder, multiline, forceEditab
 export function SectionTitle({ emoji, children, style }) {
   return (
     <div className="font-display" style={{ color: T.text, fontSize: 22, fontWeight: 700, letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: 9, marginBottom: 10, ...style }}>
-      <span style={{ filter: 'drop-shadow(0 0 8px rgba(34,211,238,0.45))' }}>{emoji}</span>
+      <span style={{ filter: 'drop-shadow(0 0 8px rgba(var(--ac-rgb),0.45))' }}>{emoji}</span>
       <span>{children}</span>
-      <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(34,211,238,0.5), rgba(167,139,250,0.25), transparent)', marginLeft: 4 }} />
+      <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(var(--ac-rgb),0.5), rgba(167,139,250,0.25), transparent)', marginLeft: 4 }} />
     </div>
   );
 }
@@ -125,8 +125,8 @@ export function EditLockBar({ showFill }) {
     <div style={{ marginBottom: 14 }}>
       <button onClick={toggleEditMode} className="font-body" style={{
         width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-        background: on ? 'linear-gradient(135deg, #FBBF24, #FB923C)' : 'rgba(34,211,238,0.10)', color: on ? '#1A1002' : '#7DE9FA',
-        border: `1.5px ${on ? 'solid #FBBF24' : 'dashed rgba(34,211,238,0.6)'}`, borderRadius: 14, padding: '11px', fontWeight: 800, fontSize: 13, cursor: 'pointer',
+        background: on ? 'linear-gradient(135deg, #FBBF24, #FB923C)' : 'rgba(var(--ac-rgb),0.10)', color: on ? '#1A1002' : 'var(--ac-claro)',
+        border: `1.5px ${on ? 'solid #FBBF24' : 'dashed rgba(var(--ac-rgb),0.6)'}`, borderRadius: 14, padding: '11px', fontWeight: 800, fontSize: 13, cursor: 'pointer',
         boxShadow: on ? '0 0 22px rgba(251,191,36,0.35)' : 'none',
       }}>
         {on ? '🔓 Modo edición activo — toca para bloquear' : '🔒 Bloqueado — toca para editar'}
@@ -173,13 +173,13 @@ function ConfirmDialogAbierto({ dlg, onClose }) {
   useBackHandler(true, onClose);
   return (
     <div onClick={onClose} style={{ position: 'absolute', inset: 0, zIndex: 120, background: 'rgba(3,5,12,0.8)', WebkitBackdropFilter: 'blur(4px)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-      <div onClick={(e) => e.stopPropagation()} className="card" style={{ maxWidth: 360, width: '100%', padding: 20, textAlign: 'center', borderColor: dlg.danger === false ? 'rgba(34,211,238,0.4)' : 'rgba(251,113,133,0.35)', background: 'rgba(12,18,34,0.97)' }}>
+      <div onClick={(e) => e.stopPropagation()} className="card" style={{ maxWidth: 360, width: '100%', padding: 20, textAlign: 'center', borderColor: dlg.danger === false ? 'rgba(var(--ac-rgb),0.4)' : 'rgba(251,113,133,0.35)', background: 'rgba(12,18,34,0.97)' }}>
         <div className="font-display" style={{ color: T.text, fontSize: 22, fontWeight: 700, marginBottom: 8 }}>{dlg.title || '¿Confirmar?'}</div>
         {dlg.text && <p className="font-body" style={{ color: '#C9D3EE', fontSize: 13, lineHeight: 1.5, margin: '0 0 18px', whiteSpace: 'pre-wrap' }}>{dlg.text}</p>}
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={onClose} className="font-body btn btn-ghost" style={{ flex: 1, fontSize: 13 }}>Cancelar</button>
           <button onClick={() => { const fn = dlg.onConfirm; onClose(); if (fn) fn(); }} className="font-body btn"
-            style={{ flex: 1, background: dlg.danger === false ? 'linear-gradient(135deg, #22D3EE, #818CF8)' : 'linear-gradient(135deg, #FB7185, #F43F5E)', color: dlg.danger === false ? '#04101C' : '#fff' }}>{dlg.confirmLabel || 'Confirmar'}</button>
+            style={{ flex: 1, background: dlg.danger === false ? 'linear-gradient(135deg, var(--ac), var(--ac2))' : 'linear-gradient(135deg, #FB7185, #F43F5E)', color: dlg.danger === false ? '#04101C' : '#fff' }}>{dlg.confirmLabel || 'Confirmar'}</button>
         </div>
       </div>
     </div>
@@ -236,7 +236,8 @@ export function chipStyle(color) {
   return { fontSize: 11, fontWeight: 600, color: '#FFFFFF', background: color + '26', border: '1px solid ' + color + '88', borderRadius: 999, padding: '3px 9px' };
 }
 
-export const CHIP_STYLE = chipStyle('#22D3EE');
+// Estilo de etiqueta con el color de acento del tema (función: el tema puede cambiar)
+export function chipAcento() { return chipStyle(T.cyan); }
 
 export function Stepper({ value, onChange, min, max, step, suffix }) {
   const st = step || 1;
@@ -262,7 +263,7 @@ export function MacroLine({ t, small }) {
 export function CheckRow({ on, onClick, children }) {
   return (
     <div onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', cursor: 'pointer' }}>
-      <span style={{ width: 22, height: 22, borderRadius: 7, border: '2px solid ' + (on ? ACCENT : 'rgba(140,170,255,0.5)'), background: on ? ACCENT : 'transparent', color: '#04101C', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{on ? '✓' : ''}</span>
+      <span style={{ width: 22, height: 22, borderRadius: 7, border: '2px solid ' + (on ? T.cyan : 'rgba(140,170,255,0.5)'), background: on ? T.cyan : 'transparent', color: '#04101C', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{on ? '✓' : ''}</span>
       <span className="font-body" style={{ color: T.text, fontSize: 13 }}>{children}</span>
     </div>
   );

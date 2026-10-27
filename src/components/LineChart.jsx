@@ -1,3 +1,4 @@
+import { T } from '../data/theme.js';
 import React from 'react';
 
 /* =========================================================================
@@ -9,7 +10,8 @@ import React from 'react';
    GRÁFICOS DIBUJADOS A MANO (SVG) — sin dependencias externas
    ========================================================================= */
 
-export function LineChartSVG({ points, color = '#22D3EE', height = 180, onPointClick, selectedIndex }) {
+export function LineChartSVG({ points, color, height = 180, onPointClick, selectedIndex }) {
+  if (!color) color = T.cyan; // color del tema por defecto
   const w = 320;
   const padL = 36, padR = 14, padT = 16, padB = 26;
   const valid = points.filter((p) => typeof p.y === 'number');

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Bar, Card, LabeledNum, Modal } from '../components/ui.jsx';
-import { ACCENT, T } from '../data/theme.js';
+import { T } from '../data/theme.js';
 import { fmtMS } from '../utils/format.js';
 import { esIOS, isNative } from '../native/index.js';
 
@@ -28,7 +28,7 @@ export function TimerModal({ timer, nowMs, startTimer, addTimer, stopTimer, onCl
         {timer ? (
           <div>
             <div className="font-display" style={{ color: '#FFFFFF', fontSize: 76, fontWeight: 700, lineHeight: 1 }}>{fmtMS(resta)}</div>
-            <div style={{ margin: '12px 0' }}><Bar pct={(resta / (timer.total * 1000)) * 100} color={ACCENT} height={12} /></div>
+            <div style={{ margin: '12px 0' }}><Bar pct={(resta / (timer.total * 1000)) * 100} color={T.cyan} height={12} /></div>
             <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
               <button onClick={() => addTimer(-15)} className="font-body btn btn-ghost" style={{ flex: 1 }}>−15 s</button>
               <button onClick={() => addTimer(15)} className="font-body btn btn-ghost" style={{ flex: 1 }}>+15 s</button>

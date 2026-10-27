@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Card, Chip, Label, MiniBtn, Modal, SectionTitle, useGym } from '../components/ui.jsx';
 import { CATS, CAT_IDS, ESTADO_COLOR, ESTADO_LABEL, REGIONES_MAPA, catInfo } from '../data/catalog.js';
-import { ACCENT, T } from '../data/theme.js';
+import { T } from '../data/theme.js';
 import { fmt } from '../utils/format.js';
 import { muscleProgress } from '../utils/training.js';
 import { borrarMusculo, cambiarRegionMusculo, crearMusculo, ejerciciosDeMusculo, musculosDeRegion, renombrarMusculo } from '../utils/musculos.js';
@@ -258,7 +258,7 @@ export function DianaFisicaTab() {
           <div key={g[0]} style={{ marginBottom: 14 }}>
             <div className="font-body" style={{ color: col, fontWeight: 800, fontSize: 13, marginBottom: 8 }}>{g[1]} ({lista.length})</div>
             {lista.map((k) => (
-              <div key={k} onClick={() => setSelected(k)} className="card" style={{ borderLeft: '3px solid ' + col, borderRadius: 14, padding: '10px 12px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', outline: selected === k ? '1.5px solid ' + ACCENT : 'none' }}>
+              <div key={k} onClick={() => setSelected(k)} className="card" style={{ borderLeft: '3px solid ' + col, borderRadius: 14, padding: '10px 12px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', outline: selected === k ? '1.5px solid ' + T.cyan : 'none' }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div className="font-body" style={{ color: T.text, fontWeight: 700, fontSize: 13.5 }}>{catInfo(CATS, k).label}{titulos[k] ? ' · ' + titulos[k] : ''}</div>
                   <div className="font-body" style={{ color: T.dim, fontSize: 11, marginTop: 2 }}>{prog[k] && prog[k].pct !== null ? 'Objetivos: ' + Math.round(prog[k].pct) + ' % · faltan ' + fmt(prog[k].falta) + ' kg' : 'sin objetivos'}</div>

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { Bar, CHIP_STYLE, Card, Chip, Label, LabeledNum, MacroLine, MiniBtn, Modal, NumInput, SectionTitle, Stepper, SupRow, useGym } from '../components/ui.jsx';
+import { Bar, chipAcento, Card, Chip, Label, LabeledNum, MacroLine, MiniBtn, Modal, NumInput, SectionTitle, Stepper, SupRow, useGym } from '../components/ui.jsx';
 import { DIAS_SEMANA, MOMENTOS, OBJETIVOS, TIPO_RECETA, tipoRecetaLabel } from '../data/catalog.js';
-import { ACCENT, T } from '../data/theme.js';
+import { T } from '../data/theme.js';
 import { Native } from '../native/index.js';
 import { copyText, toastResult } from '../utils/clipboard.js';
 import { listaCompra, macrosFromIngredientes, qtyText, recKcal, recTotals, scaleQty, toggleFavorita } from '../utils/comida.js';
@@ -43,7 +43,7 @@ export function PickRecetaModal({ titulo, tipoInicial, onPick, onClose }) {
           <div className="font-body" style={{ color: T.text, fontWeight: 800, fontSize: 13, margin: '14px 0 4px' }}>Ingredientes para {fmt(rac, 2)} {rac === 1 ? 'ración' : 'raciones'}</div>
           {sel.ingredientes.map((x, i) => <SupRow key={i} label={x.n} value={qtyText(scaleQty(x.q, rac), x.u)} />)}
           <div className="font-body" style={{ color: T.text, fontWeight: 800, fontSize: 13, margin: '14px 0 6px' }}>Cómo prepararla</div>
-          {sel.pasos.map((p, i) => <div key={i} className="font-body" style={{ color: T.muted, fontSize: 12.5, lineHeight: 1.55, marginBottom: 6, textAlign: 'left' }}><b style={{ color: ACCENT }}>{i + 1}.</b> {p}</div>)}
+          {sel.pasos.map((p, i) => <div key={i} className="font-body" style={{ color: T.muted, fontSize: 12.5, lineHeight: 1.55, marginBottom: 6, textAlign: 'left' }}><b style={{ color: T.cyan }}>{i + 1}.</b> {p}</div>)}
           <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
             <button onClick={() => setSel(null)} className="font-body btn btn-ghost" style={{ flex: 1 }}>Atrás</button>
             <button onClick={() => { onPick(sel, rac); onClose(); }} className="font-body btn btn-primary" style={{ flex: 2 }}>Añadir</button>
@@ -257,7 +257,7 @@ export function RecetaDetalle({ receta, onClose, onEdit }) {
         {!receta.propia && !receta.editada && <div className="font-body" style={{ color: T.dim, fontSize: 11, lineHeight: 1.5, marginTop: 6 }}>Las calorías y los macros están calculados con estas cantidades exactas ({fmt(rac, 2)} {rac === 1 ? 'ración' : 'raciones'}). Los pesos de arroz, pasta, avena y legumbres son en crudo o en seco.</div>}
         <div className="font-body" style={{ color: T.text, fontWeight: 800, fontSize: 13.5, margin: '14px 0 6px' }}>Preparación</div>
         {receta.pasos.length === 0 && <div className="font-body" style={{ color: T.dim, fontSize: 12 }}>Sin pasos escritos.</div>}
-        {receta.pasos.map((p, i) => <div key={i} className="font-body" style={{ color: T.muted, fontSize: 12.5, lineHeight: 1.55, marginBottom: 6 }}><b style={{ color: ACCENT }}>{i + 1}.</b> {p}</div>)}
+        {receta.pasos.map((p, i) => <div key={i} className="font-body" style={{ color: T.muted, fontSize: 12.5, lineHeight: 1.55, marginBottom: 6 }}><b style={{ color: T.cyan }}>{i + 1}.</b> {p}</div>)}
       </Card>
 
       {!destino ? (
@@ -327,7 +327,7 @@ export function RecetasSec() {
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
             <div className="font-body" style={{ color: T.text, fontWeight: 700, fontSize: 13.5 }}>{r.nombre}</div>
             <span style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-              <span className="font-body" style={CHIP_STYLE}>{tipoRecetaLabel(r.tipo)}</span>
+              <span className="font-body" style={chipAcento()}>{tipoRecetaLabel(r.tipo)}</span>
               <MiniBtn title="Favorita" onClick={(e) => { e.stopPropagation(); toggleFavorita(commit, r.id); }} style={{ color: favs.indexOf(r.id) !== -1 ? '#FBBF24' : undefined }}>{favs.indexOf(r.id) !== -1 ? '★' : '☆'}</MiniBtn>
             </span>
           </div>
@@ -454,8 +454,8 @@ export function AguaSec() {
           {Array.from({ length: botellas }).map((_, i) => {
             const nivel = Math.max(0, Math.min(1, n - i));
             return (
-              <span key={i} onClick={() => set(nivel >= 1 ? i : i + 1)} title={'Botella ' + (i + 1)} style={{ position: 'relative', width: 44, height: 62, borderRadius: 12, overflow: 'hidden', cursor: 'pointer', border: '1.5px solid ' + (nivel > 0 ? ACCENT : 'rgba(140,170,255,0.35)'), background: 'rgba(255,255,255,0.05)' }}>
-                <span style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: nivel * 100 + '%', background: 'linear-gradient(180deg, rgba(34,211,238,0.55), rgba(56,189,248,0.85))' }} />
+              <span key={i} onClick={() => set(nivel >= 1 ? i : i + 1)} title={'Botella ' + (i + 1)} style={{ position: 'relative', width: 44, height: 62, borderRadius: 12, overflow: 'hidden', cursor: 'pointer', border: '1.5px solid ' + (nivel > 0 ? T.cyan : 'rgba(140,170,255,0.35)'), background: 'rgba(255,255,255,0.05)' }}>
+                <span style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: nivel * 100 + '%', background: 'linear-gradient(180deg, rgba(var(--ac-rgb),0.55), rgba(56,189,248,0.85))' }} />
                 <span className="font-body" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11.5, fontWeight: 800, color: '#FFFFFF', textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}>{i + 1} L</span>
               </span>
             );
