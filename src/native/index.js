@@ -25,6 +25,7 @@ const FOTOS_NATIVE_KEY = 'gymtracker_fotos_v2'; // móvil: { idEjercicio: ruta d
 export const NATIVE_AVISO = 'Esta función solo está disponible en la app instalada en el móvil.';
 export const NOTIF_CANAL = 'descanso';
 export const NOTIF_ID_DESCANSO = 1001;
+export const NOTIF_CANAL_RECORDATORIOS = 'recordatorios';
 
 export const isNative = () => { try { return Capacitor.isNativePlatform(); } catch (e) { return false; } };
 
@@ -158,6 +159,9 @@ export const Native = {
     try {
       await LocalNotifications.createChannel({ id: NOTIF_CANAL, name: 'Descanso entre series', description: 'Aviso cuando termina el descanso', importance: 5, visibility: 1, vibration: true });
     } catch (e) { /* sin canal: Android usa el de por defecto */ }
+    try {
+      await LocalNotifications.createChannel({ id: NOTIF_CANAL_RECORDATORIOS, name: 'Recordatorios de entrenamiento', description: 'Aviso los días y a la hora que elijas para entrenar', importance: 4, visibility: 1, vibration: true });
+    } catch (e) { /* sin canal: Android usa el de por defecto */ }
     try { await SystemBars.setStyle({ style: SystemBarsStyle.Dark }); } catch (e) { /* nada */ }
     Native.ajustarTeclado();
   },
@@ -259,8 +263,9 @@ export const Native = {
     return out;
   },
 
-  // Elige una foto. origen: 'camara' | 'galeria'. Devuelve un dataURL JPEG (~500 px, calidad 0,65) o null si se cancela.
-  async pickPhoto(origen) { // NATIVE-HOOK
+  // Elige una foto. origen: 'camara' | 'galeria'. Devuelve un dataURL JPEG (por defecto ~500 px, calidad 0,65) o null si se cancela.
+  async pickPhoto(origen, maxDim, calidad) { // NATIVE-HOOK
+    const tam = maxDim || 500, q = calidad || 0.65;
     if (isNative()) {
       try {
         let webPath = null;
@@ -273,7 +278,7 @@ export const Native = {
         }
         if (!webPath) return null;
         const blob = await (await fetch(webPath)).blob();
-        return await compressImage(blob, 500, 0.65);
+        return await compressImage(blob, tam, q);
       } catch (e) {
         if (/cancel/i.test(String(e && (e.message || e)))) return null;
         throw e;
@@ -288,7 +293,7 @@ export const Native = {
       input.addEventListener('change', () => {
         const f = input.files && input.files[0];
         if (!f) { done(null); return; }
-        compressImage(f, 500, 0.65).then(done, () => done(null));
+        compressImage(f, tam, q).then(done, () => done(null));
       });
       input.addEventListener('cancel', () => done(null));
       input.click();
@@ -421,6 +426,26 @@ export const Native = {
         smallIcon: 'ic_stat_mirutina', iconColor: '#22D3EE',
       }] });
       return { ok: true };
+    } catch (e) { return { ok: false, motivo: 'error' }; }
+  },
+
+  // Recordatorios de entrenamiento: avisos sueltos (a fecha y hora exactas) para las próximas semanas.
+  // Se usan avisos sueltos y no uno "repetido" porque Android entrega los sueltos a su hora aunque el móvil
+  // esté en reposo; la app los vuelve a programar cada vez que se abre. avisos = [{ id, at }].
+  // Devuelve { ok, motivo, programados }.
+  async programarRecordatorios(avisos, idsAnteriores) {
+    if (!isNative()) return { ok: false, motivo: 'web', aviso: NATIVE_AVISO };
+    try {
+      if (idsAnteriores && idsAnteriores.length) await LocalNotifications.cancel({ notifications: idsAnteriores.map((id) => ({ id })) }).catch(() => {});
+      if (!avisos || !avisos.length) return { ok: true, programados: 0 };
+      let p = (await LocalNotifications.checkPermissions()).display;
+      if (p === 'prompt' || p === 'prompt-with-rationale') p = (await LocalNotifications.requestPermissions()).display;
+      if (p !== 'granted') return { ok: false, motivo: 'permiso' };
+      await LocalNotifications.schedule({ notifications: avisos.map((a) => ({
+        id: a.id, title: a.title || '🏋️ Hoy toca entrenar', body: a.body || 'Abre Mi Rutina y a por ello.', channelId: NOTIF_CANAL_RECORDATORIOS,
+        schedule: { at: new Date(a.at), allowWhileIdle: true }, smallIcon: 'ic_stat_mirutina', iconColor: '#22D3EE',
+      })) });
+      return { ok: true, programados: avisos.length };
     } catch (e) { return { ok: false, motivo: 'error' }; }
   },
 

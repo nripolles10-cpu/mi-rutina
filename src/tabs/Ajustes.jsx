@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Card, CheckRow, Chip, Label, LabeledNum, Modal, SectionTitle, SupRow, useGym } from '../components/ui.jsx';
+import { Card, CheckRow, Chip, Label, LabeledNum, Modal, SectionTitle, Stepper, SupRow, useGym } from '../components/ui.jsx';
 import { ACTIVIDADES } from '../data/catalog.js';
-import { T } from '../data/theme.js';
+import { ESCALAS_LETRA, T, TEMAS_COLOR } from '../data/theme.js';
 import { Native, esIOS, esWebInstalada } from '../native/index.js';
 import { RECOVERY_PREFIX, listRescueKeys } from '../state/storage.js';
 import { copyText, toastResult } from '../utils/clipboard.js';
@@ -10,8 +10,9 @@ import { buildXlsx, bytesToBase64, readXlsxRows } from '../utils/excel.js';
 import { buildDocxBase64 } from '../utils/word.js';
 import { PLANTILLA_CSV, parseCsv, rowsToRutina } from '../utils/importar.js';
 import { buildDefaultData } from '../utils/defaults.js';
-import { fmt, fmtDateLong } from '../utils/format.js';
+import { fmt, fmtDateLong, fromYmd, mondayOf as lunesDe, ymd } from '../utils/format.js';
 import { diasDesde } from '../utils/copias.js';
+import { semanaDescarga } from '../utils/entreno.js';
 import { calcCalorias, estimaGrasaCorporal } from '../utils/health.js';
 import { buildShareObject, decodeShare, describeShare, encodeShare } from '../utils/share.js';
 
@@ -357,6 +358,103 @@ export function PantallaAvisosCard() {
 
 /* ---------- Pantalla de ajustes ---------- */
 
+/* ---------- Apariencia: tema de color y tamaño de letra ---------- */
+export function AparienciaCard() {
+  const { state, setPreferencia } = useGym();
+  const p = state.preferencias || {};
+  return (
+    <Card style={{ marginBottom: 18 }}>
+      <Label>Color de la app</Label>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
+        {Object.keys(TEMAS_COLOR).map((k) => (
+          <Chip key={k} active={(p.tema || 'cian') === k} accent={TEMAS_COLOR[k].ac} onClick={() => setPreferencia({ tema: k })}>
+            <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 999, background: 'linear-gradient(135deg, ' + TEMAS_COLOR[k].ac + ', ' + TEMAS_COLOR[k].ac2 + ')', marginRight: 6 }} />{TEMAS_COLOR[k].nombre}
+          </Chip>
+        ))}
+      </div>
+      <Label>Tamaño de la letra</Label>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        {Object.keys(ESCALAS_LETRA).map((k) => <Chip key={k} active={(p.letra || 'normal') === k} onClick={() => setPreferencia({ letra: k })}>{ESCALAS_LETRA[k][0]}</Chip>)}
+      </div>
+      <div className="font-body" style={{ color: T.dim, fontSize: 11, marginTop: 8, lineHeight: 1.5 }}>El tamaño cambia toda la pantalla a la vez (textos y botones), para que nada se descoloque. Los colores de los músculos, de los tipos de serie y de fuerte/débil no cambian.</div>
+    </Card>
+  );
+}
+
+/* ---------- Entreno: descanso, objetivo semanal y semana de descarga ---------- */
+export function EntrenoAjustesCard() {
+  const { state, setPreferencia } = useGym();
+  const p = state.preferencias || {};
+  const ds = p.descarga || { activa: false, cadaSemanas: 6, inicio: null };
+  const info = semanaDescarga(ds, new Date());
+  const setDescarga = (patch) => setPreferencia({ descarga: { ...ds, ...patch } });
+  return (
+    <Card style={{ marginBottom: 18 }}>
+      <Label>⏱️ Descanso que propone el modo entreno en vivo</Label>
+      <Stepper value={p.descanso || 90} onChange={(v) => setPreferencia({ descanso: v })} min={30} max={300} step={15} suffix="s" />
+      <Label style={{ marginTop: 14 }}>🔥 Días de entreno por semana (para la racha)</Label>
+      <Stepper value={p.objetivoDiasSemana || 3} onChange={(v) => setPreferencia({ objetivoDiasSemana: v })} min={1} max={7} step={1} suffix="días" />
+      <div style={{ marginTop: 14 }}>
+        <CheckRow on={!!ds.activa} onClick={() => setDescarga(ds.activa ? { activa: false } : { activa: true, inicio: ds.inicio || ymd(lunesDe(new Date())) })}>🧘 Avisarme de la semana de descarga</CheckRow>
+      </div>
+      {ds.activa && (
+        <div style={{ marginTop: 8 }}>
+          <Label>Cada cuántas semanas (la última del ciclo es la de descarga)</Label>
+          <Stepper value={ds.cadaSemanas || 6} onChange={(v) => setDescarga({ cadaSemanas: v })} min={3} max={12} step={1} suffix="sem." />
+          <div className="font-body" style={{ color: T.muted, fontSize: 12, lineHeight: 1.5, marginTop: 8 }}>
+            {info.es ? '🧘 Esta semana es de descarga.' : info.semanaDelCiclo ? 'Vas por la semana ' + info.semanaDelCiclo + ' de ' + info.cadaSemanas + '. La próxima descarga empieza el lunes ' + fromYmd(info.proxima).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' }) + '.' : 'El ciclo aún no ha empezado.'}
+          </div>
+          <button onClick={() => setDescarga({ inicio: ymd(lunesDe(new Date())) })} className="font-body btn btn-ghost" style={{ marginTop: 8, padding: '7px 10px', fontSize: 11.5 }}>Empezar el ciclo esta semana</button>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+/* ---------- Recordatorios de entrenamiento (notificaciones locales) ---------- */
+const DIAS_SEMANA_CORTOS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+export function RecordatoriosCard() {
+  const { state, programarRecordatorios } = useGym();
+  const r = (state.preferencias && state.preferencias.recordatorios) || { activos: false, dias: [0, 2, 4], hora: '18:00', ids: [] };
+  const [dias, setDias] = useState(r.dias);
+  const [hora, setHora] = useState(r.hora);
+  const [ocupado, setOcupado] = useState(false);
+  const nativo = Native.isNative();
+  const guardar = async (activos) => {
+    setOcupado(true);
+    try { await programarRecordatorios({ activos, dias, hora }); } finally { setOcupado(false); }
+  };
+  const cambiado = r.activos && (r.hora !== hora || JSON.stringify(r.dias) !== JSON.stringify(dias));
+  return (
+    <Card style={{ marginBottom: 18 }}>
+      <div className="font-body" style={{ color: T.muted, fontSize: 12, lineHeight: 1.5, marginBottom: 10 }}>
+        Elige los días y la hora y te llegará un aviso para entrenar, aunque la app esté cerrada.
+      </div>
+      <Label>Días</Label>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+        {DIAS_SEMANA_CORTOS.map((d, i) => (
+          <button key={d} aria-label={'Día ' + d} onClick={() => setDias(dias.indexOf(i) !== -1 ? dias.filter((x) => x !== i) : dias.concat([i]).sort())} className="font-body" style={{
+            flex: 1, height: 38, borderRadius: 10, cursor: 'pointer', fontWeight: 800, fontSize: 13, color: '#FFFFFF',
+            border: '1.5px solid ' + (dias.indexOf(i) !== -1 ? T.cyan : 'rgba(140,170,255,0.25)'), background: dias.indexOf(i) !== -1 ? 'rgba(var(--ac-rgb),0.18)' : 'rgba(10,15,30,0.45)',
+          }}>{d}</button>
+        ))}
+      </div>
+      <Label>Hora</Label>
+      <input type="time" value={hora} onChange={(e) => setHora(e.target.value)} aria-label="Hora del recordatorio" className="font-body inp" style={{ marginBottom: 12, maxWidth: 140 }} />
+      <SupRow label="Estado" value={r.activos ? '✅ Activos (' + r.dias.map((d) => DIAS_SEMANA_CORTOS[d]).join(' ') + ' · ' + r.hora + ')' : 'Desactivados'} />
+      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+        <button disabled={ocupado || !dias.length || !/^\d{2}:\d{2}$/.test(hora)} onClick={() => guardar(true)} className="font-body btn btn-primary" style={{ flex: 2, fontSize: 12.5 }}>{r.activos ? (cambiado ? 'Guardar cambios' : 'Volver a programar') : 'Activar recordatorios'}</button>
+        {r.activos && <button disabled={ocupado} onClick={() => guardar(false)} className="font-body btn btn-ghost" style={{ flex: 1, fontSize: 12.5 }}>Desactivar</button>}
+      </div>
+      <div className="font-body" style={{ color: T.dim, fontSize: 11, lineHeight: 1.5, marginTop: 10 }}>
+        {nativo
+          ? 'Se programan los avisos de las próximas 8 semanas y se renuevan cada vez que abres la app. Si no llegan, revisa el permiso de notificaciones y el ahorro de batería (más arriba).'
+          : 'En la versión web (y en iPhone) no se pueden programar avisos: funcionan en la app de Android.'}
+      </div>
+    </Card>
+  );
+}
+
 /* ---------- Versión web (PWA): dónde están los datos y qué no funciona en iPhone ---------- */
 export function WebInfoCard({ onCopia }) {
   const { state, persistencia, pedirPersistencia } = useGym();
@@ -402,6 +500,15 @@ export function AjustesScreen({ onClose }) {
 
       <SectionTitle emoji="📱">Pantalla y avisos</SectionTitle>
       <PantallaAvisosCard />
+
+      <SectionTitle emoji="🔔">Recordatorios de entrenamiento</SectionTitle>
+      <RecordatoriosCard />
+
+      <SectionTitle emoji="🏋️">Entreno</SectionTitle>
+      <EntrenoAjustesCard />
+
+      <SectionTitle emoji="🎨">Apariencia</SectionTitle>
+      <AparienciaCard />
 
       {!Native.isNative() && (
         <>

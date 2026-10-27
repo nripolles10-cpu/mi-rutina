@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { CHIP_STYLE, Card, Chip, EditLockBar, Label, LabeledNum, MiniBtn, SectionTitle, SupRow, TextField, useGym } from '../components/ui.jsx';
+import { chipAcento, Card, Chip, EditLockBar, Label, LabeledNum, MiniBtn, SectionTitle, SupRow, TextField, useGym } from '../components/ui.jsx';
 import { ACTIVIDADES, ACTIVIDAD_FACTOR, OBJETIVOS, RITMOS } from '../data/catalog.js';
 import { T } from '../data/theme.js';
 import { Native } from '../native/index.js';
@@ -305,13 +305,47 @@ export function DiscosCard() {
           <div className="font-body" style={{ color: T.muted, fontSize: 12, marginBottom: 6 }}>{barra === 0 ? 'En cada lado (sin contar ninguna barra):' : 'En cada lado de la barra:'}</div>
           {lado.usados.length === 0 ? <div className="font-body" style={{ color: T.text, fontWeight: 700 }}>{barra === 0 ? 'Sin discos' : 'Solo la barra'}</div> : (
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {lado.usados.map((u) => <span key={u[0]} className="font-body" style={{ ...CHIP_STYLE, fontSize: 13, fontWeight: 800, padding: '6px 12px' }}>{u[1] + ' × ' + fmt(u[0], 2) + ' kg'}</span>)}
+              {lado.usados.map((u) => <span key={u[0]} className="font-body" style={{ ...chipAcento, fontSize: 13, fontWeight: 800, padding: '6px 12px' }}>{u[1] + ' × ' + fmt(u[0], 2) + ' kg'}</span>)}
             </div>
           )}
           {lado.usados.length > 0 && <div className="font-body" style={{ color: T.muted, fontSize: 12, marginTop: 8 }}>Total en discos: <b style={{ color: T.text }}>{fmt(lado.enDiscos, 2) + ' kg'}</b>{barra > 0 ? ' + barra ' + barra + ' kg' : ''}</div>}
           {lado.resto > 0 && <div className="font-body" style={{ color: '#FDE68A', fontSize: 12, marginTop: 8 }}>{'No se puede montar exacto con estos discos: te quedas en ' + fmt(lado.montado, 2) + ' kg (faltan ' + fmt(lado.resto * 2, 2) + ' kg).'}</div>}
         </div>
       )}
+    </Card>
+  );
+}
+
+/* ---------- Glosario de técnicas ---------- */
+export const GLOSARIO = [
+  ['🔥 Top set', 'La serie más pesada del ejercicio, normalmente la primera tras calentar. Es la que marca tu récord y tu progreso.'],
+  ['📐 Back-off', 'Series después del top set con algo menos de peso (un 10–20 % menos) para sumar volumen con buena técnica.'],
+  ['⚡ Rest-pause', 'Haces una serie casi al fallo, descansas 10–20 segundos y sacas unas pocas repeticiones más (las "tandas") con el mismo peso.'],
+  ['🔻 Dropset', 'Al llegar al fallo bajas el peso (un 20–30 %) sin descansar y sigues. Cada bajada es un "descenso".'],
+  ['🌡️ Calentamiento', 'Series ligeras antes del trabajo de verdad. No cuentan como series efectivas ni para el volumen.'],
+  ['📊 Series efectivas', 'Las series que cuentan para el músculo: el calentamiento no cuenta; cada tanda o descenso extra suma media serie.'],
+  ['🎯 Fallo técnico', 'El punto en el que ya no puedes hacer otra repetición con buena técnica, aunque "a lo bruto" saldría alguna más.'],
+  ['🔢 RIR', 'Repeticiones en reserva: cuántas te quedarían antes del fallo. RIR 2 = podrías hacer 2 más.'],
+  ['📈 Sobrecarga progresiva', 'Ir subiendo poco a poco el peso, las repeticiones o las series para que el músculo siga mejorando.'],
+  ['🔁 Doble progresión', 'Con un peso fijo subes repeticiones hasta el máximo del rango (por ejemplo, 10); entonces subes el peso y vuelves al mínimo (6).'],
+  ['💪 1RM', 'El peso máximo que podrías levantar una sola vez. La app lo estima con tus series, sin tener que probarlo.'],
+  ['🧘 Semana de descarga', 'Una semana más suave (menos peso o menos series) cada 4–8 semanas para recuperarte y seguir progresando.'],
+  ['📦 Volumen', 'Kilos totales levantados: peso × repeticiones de todas las series (sin calentamientos).'],
+  ['🔀 Alternos', 'Dos ejercicios que se turnan semana a semana en el mismo hueco de la rutina.'],
+];
+
+export function GlosarioCard() {
+  const [abierto, setAbierto] = useState(null);
+  return (
+    <Card style={{ marginBottom: 22, padding: 8 }}>
+      {GLOSARIO.map((g, i) => (
+        <div key={g[0]} style={{ borderTop: i ? '1px solid rgba(140,170,255,0.12)' : 'none' }}>
+          <button onClick={() => setAbierto(abierto === i ? null : i)} className="font-body" style={{ width: '100%', textAlign: 'left', background: 'transparent', border: 'none', color: T.text, fontWeight: 700, fontSize: 13.5, padding: '10px 6px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}>
+            <span>{g[0]}</span><span style={{ color: T.muted, transform: abierto === i ? 'rotate(180deg)' : 'none' }}>▾</span>
+          </button>
+          {abierto === i && <div className="font-body" style={{ color: T.muted, fontSize: 12.5, lineHeight: 1.55, padding: '0 6px 10px' }}>{g[1]}</div>}
+        </div>
+      ))}
     </Card>
   );
 }
@@ -332,6 +366,9 @@ export function ExtrasTab() {
       <SectionTitle emoji="🧰">Calculadoras</SectionTitle>
       <OneRMCard />
       <DiscosCard />
+
+      <SectionTitle emoji="📖">Glosario de técnicas</SectionTitle>
+      <GlosarioCard />
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { GlobalStyle } from './components/GlobalStyle.jsx';
 import { TimerModal } from './components/TimerModal.jsx';
 import { ConfirmDialog, GymContext, Toast } from './components/ui.jsx';
 import { aplicarCatalogo } from './data/catalog.js';
-import { ACCENT, BG_IMAGE, T } from './data/theme.js';
+import { BG_IMAGE, T, aplicarTema } from './data/theme.js';
 import defaultData from './data/defaultData.json';
 import { Native, NOTIF_ID_DESCANSO } from './native/index.js';
 import { handleBack, useBackHandler } from './native/back.js';
@@ -18,8 +18,9 @@ import { ExtrasTab } from './tabs/ExtrasTab.jsx';
 import { ProgresoTab } from './tabs/ProgresoTab.jsx';
 import { RutinaTab } from './tabs/RutinaTab.jsx';
 import { stateFromDefaults } from './utils/defaults.js';
-import { clone, fmt, fmtMS, uid } from './utils/format.js';
+import { clone, fmt, fmtMS, uid, ymd } from './utils/format.js';
 import { aplicarObjetivoPeso } from './utils/peso.js';
+import { RECORDATORIO_ID_BASE, duplicarDia as duplicarDiaPuro, duplicarEjercicio as duplicarEjercicioPuro, proximosRecordatorios } from './utils/entreno.js';
 import { applyImport } from './utils/share.js';
 import { activeExerciseIds, bestSerie1, computeScore, normalizeSet } from './utils/training.js';
 
@@ -364,6 +365,80 @@ export function App() {
     showToast(count > 0 ? '✅ ' + count + ' objetivo(s) rellenado(s)' : 'No hay ejercicios sin objetivo con marca registrada');
   }, [commit, showToast]);
 
+  /* ---------- Fase 3: duplicar, registro diario, medidas, fotos de progreso, recordatorios ---------- */
+  const duplicarDia = useCallback((dayId) => {
+    const r = duplicarDiaPuro(stateRef.current, dayId);
+    if (r.ok) commitDeshacible(() => r.state, 'Día duplicado ✓');
+  }, [commitDeshacible]);
+  const duplicarEjercicio = useCallback((dayId, exId) => {
+    const r = duplicarEjercicioPuro(stateRef.current, dayId, exId);
+    if (r.ok) commitDeshacible(() => r.state, 'Ejercicio duplicado ✓ (sin historial)');
+  }, [commitDeshacible]);
+
+  // Pasos, sueño y energía de un día (fecha AAAA-MM-DD)
+  const setRegistroDia = useCallback((fecha, patch) => {
+    commit((prev) => {
+      const reg = { ...(prev.registro || {}) };
+      const dia = { pasos: null, sueno: null, energia: null, ...(reg[fecha] || {}), ...patch };
+      if (dia.pasos === null && dia.sueno === null && dia.energia === null) delete reg[fecha]; else reg[fecha] = dia;
+      return { ...prev, registro: reg };
+    });
+  }, [commit]);
+
+  const addMedida = useCallback((tipo, valor, fecha) => {
+    commit((prev) => ({ ...prev, medidas: { ...prev.medidas, historial: (prev.medidas.historial || []).concat([{ id: uid(), tipo, valor, date: fecha ? new Date(fecha + 'T12:00:00').toISOString() : new Date().toISOString() }]) } }));
+  }, [commit]);
+  const editMedida = useCallback((id, valor, fecha) => {
+    commit((prev) => ({ ...prev, medidas: { ...prev.medidas, historial: prev.medidas.historial.map((m) => (m.id === id ? { ...m, valor, date: new Date(fecha + 'T12:00:00').toISOString() } : m)) } }));
+  }, [commit]);
+  const delMedida = useCallback((id) => {
+    commit((prev) => ({ ...prev, medidas: { ...prev.medidas, historial: prev.medidas.historial.filter((m) => m.id !== id) } }));
+  }, [commit]);
+
+  // Fotos de progreso: la imagen va al mismo almacén que las de los ejercicios (clave "prog_<id>"); en los datos, la fecha y una nota
+  const addFotoProgreso = useCallback(async (dataUrl, nota) => {
+    const id = 'f' + uid();
+    const r = await Native.savePhoto('prog_' + id, dataUrl, fotosRef.current);
+    if (!r.ok) { showToast('No se pudo guardar la foto: almacenamiento lleno o bloqueado', 'warn'); return false; }
+    setFotosMap(r.mapa);
+    commit((prev) => ({ ...prev, fotosProgreso: (prev.fotosProgreso || []).concat([{ id, date: new Date().toISOString(), nota: nota || '' }]) }));
+    showToast('Foto de progreso guardada ✓');
+    return true;
+  }, [commit, showToast]);
+  const delFotoProgreso = useCallback(async (id) => {
+    const r = await Native.deletePhoto('prog_' + id, fotosRef.current);
+    if (r.ok) setFotosMap(r.mapa);
+    commit((prev) => ({ ...prev, fotosProgreso: (prev.fotosProgreso || []).filter((f) => f.id !== id) }));
+  }, [commit]);
+
+  // Recordatorios de entrenamiento: se programan avisos sueltos para las próximas semanas y se renuevan al abrir la app
+  const programarRecordatorios = useCallback(async (cfg, silencioso) => {
+    const prevIds = (stateRef.current.preferencias.recordatorios || {}).ids || [];
+    // por si acaso, se cancelan también todos los ids posibles de recordatorios
+    const todos = prevIds.length ? prevIds : Array.from({ length: 64 }, (_, i) => RECORDATORIO_ID_BASE + i);
+    const avisos = cfg.activos ? proximosRecordatorios(cfg.dias, cfg.hora) : [];
+    const r = await Native.programarRecordatorios(avisos, todos);
+    const ids = r.ok ? avisos.map((a) => a.id) : [];
+    commit((prev) => ({ ...prev, preferencias: { ...prev.preferencias, recordatorios: { activos: !!cfg.activos, dias: cfg.dias, hora: cfg.hora, ids } } }));
+    if (!silencioso) {
+      if (!cfg.activos) showToast('Recordatorios desactivados');
+      else if (r.ok) showToast('Recordatorios programados ✓ (' + avisos.length + ' avisos en las próximas semanas)');
+      else if (r.motivo === 'permiso') showToast('Sin permiso de notificaciones: actívalo en Ajustes del móvil → Apps → Mi Rutina → Notificaciones.', 'warn', 8000);
+      else if (r.motivo === 'web') showToast('Los recordatorios solo funcionan en la app de Android.', 'warn', 6000);
+      else showToast('No se pudieron programar los recordatorios', 'warn');
+    }
+    return r;
+  }, [commit, showToast]);
+  // Al abrir la app (y al volver a ella) se renuevan, para que siempre haya avisos para las próximas semanas
+  const recordatoriosActivos = !!(state && state.preferencias && state.preferencias.recordatorios && state.preferencias.recordatorios.activos);
+  useEffect(() => {
+    if (!recordatoriosActivos || !Native.isNative()) return undefined;
+    const renovar = () => { const c = stateRef.current.preferencias.recordatorios; if (c && c.activos) programarRecordatorios(c, true); };
+    renovar();
+    const quitar = Native.onAppStateChange((activa) => { if (activa) renovar(); });
+    return quitar;
+  }, [recordatoriosActivos]);
+
   /* ---------- temporizador de descanso ----------
      Cuenta con la hora real (Date.now). En el móvil además programa una notificación para el final,
      que suena aunque la pantalla esté bloqueada o la app cerrada. */
@@ -421,6 +496,8 @@ export function App() {
 
   // Los músculos del usuario son el catálogo que usa toda la pantalla (selector, colores, Diana…)
   aplicarCatalogo(state.musculos);
+  // Tema de color y tamaño de letra (Ajustes → Apariencia)
+  aplicarTema(state.preferencias && state.preferencias.tema, state.preferencias && state.preferencias.letra);
 
   const ctx = {
     state, commit, fotos, setFoto, delFoto, showToast, askConfirm,
@@ -429,6 +506,8 @@ export function App() {
     addExercise, removeFromDay, moveExercise, addSerie, removeSerieAt,
     saveEntry, logPeso, guardarFormulario, resetAll, importObj, restoreBackup, hasBackup,
     suggestObjetivo, rellenarObjetivosFaltantes, setPreferencia, setObjetivoPeso, commitDeshacible, persistencia, pedirPersistencia,
+    duplicarDia, duplicarEjercicio, setRegistroDia, addMedida, editMedida, delMedida, addFotoProgreso, delFotoProgreso, programarRecordatorios,
+    timer, nowMs, startTimer, addTimer, stopTimer, hoy: ymd(new Date()),
   };
 
   const TABS = [
@@ -462,9 +541,9 @@ export function App() {
         ) : (
           <>
             <div style={{ position: 'relative', zIndex: 1, padding: 'calc(14px + var(--safe-top)) 14px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, gap: 8 }}>
-              <div className="font-display" style={{ fontSize: 'clamp(19px, 6.4vw, 26px)', fontWeight: 700, letterSpacing: '0.07em', color: '#FFFFFF', textShadow: '0 0 14px rgba(34,211,238,0.55)', whiteSpace: 'nowrap', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>MI RUTINA 💪</div>
+              <div className="font-display" style={{ fontSize: 'clamp(19px, 6.4vw, 26px)', fontWeight: 700, letterSpacing: '0.07em', color: '#FFFFFF', textShadow: '0 0 14px rgba(var(--ac-rgb),0.55)', whiteSpace: 'nowrap', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>MI RUTINA 💪</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                <button onClick={() => setTimerOpen(true)} title="Descanso entre series" className="font-body hbtn" style={timer ? { width: 'auto', padding: '0 8px', fontSize: 12, borderColor: ACCENT, color: '#FFFFFF' } : undefined}>⏱️{timer ? ' ' + fmtMS(timer.end - nowMs) : ''}</button>
+                <button onClick={() => setTimerOpen(true)} title="Descanso entre series" className="font-body hbtn" style={timer ? { width: 'auto', padding: '0 8px', fontSize: 12, borderColor: T.cyan, color: '#FFFFFF' } : undefined}>⏱️{timer ? ' ' + fmtMS(timer.end - nowMs) : ''}</button>
                 <button onClick={() => setScreen('settings')} title="Ajustes" className="font-body hbtn">⚙️</button>
               </div>
             </div>
@@ -484,8 +563,8 @@ export function App() {
                 const active = tab === t.id;
                 return (
                   <button key={t.id} onClick={() => setActiveTab(t.id)} style={{ flex: 1, minWidth: 0, background: 'transparent', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '6px 2px', cursor: 'pointer', position: 'relative' }}>
-                    {active && <span style={{ position: 'absolute', top: -9, width: 28, height: 3, borderRadius: 3, background: T.grad, boxShadow: '0 0 12px rgba(34,211,238,0.9)' }} />}
-                    <span style={{ fontSize: 20, opacity: active ? 1 : 0.5, filter: active ? 'drop-shadow(0 0 8px rgba(34,211,238,0.7))' : 'none', transform: active ? 'scale(1.12)' : 'none', transition: 'all .15s' }}>{t.emoji}</span>
+                    {active && <span style={{ position: 'absolute', top: -9, width: 28, height: 3, borderRadius: 3, background: T.grad, boxShadow: '0 0 12px rgba(var(--ac-rgb),0.9)' }} />}
+                    <span style={{ fontSize: 20, opacity: active ? 1 : 0.5, filter: active ? 'drop-shadow(0 0 8px rgba(var(--ac-rgb),0.7))' : 'none', transform: active ? 'scale(1.12)' : 'none', transition: 'all .15s' }}>{t.emoji}</span>
                     <span className="font-body" style={{ fontSize: 10.5, fontWeight: 700, color: active ? '#FFFFFF' : '#6F7A96' }}>{t.label}</span>
                   </button>
                 );
