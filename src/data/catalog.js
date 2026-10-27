@@ -107,7 +107,7 @@ export const ACTIVIDAD_FACTOR = { sedentario: 1.2, ligero: 1.35, moderado: 1.5, 
 
 export const ACTIVIDADES = [['sedentario', 'Sedentario'], ['ligero', 'Ligero'], ['moderado', 'Moderado'], ['intenso', 'Intenso']];
 
-export const APP_VERSION = 8;
+export const APP_VERSION = 9;
 
 export const MOMENTOS = [['desayuno', '🌅 Desayuno'], ['comida', '🍽️ Comida'], ['cena', '🌙 Cena'], ['snack', '🍎 Snack']];
 

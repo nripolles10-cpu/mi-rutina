@@ -39,6 +39,61 @@ export function normalizeDay(d) {
   return { ...d, id: d.id || 'day_' + uid(), label: d.label || 'Día', equipo: d.equipo || '', nota: d.nota || '', ids: ids };
 }
 
+export const TEMAS = ['cian', 'violeta', 'verde', 'fuego'];
+export const TAMANOS_LETRA = ['pequena', 'normal', 'grande', 'muygrande'];
+export const MEDIDAS_TIPOS = ['cintura', 'cadera', 'pecho', 'brazo', 'muslo', 'gemelo', 'cuello', 'grasa'];
+
+export function preferenciasPorDefecto() {
+  return {
+    pantallaEncendida: false,
+    tema: 'cian', letra: 'normal',
+    descanso: 90, // segundos de descanso que propone el modo entreno en vivo
+    objetivoDiasSemana: 3, // para la racha semanal
+    descarga: { activa: false, cadaSemanas: 6, inicio: null },
+    recordatorios: { activos: false, dias: [0, 2, 4], hora: '18:00', ids: [] },
+  };
+}
+
+// Repara las preferencias guardadas (las de versiones anteriores no tienen los campos nuevos)
+export function normalizarPreferencias(p) {
+  const d = preferenciasPorDefecto();
+  const x = p && typeof p === 'object' ? p : {};
+  const out = { ...d, ...x };
+  out.pantallaEncendida = !!out.pantallaEncendida;
+  if (TEMAS.indexOf(out.tema) === -1) out.tema = 'cian';
+  if (TAMANOS_LETRA.indexOf(out.letra) === -1) out.letra = 'normal';
+  out.descanso = typeof out.descanso === 'number' && out.descanso >= 10 && out.descanso <= 600 ? Math.round(out.descanso) : 90;
+  out.objetivoDiasSemana = typeof out.objetivoDiasSemana === 'number' && out.objetivoDiasSemana >= 1 && out.objetivoDiasSemana <= 7 ? Math.round(out.objetivoDiasSemana) : 3;
+  const ds = x.descarga && typeof x.descarga === 'object' ? x.descarga : {};
+  out.descarga = {
+    activa: !!ds.activa,
+    cadaSemanas: typeof ds.cadaSemanas === 'number' && ds.cadaSemanas >= 3 && ds.cadaSemanas <= 12 ? Math.round(ds.cadaSemanas) : 6,
+    inicio: typeof ds.inicio === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(ds.inicio) ? ds.inicio : null,
+  };
+  const r = x.recordatorios && typeof x.recordatorios === 'object' ? x.recordatorios : {};
+  out.recordatorios = {
+    activos: !!r.activos,
+    dias: Array.isArray(r.dias) ? r.dias.filter((n, i, a) => Number.isInteger(n) && n >= 0 && n <= 6 && a.indexOf(n) === i).sort() : d.recordatorios.dias,
+    hora: typeof r.hora === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(r.hora) ? r.hora : '18:00',
+    ids: Array.isArray(r.ids) ? r.ids.filter((n) => Number.isInteger(n)) : [],
+  };
+  return out;
+}
+
+function normalizarRegistro(reg) {
+  const out = {};
+  if (!reg || typeof reg !== 'object') return out;
+  const n15 = (v) => (typeof v === 'number' && v >= 1 && v <= 5 ? Math.round(v) : null);
+  Object.keys(reg).forEach((k) => {
+    const r = reg[k];
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(k) || !r || typeof r !== 'object') return;
+    const pasos = typeof r.pasos === 'number' && r.pasos >= 0 && r.pasos < 200000 ? Math.round(r.pasos) : null;
+    const sueno = n15(r.sueno), energia = n15(r.energia);
+    if (pasos !== null || sueno !== null || energia !== null) out[k] = { pasos, sueno, energia };
+  });
+  return out;
+}
+
 export function buildInitialState() {
   const exercises = {};
   Object.keys(SEED_EXERCISES).forEach((id) => {
@@ -75,8 +130,12 @@ export function buildInitialState() {
     },
     nutricion: { objetivo: 'definicion', ritmo: 'normal', pesoActual: null, pesoObjetivo: null, edad: null, alturaCm: null, sexo: null, actividad: null, grasaPct: null, tdeeReal: null },
     comida: defaultComida(),
-    preferencias: { pantallaEncendida: false },
-    meta: { activeTab: 'rutina', activeDay: 'piernaA', editMode: false },
+    preferencias: preferenciasPorDefecto(),
+    // Fase 3: registro diario (pasos, sueño y energía), medidas corporales y fotos de progreso
+    registro: {},
+    medidas: { historial: [] },
+    fotosProgreso: [],
+    meta: { activeTab: 'rutina', activeDay: 'piernaA', editMode: false, progresoSec: 'progreso' },
   };
 }
 
@@ -130,9 +189,20 @@ export function normalizeCurrent(loaded, seed, appVersion) {
     compra: c.compra && typeof c.compra === 'object' ? c.compra : {},
     agua: normalizeAgua(c.agua),
   };
-  next.preferencias = { ...seed.preferencias, ...(loaded.preferencias && typeof loaded.preferencias === 'object' ? loaded.preferencias : {}) };
+  next.preferencias = normalizarPreferencias(loaded.preferencias);
+  next.registro = normalizarRegistro(loaded.registro);
+  const med = loaded.medidas && typeof loaded.medidas === 'object' ? loaded.medidas : {};
+  next.medidas = {
+    historial: (Array.isArray(med.historial) ? med.historial : [])
+      .filter((r) => r && typeof r === 'object' && MEDIDAS_TIPOS.indexOf(r.tipo) !== -1 && typeof r.valor === 'number' && isFinite(r.valor) && !isNaN(new Date(r.date).getTime()))
+      .map((r) => ({ id: r.id || uid(), tipo: r.tipo, valor: r.valor, date: r.date })),
+  };
+  next.fotosProgreso = (Array.isArray(loaded.fotosProgreso) ? loaded.fotosProgreso : [])
+    .filter((f) => f && typeof f === 'object' && typeof f.id === 'string' && !isNaN(new Date(f.date).getTime()))
+    .map((f) => ({ id: f.id, date: f.date, nota: typeof f.nota === 'string' ? f.nota : '' }));
   next.meta = { ...seed.meta, ...(loaded.meta || {}) };
   if (TAB_IDS.indexOf(next.meta.activeTab) === -1) next.meta.activeTab = 'rutina';
+  if (['progreso', 'calendario', 'cuerpo', 'logros'].indexOf(next.meta.progresoSec) === -1) next.meta.progresoSec = 'progreso';
   if (!days.some((d) => d.id === next.meta.activeDay)) next.meta.activeDay = days.length ? days[0].id : null;
   delete next.profile; delete next.pasos;
   return next;
@@ -229,6 +299,9 @@ export const MIGRATIONS = {
     return { ...st, comida: { ...c, recetas: anadirRecetasNuevas(c.recetas) } };
   },
 };
+
+// (la v9 —registro diario, medidas, fotos de progreso y preferencias nuevas— la completa normalizeCurrent)
+MIGRATIONS[9] = (st) => st;
 
 // Añade las recetas nuevas de la versión 8 que falten (por id). No cambia ni duplica ninguna.
 export function anadirRecetasNuevas(lista) {

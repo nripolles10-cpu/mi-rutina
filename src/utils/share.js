@@ -70,7 +70,8 @@ export function buildShareObject(state, opts, fotos) {
   if (opts.recetas) { o.recetas = state.comida.recetas; o.favoritos = state.comida.favoritos; }
   if (opts.nutricion) o.nutricion = { nutricion: state.nutricion, formulario: state.formulario, plan: state.comida.plan };
   if (opts.todo) {
-    o.extra = { cardio: state.cardio, diana: state.diana, extras: state.extras, diario: state.comida.diario, agua: state.comida.agua, compra: state.comida.compra };
+    o.extra = { cardio: state.cardio, diana: state.diana, extras: state.extras, diario: state.comida.diario, agua: state.comida.agua, compra: state.comida.compra,
+      registro: state.registro, medidas: state.medidas, fotosProgreso: state.fotosProgreso, preferencias: state.preferencias };
   }
   if (opts.fotos && fotos) o.fotos = fotos;
   return o;
@@ -83,7 +84,7 @@ export function describeShare(obj) {
   if (obj.peso) out.push('Peso corporal (' + ((obj.peso.historial || []).length) + ' registros)');
   if (obj.recetas) out.push('Recetas (' + obj.recetas.length + ')');
   if (obj.nutricion) out.push('Nutrición (calculadora, tus datos y planificador)');
-  if (obj.extra) out.push('Resto de datos (cardio, diana física, suplementos, diario de comidas, agua…)');
+  if (obj.extra) out.push('Resto de datos (cardio, diana física, suplementos, diario de comidas, agua, medidas, sueño y pasos…)');
   if (obj.fotos) out.push('Fotos (' + Object.keys(obj.fotos).length + ')');
   return out;
 }
@@ -134,6 +135,11 @@ export function applyImport(prev, obj, mode) {
       if (x.diana) next.diana = x.diana;
       if (x.extras) next.extras = x.extras;
       next.comida = { ...next.comida, diario: x.diario || next.comida.diario, agua: x.agua || next.comida.agua, compra: x.compra || next.comida.compra };
+      if (x.registro) next.registro = x.registro;
+      if (x.medidas) next.medidas = x.medidas;
+      if (x.fotosProgreso) next.fotosProgreso = x.fotosProgreso;
+      // Preferencias: se traen las de la copia, pero los recordatorios se vuelven a programar en este móvil
+      if (x.preferencias) next.preferencias = { ...x.preferencias, recordatorios: { ...(x.preferencias.recordatorios || {}), ids: (prev.preferencias && prev.preferencias.recordatorios && prev.preferencias.recordatorios.ids) || [] } };
     }
   }
   return migrateState({ ...next, version: APP_VERSION });
