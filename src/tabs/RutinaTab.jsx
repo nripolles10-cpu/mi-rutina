@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Chip, EditLockBar, Label, MiniBtn, NumField, TextField, chipStyle, useGym } from '../components/ui.jsx';
 import { CATS, CAT_IDS, SET_TYPES, catInfo } from '../data/catalog.js';
-import { ACCENT, T } from '../data/theme.js';
+import { T } from '../data/theme.js';
 import { Native } from '../native/index.js';
 import { fmt, fmtDateShort, parseNum } from '../utils/format.js';
 import { bestSerie1, computeScore, ensureStruct } from '../utils/training.js';
+import { EntrenoVivoModal } from '../components/EntrenoVivo.jsx';
+import { HistorialEjercicioModal, SugerenciaProgresion } from '../components/HistorialEjercicio.jsx';
+import { semanaDescarga } from '../utils/entreno.js';
 
 /* =========================================================================
    SECCIÓN 7 · PESTAÑAS
@@ -280,8 +283,9 @@ export function SetRow({ s, idx, onPatch, onRemove, canRemove, editMode }) {
    ========================================================================= */
 
 export function ExerciseCard({ id, dayId, embedded }) {
-  const { state, updateExercise, updateDay, saveEntry, suggestObjetivo, removeFromDay, addSerie, removeSerieAt, askConfirm, fotos, setFoto, delFoto, showToast } = useGym();
+  const { state, updateExercise, updateDay, saveEntry, suggestObjetivo, removeFromDay, addSerie, removeSerieAt, askConfirm, fotos, setFoto, delFoto, showToast, duplicarEjercicio } = useGym();
   const [open, setOpen] = useState(false);
+  const [verHistorial, setVerHistorial] = useState(false);
   const [fotoOcupada, setFotoOcupada] = useState(false);
   const ex = state.exercises[id];
   if (!ex) return null;
@@ -419,10 +423,13 @@ export function ExerciseCard({ id, dayId, embedded }) {
           )}
 
           <div className="font-body" style={{ marginTop: 12, fontSize: 11, color: T.dim }}>{last && !last.seed ? 'Último registro: ' + fmtDateShort(last.date) : 'Sin registros guardados aún'}</div>
+          <SugerenciaProgresion id={id} compacta />
 
           <button onClick={() => saveEntry(id)} className="font-body btn" style={{ marginTop: 10, width: '100%', background: mc, color: '#060913', boxShadow: '0 6px 20px ' + mc + '55' }}>
             💾 Guardar registro de hoy
           </button>
+          <button onClick={() => setVerHistorial(true)} className="font-body btn btn-ghost" style={{ marginTop: 8, width: '100%', fontSize: 12.5 }}>📈 Historial, récords y 1RM</button>
+          {verHistorial && <HistorialEjercicioModal id={id} onClose={() => setVerHistorial(false)} />}
 
           <div style={{ marginTop: 16 }}>
             <Label>🎯 Objetivo</Label>
@@ -456,7 +463,12 @@ export function ExerciseCard({ id, dayId, embedded }) {
             </div>
           )}
           {editMode && dayId && (
-            <button onClick={askRemove} className="font-body btn btn-danger" style={{ marginTop: 16, width: '100%', fontSize: 12.5 }}>
+            <button onClick={() => duplicarEjercicio(dayId, id)} className="font-body btn btn-ghost" style={{ marginTop: 16, width: '100%', fontSize: 12.5 }}>
+              ⧉ Duplicar este ejercicio (sin su historial)
+            </button>
+          )}
+          {editMode && dayId && (
+            <button onClick={askRemove} className="font-body btn btn-danger" style={{ marginTop: 8, width: '100%', fontSize: 12.5 }}>
               🗑️ Quitar este ejercicio del día
             </button>
           )}
@@ -526,8 +538,21 @@ export function AddDayForm() {
   );
 }
 
+// Aviso de semana de descarga (Ajustes → Entreno)
+export function AvisoDescarga() {
+  const { state } = useGym();
+  const d = semanaDescarga(state.preferencias && state.preferencias.descarga, new Date());
+  if (!d.activa || !d.es) return null;
+  return (
+    <div data-testid="aviso-descarga" className="font-body" style={{ marginBottom: 12, padding: '10px 12px', borderRadius: 14, background: 'rgba(56,189,248,0.10)', border: '1px solid rgba(56,189,248,0.4)', color: '#BAE6FD', fontSize: 12.5, lineHeight: 1.5 }}>
+      🧘 <b>Semana de descarga</b> (semana {d.semanaDelCiclo} de {d.cadaSemanas}). Baja el peso un 40–50 % o haz la mitad de las series, sin llegar al fallo. Sirve para recuperarte y volver más fuerte.
+    </div>
+  );
+}
+
 export function RutinaTab() {
-  const { state, setActiveDay, updateDay, moveDay, removeDay, askConfirm } = useGym();
+  const { state, setActiveDay, updateDay, moveDay, removeDay, askConfirm, duplicarDia } = useGym();
+  const [vivo, setVivo] = useState(null);
   const days = state.days || [];
   const editMode = state.meta.editMode;
   const dayIndex = Math.max(0, days.findIndex((d) => d.id === state.meta.activeDay));
@@ -575,11 +600,17 @@ export function RutinaTab() {
           {days.map((d, i) => (
             <span key={d.id} onClick={() => setActiveDay(d.id)} style={{
               width: i === dayIndex ? 22 : 7, height: 7, borderRadius: 999, cursor: 'pointer', transition: 'all .2s',
-              background: i === dayIndex ? ACCENT : 'rgba(255,255,255,0.3)', boxShadow: i === dayIndex ? '0 0 10px rgba(34,211,238,0.7)' : 'none',
+              background: i === dayIndex ? T.cyan : 'rgba(255,255,255,0.3)', boxShadow: i === dayIndex ? '0 0 10px rgba(var(--ac-rgb),0.7)' : 'none',
             }} />
           ))}
         </div>
       </div>
+
+      <AvisoDescarga />
+      {vivo && <EntrenoVivoModal dayId={vivo} onClose={() => setVivo(null)} />}
+      {!editMode && day.ids.length > 0 && (
+        <button onClick={() => setVivo(day.id)} className="font-body btn btn-primary" style={{ width: '100%', marginBottom: 14, padding: 13, fontSize: 14 }}>▶ Empezar entreno en vivo</button>
+      )}
 
       {editMode ? (
         <Card style={{ marginBottom: 14 }}>
@@ -607,6 +638,9 @@ export function RutinaTab() {
         ))}
         {editMode && <AddExerciseForm dayId={day.id} />}
         {editMode && <AddDayForm />}
+        {editMode && (
+          <button onClick={() => duplicarDia(day.id)} className="font-body btn btn-ghost" style={{ width: '100%', marginTop: 10, fontSize: 12.5 }}>⧉ Duplicar este día</button>
+        )}
         {editMode && (
           <button onClick={() => askConfirm({ title: '¿Eliminar este día?', text: 'Se eliminará "' + day.label + '" con todos sus ejercicios. No se puede deshacer, pero tienes tus copias de seguridad.', confirmLabel: 'Eliminar día', onConfirm: () => removeDay(day.id) })}
             className="font-body btn btn-danger" style={{ width: '100%', marginTop: 10, fontSize: 12.5 }}>
