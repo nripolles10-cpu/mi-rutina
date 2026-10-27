@@ -254,3 +254,33 @@ describe('versión web dentro del APK', () => {
     expect(await N.pedirAlmacenamientoPersistente()).toEqual({ soportado: true, persistente: true });
   });
 });
+
+describe('recordatorios de entrenamiento en el móvil', () => {
+  test('cancela los anteriores y programa avisos sueltos a su hora, en su canal y con el móvil en reposo', async () => {
+    const N = await cargarNative();
+    await N.init();
+    const { LocalNotifications } = await import('@capacitor/local-notifications');
+    const cancelados = [];
+    const cancel = LocalNotifications.cancel;
+    LocalNotifications.cancel = async ({ notifications }) => { cancelados.push(...notifications.map((n) => n.id)); };
+    try {
+      const at = Date.now() + 86400000;
+      const r = await N.programarRecordatorios([{ id: 3000, at }, { id: 3001, at: at + 86400000 }], [3000, 3001, 3002]);
+      expect(r).toEqual({ ok: true, programados: 2 });
+      expect(cancelados).toEqual([3000, 3001, 3002]);
+      expect(sim.programadas).toHaveLength(2);
+      expect(sim.programadas[0]).toMatchObject({ id: 3000, channelId: 'recordatorios', schedule: { allowWhileIdle: true } });
+      expect(sim.programadas[0].schedule.at.getTime()).toBe(at);
+      // desactivar = solo cancelar
+      expect(await N.programarRecordatorios([], [3000])).toEqual({ ok: true, programados: 0 });
+      // sin permiso no se programa nada
+      sim.permiso = 'denied';
+      expect((await N.programarRecordatorios([{ id: 3000, at }], [])).motivo).toBe('permiso');
+    } finally { LocalNotifications.cancel = cancel; }
+  });
+
+  test('las fotos de progreso pueden pedir más tamaño que las de los ejercicios', async () => {
+    const N = await cargarNative();
+    expect(N.pickPhoto.length).toBe(3);
+  });
+});
