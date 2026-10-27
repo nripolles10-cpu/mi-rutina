@@ -6,6 +6,7 @@ import { T } from '../data/theme.js';
 import { fmt, fmtDateLong, fmtDateShort, formatDecimal, groupByMonth, mean, monthLabel, ymd } from '../utils/format.js';
 import { bmiCategory, calcBMI } from '../utils/health.js';
 import { OBJETIVO_PESO_MAX, OBJETIVO_PESO_MIN, validarObjetivoPeso } from '../utils/peso.js';
+import { CalendarioSec, CuerpoSec, LogrosSec, SECCIONES_PROGRESO } from './ProgresoExtra.jsx';
 import { activeExerciseIds, muscleProgress, weeklySets } from '../utils/training.js';
 
 /* ---------- Peso corporal ---------- */
@@ -77,7 +78,7 @@ export function PesoChartPanel({ big, st, setSt }) {
 
       <div {...swipe}>
         {points.length >= 2 ? (
-          <LineChartSVG points={points} color="#22D3EE" height={big ? 320 : 200} selectedIndex={selIdx >= 0 ? selIdx : null} onPointClick={(i) => setSt({ ...st, selId: entries[i].id })} />
+          <LineChartSVG points={points} color={T.cyan} height={big ? 320 : 200} selectedIndex={selIdx >= 0 ? selIdx : null} onPointClick={(i) => setSt({ ...st, selId: entries[i].id })} />
         ) : (
           <div className="font-body" style={{ color: T.dim, fontSize: 12, textAlign: 'center', padding: '24px 10px' }}>Necesitas al menos 2 registros en este periodo para ver la curva.</div>
         )}
@@ -126,7 +127,7 @@ export function ObjetivoPesoEditor({ actual, onClose }) {
   let pista = null;
   if (v.ok && v.kg && actual) pista = v.kg < actual ? 'Bajar ' + fmt(Math.round((actual - v.kg) * 10) / 10) + ' kg' : v.kg > actual ? 'Subir ' + fmt(Math.round((v.kg - actual) * 10) / 10) + ' kg' : 'Es tu peso actual';
   return (
-    <div data-testid="objetivo-peso-editor" style={{ background: 'rgba(7,11,22,0.7)', border: '1px solid rgba(34,211,238,0.35)', borderRadius: 14, padding: 12, marginBottom: 12 }}>
+    <div data-testid="objetivo-peso-editor" style={{ background: 'rgba(7,11,22,0.7)', border: '1px solid rgba(var(--ac-rgb),0.35)', borderRadius: 14, padding: 12, marginBottom: 12 }}>
       <div className="font-body" style={{ color: T.text, fontWeight: 800, fontSize: 13, marginBottom: 8 }}>🎯 ¿A qué peso quieres llegar?</div>
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: 1 }}>
@@ -176,7 +177,7 @@ export function PesoCard() {
         <div className="font-body" style={{ color: T.text, fontWeight: 700, fontSize: 15, whiteSpace: 'nowrap' }}>⚖️ Peso corporal</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <button onClick={() => setEditObj(!editObj)} title="Cambiar el objetivo de peso" className="font-body"
-            style={{ background: 'rgba(34,211,238,0.08)', border: '1px dashed rgba(34,211,238,0.45)', borderRadius: 999, padding: '3px 8px', color: '#7DE9FA', fontSize: 11.5, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            style={{ background: 'rgba(var(--ac-rgb),0.08)', border: '1px dashed rgba(var(--ac-rgb),0.45)', borderRadius: 999, padding: '3px 8px', color: 'var(--ac-claro)', fontSize: 11.5, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
             {peso.objetivoKg ? '🎯 ' + fmt(peso.objetivoKg, 2) + ' kg' : '🎯 Objetivo'}
           </button>
           <button onClick={() => setBig(true)} className="font-body btn btn-ghost" style={{ padding: '6px 10px', fontSize: 12 }}>⤢ Ampliar</button>
@@ -299,6 +300,21 @@ export function ObjetivosMusculoCard() {
 /* ---------- Pestaña ---------- */
 
 export function ProgresoTab() {
+  const { state, commit } = useGym();
+  const sec = state.meta.progresoSec || 'progreso';
+  const elegir = (k) => commit((prev) => ({ ...prev, meta: { ...prev.meta, progresoSec: k } }));
+  const chips = (
+    <div className="gt-scroll" style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 6, marginBottom: 12 }}>
+      {SECCIONES_PROGRESO.map((x) => <Chip key={x[0]} active={sec === x[0]} onClick={() => elegir(x[0])}>{x[1]}</Chip>)}
+    </div>
+  );
+  if (sec === 'calendario') return <div>{chips}<CalendarioSec /></div>;
+  if (sec === 'cuerpo') return <div>{chips}<CuerpoSec /></div>;
+  if (sec === 'logros') return <div>{chips}<LogrosSec /></div>;
+  return <ProgresoPrincipal chips={chips} />;
+}
+
+function ProgresoPrincipal({ chips }) {
   const { state } = useGym();
   const allIds = useMemo(() => activeExerciseIds(state), [state.days, state.exercises]);
   const [selected, setSelected] = useState(allIds[0]);
@@ -312,6 +328,7 @@ export function ProgresoTab() {
 
   return (
     <div>
+      {chips}
       <SectionTitle emoji="⚖️">Tu peso</SectionTitle>
       <PesoCard />
 
