@@ -327,6 +327,12 @@ export function App() {
     }
     showToast('Importación completada ✓');
   }, [persistNow, showToast]);
+  // Restaura una copia completa en JSON (ya validada). Antes guarda la copia automática del estado actual.
+  const restaurarCopiaJson = useCallback((nuevo) => {
+    backupPrev(stateRef.current);
+    replaceState(nuevo);
+    showToast('Copia restaurada ✓');
+  }, [persistNow, showToast]);
   const restoreBackup = useCallback(() => {
     let snap = backupRef.current;
     if (!snap) { try { snap = JSON.parse(localStorage.getItem(BACKUP_KEY)); } catch (e) { snap = null; } }
@@ -508,7 +514,7 @@ export function App() {
     updateExercise, updateCardio, addCardio, removeCardio,
     setActiveDay, setActiveTab, toggleEditMode, updateDay, addDay, removeDay, moveDay,
     addExercise, removeFromDay, moveExercise, addSerie, removeSerieAt,
-    saveEntry, logPeso, guardarFormulario, resetAll, importObj, restoreBackup, hasBackup,
+    saveEntry, logPeso, guardarFormulario, resetAll, importObj, restoreBackup, restaurarCopiaJson, hasBackup,
     suggestObjetivo, rellenarObjetivosFaltantes, setPreferencia, setObjetivoPeso, commitDeshacible, persistencia, pedirPersistencia,
     duplicarDia, duplicarEjercicio, setRegistroDia, addMedida, editMedida, delMedida, addFotoProgreso, delFotoProgreso, editFotoProgreso, programarRecordatorios,
     timer, nowMs, startTimer, addTimer, stopTimer, hoy: ymd(new Date()),

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Card, CheckRow, Chip, Label, LabeledNum, Modal, SectionTitle, Stepper, SupRow, useGym } from '../components/ui.jsx';
 import { ACTIVIDADES } from '../data/catalog.js';
 import { ESCALAS_LETRA, T, TEMAS_COLOR } from '../data/theme.js';
@@ -12,6 +12,7 @@ import { PLANTILLA_CSV, parseCsv, rowsToRutina } from '../utils/importar.js';
 import { buildDefaultData } from '../utils/defaults.js';
 import { fmt, fmtDateLong, fromYmd, mondayOf as lunesDe, ymd } from '../utils/format.js';
 import { DIAS_SIN_COPIA, diasDesde } from '../utils/copias.js';
+import { leerCopiaJson } from '../utils/copiaJson.js';
 import { semanaDescarga } from '../utils/entreno.js';
 import { calcCalorias, estimaGrasaCorporal } from '../utils/health.js';
 import { buildShareObject, decodeShare, describeShare, encodeShare } from '../utils/share.js';
@@ -195,6 +196,32 @@ export function ExportRow({ titulo, desc, filename, mime, build }) {
         <button disabled={ocupado} onClick={() => run(true)} className="font-body btn btn-primary" style={{ flex: 1, fontSize: 12.5 }}>📤 Compartir</button>
       </div>
     </div>
+  );
+}
+
+/* ---------- Restaurar la copia completa en JSON ---------- */
+
+export function RestaurarJsonRow() {
+  const { restaurarCopiaJson, askConfirm, showToast } = useGym();
+  const ref = useRef(null);
+  const leer = async (f) => {
+    if (!f) return;
+    let texto;
+    try { texto = await f.text(); } catch (e) { showToast('No se pudo leer el archivo', 'warn'); return; }
+    const r = leerCopiaJson(texto);
+    if (!r.ok) { showToast(r.error, 'warn'); return; }
+    askConfirm({
+      title: '¿Restaurar esta copia?',
+      text: 'Se reemplazará todo lo que hay ahora por lo de la copia (rutina, historial, peso, medidas, diario…). Antes se guarda una copia automática de lo actual, a la que puedes volver con «Volver al estado anterior». Las fotos no van en la copia JSON y no se tocan.',
+      confirmLabel: 'Restaurar', danger: false,
+      onConfirm: () => restaurarCopiaJson(r.state),
+    });
+  };
+  return (
+    <>
+      <button onClick={() => ref.current && ref.current.click()} className="font-body btn btn-ghost">♻️ Restaurar copia completa (JSON)</button>
+      <input ref={ref} type="file" accept=".json,application/json" style={{ display: 'none' }} onChange={(e) => { leer(e.target.files && e.target.files[0]); e.target.value = ''; }} />
+    </>
   );
 }
 
@@ -527,6 +554,7 @@ export function AjustesScreen({ onClose }) {
           <button onClick={() => setModal('backup')} className="font-body btn btn-ghost">💾 Copia de seguridad completa (cambio de móvil)</button>
           <button onClick={() => setModal('importar')} className="font-body btn btn-ghost">📥 Importar rutina o restaurar copia</button>
           <button onClick={() => setModal('archivo')} className="font-body btn btn-ghost">📊 Importar rutina desde Excel o CSV</button>
+          <RestaurarJsonRow />
           {hasBackup && <button onClick={() => askConfirm({ title: '¿Volver al estado anterior?', text: 'Se restaurará cómo estaba la app justo antes de la última importación o restablecimiento.', confirmLabel: 'Restaurar', danger: false, onConfirm: restoreBackup })} className="font-body btn btn-ghost">↩️ Deshacer la última importación</button>}
         </div>
       </Card>

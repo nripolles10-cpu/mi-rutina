@@ -73,3 +73,26 @@ describe('descanso global del entreno en vivo', () => {
     expect(A.normalizarPreferencias({ descanso: 'x' }).descanso).toBe(90);
   });
 });
+
+describe('restaurar copia completa en JSON', () => {
+  test('una copia generada por la app se lee y vuelve con los mismos datos', async () => {
+    const { leerCopiaJson } = await import('../src/utils/copiaJson.js');
+    const st = A.buildInitialState();
+    st.preferencias = { ...st.preferencias, descanso: 120 };
+    const r = leerCopiaJson(JSON.stringify(st));
+    expect(r.ok).toBe(true);
+    expect(r.state.preferencias.descanso).toBe(120);
+    expect(Object.keys(r.state.exercises).length).toBe(Object.keys(st.exercises).length);
+  });
+  test('texto que no es JSON, formato incorrecto o días que apuntan a ejercicios que no existen se rechazan', async () => {
+    const { leerCopiaJson } = await import('../src/utils/copiaJson.js');
+    expect(leerCopiaJson('esto no es json').ok).toBe(false);
+    expect(leerCopiaJson('[1,2]').ok).toBe(false);
+    expect(leerCopiaJson('{"exercises":{}}').ok).toBe(false);
+    const st = A.buildInitialState();
+    st.days[0].ids = ['no_existe_xyz'];
+    const r = leerCopiaJson(JSON.stringify(st));
+    expect(r.ok).toBe(false);
+    expect(r.error).toMatch(/rota/);
+  });
+});
