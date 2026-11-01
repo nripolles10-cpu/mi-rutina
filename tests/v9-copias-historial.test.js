@@ -96,3 +96,16 @@ describe('restaurar copia completa en JSON', () => {
     expect(r.error).toMatch(/rota/);
   });
 });
+
+describe('copia espejo en IndexedDB: qué copia usar al arrancar', () => {
+  test('elige la más reciente que se pueda leer y nunca una dañada', async () => {
+    const { elegirCopia } = await import('../src/state/espejoIdb.js');
+    const buena = JSON.stringify({ a: 1 });
+    const otra = JSON.stringify({ a: 2 });
+    expect(elegirCopia({ lsRaw: buena, lsHora: 5, idbRaw: otra, idbHora: 9 })).toBe(otra);
+    expect(elegirCopia({ lsRaw: buena, lsHora: 9, idbRaw: otra, idbHora: 5 })).toBe(buena);
+    expect(elegirCopia({ lsRaw: null, lsHora: 0, idbRaw: otra, idbHora: 1 })).toBe(otra);
+    expect(elegirCopia({ lsRaw: '{roto', lsHora: 9, idbRaw: otra, idbHora: 1 })).toBe(otra);
+    expect(elegirCopia({ lsRaw: null, lsHora: 0, idbRaw: null, idbHora: 0 })).toBe(null);
+  });
+});

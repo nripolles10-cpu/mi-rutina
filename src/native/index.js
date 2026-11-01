@@ -19,6 +19,7 @@ import { Keyboard } from '@capacitor/keyboard';
 import { Clipboard } from '@capacitor/clipboard';
 import { copyText } from '../utils/clipboard.js';
 import { safeUrl } from '../utils/format.js';
+import { elegirCopia, idbGuardar, idbLeer } from '../state/espejoIdb.js';
 
 export const STORAGE_KEY = 'gymtracker_nacho_v2';
 const STAMP_KEY = STORAGE_KEY + '_hora'; // cuándo se guardó cada copia (para elegir la más reciente al arrancar)
@@ -125,7 +126,16 @@ export const Native = {
   async init() {
     if (MEM.iniciado) return;
     MEM.iniciado = true;
-    if (!isNative()) { MEM.raw = lsGet(STORAGE_KEY); MEM.fotos = fotosWebLeer(); return; }
+    if (!isNative()) {
+      // Navegador: localStorage, o la copia espejo de IndexedDB si localStorage está vacío o dañado
+      const lsRaw = lsGet(STORAGE_KEY);
+      const lsHora = Number(lsGet(STAMP_KEY)) || 0;
+      let idb = null;
+      try { idb = await idbLeer(STORAGE_KEY); } catch (e) { idb = null; }
+      MEM.raw = elegirCopia({ lsRaw, lsHora, idbRaw: idb ? idb.raw : null, idbHora: idb ? idb.hora : 0 });
+      MEM.fotos = fotosWebLeer();
+      return;
+    }
     // Estado: la copia más reciente que se pueda leer
     let pref = null, prefHora = 0;
     try {
@@ -193,7 +203,7 @@ export const Native = {
     try { raw = JSON.stringify(obj); } catch (e) { return false; }
     const hora = Date.now();
     const espejo = lsSet(STORAGE_KEY, raw) && lsSet(STAMP_KEY, String(hora));
-    if (!isNative()) return espejo;
+    if (!isNative()) { idbGuardar(STORAGE_KEY, { raw, hora }); return espejo; }
     MEM.raw = raw;
     pendiente = { raw, hora };
     colaGuardado = colaGuardado.then(escribirPreferences);
