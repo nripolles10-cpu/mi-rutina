@@ -4,7 +4,7 @@ import { ACTIVIDADES } from '../data/catalog.js';
 import { ESCALAS_LETRA, T, TEMAS_COLOR } from '../data/theme.js';
 import { Native, esIOS, esWebInstalada } from '../native/index.js';
 import { RECOVERY_PREFIX, listRescueKeys } from '../state/storage.js';
-import { copyText, toastResult } from '../utils/clipboard.js';
+import { toastResult } from '../utils/clipboard.js';
 import { buildCsv, buildTxt } from '../utils/exportar.js';
 import { buildXlsx, bytesToBase64, readXlsxRows } from '../utils/excel.js';
 import { buildDocxBase64 } from '../utils/word.js';
@@ -118,7 +118,7 @@ export function CodeModal({ modo, onClose }) {
           <div className="font-body" style={{ color: T.muted, fontSize: 12, marginBottom: 6 }}>{fmt(code.length, 0)} caracteres. Toca el texto para seleccionarlo.</div>
           <textarea readOnly value={code} rows={6} onFocus={(e) => e.target.select()} onClick={(e) => e.target.select()} className="font-body inp" style={{ fontSize: 11, wordBreak: 'break-all' }} />
           <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-            <button onClick={() => toastResult(showToast, marcarCopia(copyText(code)), 'Código copiado ✓', 'Selecciona el texto y cópialo a mano')} className="font-body btn btn-ghost" style={{ flex: 1 }}>📋 Copiar</button>
+            <button onClick={async () => toastResult(showToast, marcarCopia(await Native.copiar(code)), 'Código copiado ✓', 'Selecciona el texto y cópialo a mano')} className="font-body btn btn-ghost" style={{ flex: 1 }}>📋 Copiar</button>
             <button onClick={async () => { if (!marcarCopia(await Native.share({ title: titulo, text: code }))) showToast('No se pudo compartir: copia el código a mano', 'warn'); }} className="font-body btn btn-primary" style={{ flex: 1 }}>📤 Enviar</button>
           </div>
           <button onClick={async () => toastResult(showToast, marcarCopia(await Native.saveFile(backup ? 'copia_seguridad_rutina.txt' : 'mi_rutina_codigo.txt', code, 'text/plain;charset=utf-8')), 'Archivo preparado ✓', 'No se pudo guardar el archivo')} className="font-body btn btn-ghost" style={{ width: '100%', marginTop: 8, fontSize: 12.5 }}>💾 Guardar en un archivo de texto</button>

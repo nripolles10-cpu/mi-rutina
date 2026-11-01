@@ -3,12 +3,22 @@ import { Bar, chipAcento, Card, Chip, Label, LabeledNum, MacroLine, MiniBtn, Mod
 import { DIAS_SEMANA, MOMENTOS, OBJETIVOS, TIPO_RECETA, tipoRecetaLabel } from '../data/catalog.js';
 import { T } from '../data/theme.js';
 import { Native } from '../native/index.js';
-import { copyText, toastResult } from '../utils/clipboard.js';
+import { toastResult } from '../utils/clipboard.js';
 import { listaCompra, macrosFromIngredientes, qtyText, recKcal, recTotals, scaleQty, toggleFavorita } from '../utils/comida.js';
 import { addDays, clone, fmt, fmtDateLong, fromYmd, num, stripAcc, uid, ymd } from '../utils/format.js';
 import { effNutri, entryTotals, kcalOfMacros } from '../utils/health.js';
 
 /* ---------- Elegir receta (para diario y plan) ---------- */
+
+// Texto de la lista de la compra para copiar o compartir (una línea por ingrediente)
+export function textoListaCompra(items) {
+  return '🛒 Lista de la compra\n' + items.map((x) => '• ' + x.nombre + (x.q ? ' — ' + fmt(x.q, 1) + ' ' + (x.u || '') : x.u ? ' — ' + x.u : '')).join('\n');
+}
+
+// Ingredientes de una receta (con las raciones elegidas) para copiar
+export function textoIngredientes(receta, rac) {
+  return receta.nombre + ' (' + fmt(rac, 2) + ' ' + (rac === 1 ? 'ración' : 'raciones') + ')\n' + receta.ingredientes.map((x) => '• ' + x.n + (x.q !== null && x.q !== undefined ? ' — ' + qtyText(scaleQty(x.q, rac), x.u) : x.u ? ' — ' + x.u : '')).join('\n');
+}
 
 export function PickRecetaModal({ titulo, tipoInicial, onPick, onClose }) {
   const { state } = useGym();
@@ -254,6 +264,11 @@ export function RecetaDetalle({ receta, onClose, onEdit }) {
       <Card style={{ marginBottom: 12 }}>
         <div className="font-body" style={{ color: T.text, fontWeight: 800, fontSize: 13.5, marginBottom: 6 }}>Ingredientes</div>
         {receta.ingredientes.map((x, i) => <SupRow key={i} label={x.n} value={qtyText(scaleQty(x.q, rac), x.u)} />)}
+        {receta.ingredientes.length > 0 && (
+          <button onClick={async () => toastResult(showToast, await Native.copiar(textoIngredientes(receta, rac)), 'Ingredientes copiados ✓', 'No se pudo copiar')} className="font-body btn btn-ghost" style={{ width: '100%', marginTop: 8, fontSize: 12.5 }}>
+            📋 Copiar ingredientes ({fmt(rac, 2)} {rac === 1 ? 'ración' : 'raciones'})
+          </button>
+        )}
         {!receta.propia && !receta.editada && <div className="font-body" style={{ color: T.dim, fontSize: 11, lineHeight: 1.5, marginTop: 6 }}>Las calorías y los macros están calculados con estas cantidades exactas ({fmt(rac, 2)} {rac === 1 ? 'ración' : 'raciones'}). Los pesos de arroz, pasta, avena y legumbres son en crudo o en seco.</div>}
         <div className="font-body" style={{ color: T.text, fontWeight: 800, fontSize: 13.5, margin: '14px 0 6px' }}>Preparación</div>
         {receta.pasos.length === 0 && <div className="font-body" style={{ color: T.dim, fontSize: 12 }}>Sin pasos escritos.</div>}
@@ -404,8 +419,17 @@ export function CompraSec() {
   const items = useMemo(() => listaCompra(state), [state.comida.plan, state.comida.recetas]);
   const marcados = state.comida.compra || {};
   const toggle = (key) => commit((prev) => ({ ...prev, comida: { ...prev.comida, compra: { ...prev.comida.compra, [key]: !prev.comida.compra[key] } } }), { noUndo: true });
-  const texto = () => 'Lista de la compra\n' + items.filter((x) => !marcados[x.key]).map((x) => '• ' + x.nombre + ' — ' + (x.q ? fmt(x.q, 1) + ' ' + (x.u || '') : x.u || '')).join('\n');
+  const texto = () => textoListaCompra(items.filter((x) => !marcados[x.key]));
   const pendientes = items.filter((x) => !marcados[x.key]).length;
+  // Copiar para pegar en Notas, Keep, WhatsApp…; compartir la manda como texto (no como archivo)
+  const copiar = async () => {
+    if (!pendientes) { showToast('No queda nada por comprar', 'warn'); return; }
+    toastResult(showToast, await Native.copiar(texto()), 'Lista copiada ✓ Pégala en Notas, Keep o donde quieras', 'No se pudo copiar');
+  };
+  const compartir = async () => {
+    if (!pendientes) { showToast('No queda nada por comprar', 'warn'); return; }
+    if (!(await Native.share({ title: 'Lista de la compra', text: texto() }))) toastResult(showToast, await Native.copiar(texto()), 'Lista copiada ✓', 'No se pudo compartir');
+  };
 
   if (!items.length) return <Card><div className="font-body" style={{ color: T.muted, fontSize: 13, textAlign: 'center', lineHeight: 1.5 }}>Todavía no hay nada planificado. Añade recetas en el planificador y aquí aparecerá la lista de la compra.</div></Card>;
   return (
@@ -420,10 +444,15 @@ export function CompraSec() {
           </div>
         ))}
       </Card>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+        <button onClick={copiar} className="font-body btn btn-primary" style={{ flex: 1, fontSize: 13 }}>📋 Copiar lista</button>
+        <button onClick={compartir} className="font-body btn btn-primary" style={{ flex: 1, fontSize: 13 }}>📤 Compartir</button>
+      </div>
       <div style={{ display: 'flex', gap: 8 }}>
         <button onClick={() => commit((prev) => ({ ...prev, comida: { ...prev.comida, compra: {} } }), { noUndo: true })} className="font-body btn btn-ghost" style={{ flex: 1, fontSize: 12.5 }}>Limpiar marcas</button>
-        <button onClick={async () => { if (!(await Native.share({ title: 'Lista de la compra', text: texto(), filename: 'lista_compra.txt', mime: 'text/plain;charset=utf-8' }))) { toastResult(showToast, copyText(texto()), 'Lista copiada ✓', 'No se pudo compartir'); } }} className="font-body btn btn-primary" style={{ flex: 1, fontSize: 12.5 }}>📤 Compartir lista</button>
+        <button onClick={async () => toastResult(showToast, await Native.saveFile('lista_compra.txt', texto(), 'text/plain;charset=utf-8'), 'Archivo preparado ✓', 'No se pudo guardar')} className="font-body btn btn-ghost" style={{ flex: 1, fontSize: 12.5 }}>💾 Guardar .txt</button>
       </div>
+      <div className="font-body" style={{ color: T.dim, fontSize: 11, marginTop: 8, lineHeight: 1.5 }}>Se copia solo lo que te queda por comprar (lo marcado no). "Compartir" la manda como texto a WhatsApp, Keep, Notas…</div>
     </div>
   );
 }
