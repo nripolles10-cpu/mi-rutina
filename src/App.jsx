@@ -392,6 +392,22 @@ export function App() {
     });
   }, [commit]);
 
+  // Registros de un ejercicio (historial): cambiar fecha y series, o borrarlo. Se identifica por su fecha exacta.
+  const editRegistroEjercicio = useCallback((id, fechaOriginal, nuevaFecha, sets) => {
+    commitDeshacible((prev) => {
+      const ex = prev.exercises[id];
+      if (!ex) return prev;
+      const hist = (ex.history || []).map((h) => (h && !h.seed && h.date === fechaOriginal ? { ...h, date: new Date(nuevaFecha + 'T12:00:00').toISOString(), sets } : h));
+      return { ...prev, exercises: { ...prev.exercises, [id]: { ...ex, history: hist } } };
+    }, 'Registro actualizado ✓');
+  }, [commitDeshacible]);
+  const borrarRegistroEjercicio = useCallback((id, fechaOriginal) => {
+    commitDeshacible((prev) => {
+      const ex = prev.exercises[id];
+      if (!ex) return prev;
+      return { ...prev, exercises: { ...prev.exercises, [id]: { ...ex, history: (ex.history || []).filter((h) => !(h && !h.seed && h.date === fechaOriginal)) } } };
+    }, 'Registro borrado');
+  }, [commitDeshacible]);
   // Zonas de medidas: añadir, renombrar y quitar (quitar borra también sus medidas, con ↩ Deshacer)
   const addZonaMedida = useCallback((nombre, unidad) => {
     const cur = stateRef.current;
@@ -535,7 +551,7 @@ export function App() {
     addExercise, removeFromDay, moveExercise, addSerie, removeSerieAt,
     saveEntry, logPeso, guardarFormulario, resetAll, importObj, restoreBackup, restaurarCopiaJson, hasBackup,
     suggestObjetivo, rellenarObjetivosFaltantes, setPreferencia, setObjetivoPeso, commitDeshacible, persistencia, pedirPersistencia,
-    duplicarDia, duplicarEjercicio, setRegistroDia, addMedida, editMedida, delMedida, addZonaMedida, renombrarZonaMedida, quitarZonaMedida, addFotoProgreso, delFotoProgreso, editFotoProgreso, programarRecordatorios,
+    duplicarDia, duplicarEjercicio, setRegistroDia, addMedida, editMedida, delMedida, addZonaMedida, renombrarZonaMedida, quitarZonaMedida, editRegistroEjercicio, borrarRegistroEjercicio, addFotoProgreso, delFotoProgreso, editFotoProgreso, programarRecordatorios,
     timer, nowMs, startTimer, addTimer, stopTimer, hoy: ymd(new Date()),
   };
 

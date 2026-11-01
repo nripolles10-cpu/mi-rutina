@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { LineChartSVG } from './LineChart.jsx';
-import { Card, Chip, Modal, SupRow, useGym } from './ui.jsx';
+import { Card, Chip, Label, MiniBtn, Modal, NumInput, SupRow, useGym } from './ui.jsx';
 import { CATS, catInfo } from '../data/catalog.js';
 import { T } from '../data/theme.js';
-import { fmt, fmtDateLong, fmtDateShort } from '../utils/format.js';
+import { fmt, fmtDateLong, fmtDateShort, ymd } from '../utils/format.js';
 import { describeSet } from '../utils/training.js';
 import { historialEjercicio, sugerenciaProgresion } from '../utils/entreno.js';
 
@@ -31,10 +31,40 @@ export function SugerenciaProgresion({ id, compacta }) {
   );
 }
 
+// Una serie se puede editar si tiene repeticiones y peso numéricos (las de rest-pause o dropset se borran y se vuelven a apuntar)
+function serieEditable(s) { return s && (s.tipo !== 'rp' && s.tipo !== 'drop'); }
+
+function EditarRegistro({ rec, onSave, onClose }) {
+  const [fecha, setFecha] = useState(ymd(rec.date));
+  const [sets, setSets] = useState(rec.sets.map((s) => ({ ...s })));
+  const cambiar = (i, patch) => setSets(sets.map((s, j) => (j === i ? { ...s, ...patch } : s)));
+  return (
+    <Modal title="Editar registro" onClose={onClose}>
+      <Card>
+        <Label>Fecha</Label>
+        <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className="font-body inp" style={{ marginBottom: 12 }} />
+        {sets.map((s, i) => (
+          <div key={i} style={{ marginBottom: 10 }}>
+            <div className="font-body" style={{ color: T.muted, fontSize: 12, marginBottom: 4 }}>Serie {i + 1}{s.tipo ? ' · ' + s.tipo : ''}</div>
+            {serieEditable(s) ? (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ flex: 1 }}><Label>Repeticiones</Label><NumInput value={s.reps === undefined ? null : s.reps} onChange={(v) => cambiar(i, { reps: v === null ? null : Math.max(0, Math.round(v)) })} className="font-body inp" /></div>
+                <div style={{ flex: 1 }}><Label>Peso (kg)</Label><NumInput value={s.weight === undefined ? null : s.weight} onChange={(v) => cambiar(i, { weight: v })} className="font-body inp" /></div>
+              </div>
+            ) : <div className="font-body" style={{ color: T.dim, fontSize: 12 }}>Esta serie no se edita aquí: bórrala y vuelve a apuntar el registro.</div>}
+          </div>
+        ))}
+        <button disabled={!fecha} onClick={() => { onSave(fecha, sets); onClose(); }} className="font-body btn btn-primary" style={{ width: '100%', marginTop: 8 }}>Guardar cambios</button>
+      </Card>
+    </Modal>
+  );
+}
+
 export function HistorialEjercicioModal({ id, onClose }) {
-  const { state } = useGym();
+  const { state, askConfirm, editRegistroEjercicio, borrarRegistroEjercicio } = useGym();
   const ex = state.exercises[id];
   const [ver, setVer] = useState('rm');
+  const [editando, setEditando] = useState(null);
   const h = useMemo(() => (ex ? historialEjercicio(ex) : null), [ex]);
   if (!ex || !h) return null;
   const color = catInfo(CATS, ex.cat).color;
@@ -67,13 +97,18 @@ export function HistorialEjercicioModal({ id, onClose }) {
           <div key={i} className="card" style={{ padding: 12, marginBottom: 8, borderLeft: '3px solid ' + (r.record ? '#FBBF24' : color) }}>
             <div className="font-body" style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
               <span style={{ color: T.text, fontWeight: 800, fontSize: 13, textTransform: 'capitalize' }}>{fmtDateLong(r.date)}</span>
-              {r.record && <span style={{ color: '#FBBF24', fontWeight: 800, fontSize: 11.5, whiteSpace: 'nowrap' }}>🏆 Récord</span>}
+              <span style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                {r.record && <span style={{ color: '#FBBF24', fontWeight: 800, fontSize: 11.5, whiteSpace: 'nowrap' }}>🏆 Récord</span>}
+                <MiniBtn title="Editar registro" onClick={() => setEditando(r)}>✏️</MiniBtn>
+                <MiniBtn title="Borrar registro" onClick={() => askConfirm({ title: '¿Borrar este registro?', text: fmtDateLong(r.date) + ' · se puede deshacer con ↩ Deshacer.', confirmLabel: 'Borrar', onConfirm: () => borrarRegistroEjercicio(id, r.date) })}>🗑</MiniBtn>
+              </span>
             </div>
             {r.sets.map((s, j) => <div key={j} className="font-body" style={{ color: T.muted, fontSize: 12, marginTop: 3 }}>{j + 1}. {describeSet(s)}{s.nota ? ' (' + s.nota + ')' : ''}</div>)}
             <div className="font-body" style={{ color: T.dim, fontSize: 11, marginTop: 5 }}>Volumen {fmt(r.volumen, 0)} kg{r.rm !== null ? ' · 1RM estimado ' + fmt(r.rm) + ' kg' : ''}</div>
           </div>
         ))}
       </div>
+      {editando && <EditarRegistro rec={editando} onClose={() => setEditando(null)} onSave={(fecha, sets) => editRegistroEjercicio(id, editando.date, fecha, sets)} />}
     </Modal>
   );
 }
