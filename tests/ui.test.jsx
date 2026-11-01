@@ -115,16 +115,22 @@ describe('rutina', () => {
     expect(guardado().days.length).toBe(5);
   });
 
-  test('el trofeo 🏆 muestra la MEJOR marca de la serie 1, no la última', async () => {
+  test('el trofeo 🏆 muestra el peso de la serie 1 del ÚLTIMO registro (aunque sea menor), y se actualiza al guardar', async () => {
     const st = A.buildInitialState();
     st.exercises.gemelo.history = [
       { date: '2026-10-01T10:00:00.000Z', sets: [{ tipo: 'top', reps: 7, weight: 110 }] },
       { date: '2026-10-08T10:00:00.000Z', sets: [{ tipo: 'top', reps: 7, weight: 100 }] },
     ];
+    st.exercises.gemelo.currentSets[0].weight = 97.5;
     localStorage.setItem(A.STORAGE_KEY, JSON.stringify(st));
     await montar();
-    const card = screen.getByText('Gemelo de pie').closest('.card');
-    expect(card.textContent).toContain('🏆 110 kg');
+    const card = () => screen.getByText('Gemelo de pie').closest('.card');
+    expect(card().textContent).toContain('🏆 100 kg');
+    expect(card().textContent).not.toContain('110 kg');
+    // al guardar el registro de hoy (con 97,5 en la serie 1), el trofeo pasa a 97,5
+    await click(screen.getByText('Gemelo de pie'));
+    await click(screen.getByText('💾 Guardar registro de hoy'));
+    expect(card().textContent).toContain('🏆 97,5 kg');
   });
 
   test('quitar ejercicio con confirmación, mover, crear y borrar día', async () => {

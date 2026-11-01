@@ -4,7 +4,7 @@ import { CATS, CAT_IDS, SET_TYPES, catInfo } from '../data/catalog.js';
 import { T } from '../data/theme.js';
 import { Native } from '../native/index.js';
 import { fmt, fmtDateShort, parseNum } from '../utils/format.js';
-import { bestSerie1, computeScore, ensureStruct } from '../utils/training.js';
+import { computeScore, ensureStruct, latestSerie1 } from '../utils/training.js';
 import { EntrenoVivoModal } from '../components/EntrenoVivo.jsx';
 import { HistorialEjercicioModal, SugerenciaProgresion } from '../components/HistorialEjercicio.jsx';
 import { semanaDescarga } from '../utils/entreno.js';
@@ -307,7 +307,9 @@ export function ExerciseCard({ id, dayId, embedded }) {
     updateDay(day.id, { ids: idsDesdeBloques(nuevos) });
   };
 
-  const record = bestSerie1(ex); // el trofeo muestra la MEJOR marca de la serie 1 (no la última)
+  // El trofeo muestra el peso de la serie 1 de tu ÚLTIMO registro guardado (suba o baje), tal como lo pidió el dueño.
+  // La mejor marca de siempre está en "📈 Historial, récords y 1RM".
+  const record = latestSerie1(ex);
   const hist = ex.history || [];
   const last = hist.length ? hist[hist.length - 1] : null;
   const prevLast = hist.length > 1 ? hist[hist.length - 2] : null;
@@ -378,7 +380,7 @@ export function ExerciseCard({ id, dayId, embedded }) {
           </div>
           <div className="font-body" style={{ color: T.muted, fontSize: 11.5, marginTop: 2 }}><b style={{ color: mc }}>{catInfo(CATS, ex.cat).label}</b></div>
           <div style={{ display: 'flex', gap: 6, marginTop: 7, flexWrap: 'wrap' }}>
-            {record !== null && <span className="font-body" style={{ ...chipSt, fontWeight: 700 }}>🏆 {fmt(record)} kg</span>}
+            {record !== null && <span className="font-body" title="Peso de la serie 1 en tu último registro" style={{ ...chipSt, fontWeight: 700 }}>🏆 {fmt(record, 2)} kg</span>}
             {ex.objetivo && <span className="font-body" style={chipSt}>🎯 {ex.objetivo.text}</span>}
             {!ex.objetivo && <span className="font-body" style={chipSt}>Sin objetivo — ponlo tú o pide una sugerencia</span>}
             {ex.marcaAntigua && <span className="font-body" style={chipSt}>↩️ recuperar {ex.marcaAntigua.text}</span>}
