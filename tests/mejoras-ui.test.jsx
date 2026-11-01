@@ -134,7 +134,9 @@ describe('3) músculos personalizables', () => {
     await click(zona); // el seleccionado era Hombro → primer músculo del pecho
     await click(zona);
     expect(texto()).toContain('Pecho superior');
-    await click(btn('Punto débil'));
+    const tarjeta = document.querySelector('[data-testid="diana-' + nuevo.id + '"]');
+    const botonDebil = Array.from(tarjeta.querySelectorAll('button')).find((b) => b.textContent.trim() === 'Punto débil');
+    await click(botonDebil);
     await flush();
     expect(guardado().diana.estados[nuevo.id]).toBe('debil');
     expect(texto()).toMatch(/Puntos débiles \(1\)/);
@@ -202,5 +204,19 @@ describe('4) recetas nuevas', () => {
     await flush();
     expect(guardado().comida.recetas.length).toBe(60);
     sinBasura();
+  });
+});
+
+describe('Diana: tarjeta por músculo con tres botones que se alternan', () => {
+  test('tocar un botón lo marca en su tarjeta; volver a tocarlo lo deja sin marcar', async () => {
+    await montar();
+    await tab('Diana');
+    const boton = (t) => Array.from(document.querySelector('[data-testid="diana-pecho"]').querySelectorAll('button')).find((b) => b.textContent.trim() === t);
+    await click(boton('Punto fuerte'));
+    await flush();
+    expect(guardado().diana.estados.pecho).toBe('fuerte');
+    await click(boton('Punto fuerte'));
+    await flush();
+    expect(guardado().diana.estados.pecho).toBeUndefined();
   });
 });

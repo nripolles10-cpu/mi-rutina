@@ -196,7 +196,6 @@ export function DianaFisicaTab() {
     return { ...prev, diana: { ...prev.diana, estados: e } };
   });
   const setTitulo = (cat, txt) => commit((prev) => ({ ...prev, diana: { ...prev.diana, titulos: { ...prev.diana.titulos, [cat]: txt } } }), { key: 'diana:' + cat });
-  const ciclo = (cat) => { const cur = estados[cat] || 'none'; setEstado(cat, cur === 'none' ? 'fuerte' : cur === 'fuerte' ? 'intermedio' : cur === 'intermedio' ? 'debil' : 'none'); };
 
   const p = prog[selected];
   const estSel = estados[selected] || 'none';
@@ -205,7 +204,7 @@ export function DianaFisicaTab() {
     if (estSel === 'debil' && p.pct >= 95) aviso = 'Solo informativo: lo tienes marcado como débil, pero va al ' + Math.round(p.pct) + ' % de sus objetivos de levantamiento. Tú decides si lo cambias.';
     if (estSel === 'fuerte' && p.pct < 60) aviso = 'Solo informativo: lo tienes como fuerte, pero va al ' + Math.round(p.pct) + ' % de sus objetivos de levantamiento. Tú decides si lo cambias.';
   }
-  const grupos = [['fuerte', 'Puntos fuertes'], ['intermedio', 'Intermedios'], ['debil', 'Puntos débiles'], ['none', 'Sin marcar']];
+  const grupos = [['fuerte', 'Puntos fuertes'], ['intermedio', 'Puntos intermedios'], ['debil', 'Puntos débiles'], ['none', 'Sin marcar']];
 
   return (
     <div>
@@ -233,12 +232,6 @@ export function DianaFisicaTab() {
             </div>
           )}
           {!catInfo(CATS, selected).region && <div className="font-body" style={{ color: T.dim, fontSize: 11, marginTop: -4, marginBottom: 8 }}>No tiene zona en el mapa: se marca desde aquí o desde la lista.</div>}
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
-            <Chip active={estSel === 'fuerte'} accent="#22C55E" onClick={() => setEstado(selected, 'fuerte')}>Punto fuerte</Chip>
-            <Chip active={estSel === 'intermedio'} accent="#FBBF24" onClick={() => setEstado(selected, 'intermedio')}>Intermedio</Chip>
-            <Chip active={estSel === 'debil'} accent="#F43F5E" onClick={() => setEstado(selected, 'debil')}>Punto débil</Chip>
-            <Chip active={estSel === 'none'} accent="#94A3B8" onClick={() => setEstado(selected, 'none')}>Sin marcar</Chip>
-          </div>
           <Label>Título corto (opcional)</Label>
           <input type="text" maxLength={40} value={titulos[selected] || ''} onChange={(e) => setTitulo(selected, e.target.value)} placeholder="ej. Deltoides redondo" className="font-body inp" style={{ fontSize: 13 }} />
           <div className="font-body" style={{ marginTop: 10, fontSize: 12, color: T.muted, lineHeight: 1.5 }}>
@@ -257,15 +250,20 @@ export function DianaFisicaTab() {
         return (
           <div key={g[0]} style={{ marginBottom: 14 }}>
             <div className="font-body" style={{ color: col, fontWeight: 800, fontSize: 13, marginBottom: 8 }}>{g[1]} ({lista.length})</div>
-            {lista.map((k) => (
-              <div key={k} onClick={() => setSelected(k)} className="card" style={{ borderLeft: '3px solid ' + col, borderRadius: 14, padding: '10px 12px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', outline: selected === k ? '1.5px solid ' + T.cyan : 'none' }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
+            {lista.map((k) => {
+              const act = estados[k] || 'none';
+              return (
+                <div key={k} data-testid={'diana-' + k} className="card" onClick={() => setSelected(k)} style={{ borderLeft: '3px solid ' + catInfo(CATS, k).color, borderRadius: 14, padding: '10px 12px', marginBottom: 8, cursor: 'pointer', outline: selected === k ? '1.5px solid rgba(var(--ac-rgb),0.7)' : 'none' }}>
                   <div className="font-body" style={{ color: T.text, fontWeight: 700, fontSize: 13.5 }}>{catInfo(CATS, k).label}{titulos[k] ? ' · ' + titulos[k] : ''}</div>
-                  <div className="font-body" style={{ color: T.dim, fontSize: 11, marginTop: 2 }}>{prog[k] && prog[k].pct !== null ? 'Objetivos: ' + Math.round(prog[k].pct) + ' % · faltan ' + fmt(prog[k].falta) + ' kg' : 'sin objetivos'}</div>
+                  <div className="font-body" style={{ color: T.dim, fontSize: 11, marginTop: 2, marginBottom: 8 }}>{prog[k] && prog[k].pct !== null ? 'Objetivos: ' + Math.round(prog[k].pct) + ' % · faltan ' + fmt(prog[k].falta) + ' kg' : 'sin objetivos'}</div>
+                  <div style={{ display: 'flex', gap: 6 }} onClick={(e) => e.stopPropagation()}>
+                    {[['fuerte', 'Punto fuerte', '#22C55E'], ['intermedio', 'Intermedio', '#FBBF24'], ['debil', 'Punto débil', '#F43F5E']].map((b) => (
+                      <Chip key={b[0]} active={act === b[0]} accent={b[2]} onClick={() => setEstado(k, act === b[0] ? 'none' : b[0])} style={{ flex: 1, textAlign: 'center', padding: '7px 4px', fontSize: 11.5 }}>{b[1]}</Chip>
+                    ))}
+                  </div>
                 </div>
-                <MiniBtn title="Cambiar estado" onClick={(e) => { e.stopPropagation(); ciclo(k); }}>⟳</MiniBtn>
-              </div>
-            ))}
+              );
+            })}
           </div>
         );
       })}
