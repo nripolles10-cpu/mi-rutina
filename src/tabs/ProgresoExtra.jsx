@@ -3,7 +3,7 @@ import { LineChartSVG } from '../components/LineChart.jsx';
 import { Card, Chip, Label, MiniBtn, Modal, NumInput, SectionTitle, SupRow, useGym } from '../components/ui.jsx';
 import { T } from '../data/theme.js';
 import { Native } from '../native/index.js';
-import { MEDIDAS_TIPOS } from '../state/migrate.js';
+import { ZONAS_DEFECTO, UNIDADES_MEDIDA, validarNombreZona } from '../utils/medidasZonas.js';
 import { addDays, fmt, fmtDateLong, fmtDateShort, fromYmd, monthLabel, ymd } from '../utils/format.js';
 import { calendarioMes, logros, porSemana, rachaDias, rachaSemanas, resumenSemana, semanaDe, sesionesDe } from '../utils/entreno.js';
 import { EditRecordModal, RANGOS } from './ProgresoTab.jsx';
@@ -214,19 +214,53 @@ export function HoyCard() {
   );
 }
 
-export const MEDIDAS_INFO = {
-  cintura: ['Cintura', 'cm'], cadera: ['Cadera', 'cm'], pecho: ['Pecho', 'cm'], brazo: ['Brazo', 'cm'],
-  muslo: ['Muslo', 'cm'], gemelo: ['Gemelo', 'cm'], cuello: ['Cuello', 'cm'], grasa: ['% de grasa', '%'],
-};
+
+function GestorZonas({ zonas }) {
+  const { addZonaMedida, renombrarZonaMedida, quitarZonaMedida, askConfirm, showToast } = useGym();
+  const [nombre, setNombre] = useState('');
+  const [unidad, setUnidad] = useState('cm');
+  const crear = () => {
+    const v = validarNombreZona(nombre, zonas);
+    if (!v.ok) { showToast(v.error, 'warn'); return; }
+    addZonaMedida(v.nombre, unidad);
+    setNombre('');
+  };
+  return (
+    <div style={{ marginBottom: 12, padding: 10, borderRadius: 12, border: '1px solid rgba(140,170,255,0.18)' }}>
+      <Label>Nueva zona</Label>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+        <input type="text" maxLength={40} value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="ej. Antebrazo" aria-label="Nombre de la zona nueva" className="font-body inp" style={{ fontSize: 13, flex: 1 }} />
+        <select aria-label="Unidad de la zona nueva" value={unidad} onChange={(e) => setUnidad(e.target.value)} className="font-body inp" style={{ fontSize: 12.5, width: 70 }}>
+          {UNIDADES_MEDIDA.map((u) => <option key={u} value={u}>{u}</option>)}
+        </select>
+      </div>
+      <button onClick={crear} className="font-body btn btn-primary" style={{ width: '100%', marginBottom: 10, fontSize: 12.5 }}>＋ Añadir zona</button>
+      {zonas.map((z) => (
+        <div key={z.id} style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6 }}>
+          <input type="text" maxLength={40} defaultValue={z.label} aria-label={'Nombre de ' + z.label}
+            onBlur={(e) => { const n = e.target.value.trim(); if (!n || n === z.label) { e.target.value = z.label; return; } const others = zonas.filter((x) => x.id !== z.id); const v = validarNombreZona(n, others); if (!v.ok) { showToast(v.error, 'warn'); e.target.value = z.label; return; } renombrarZonaMedida(z.id, v.nombre, z.unidad); }}
+            className="font-body inp" style={{ fontSize: 12.5, flex: 1 }} />
+          <select aria-label={'Unidad de ' + z.label} value={z.unidad} onChange={(e) => renombrarZonaMedida(z.id, z.label, e.target.value)} className="font-body inp" style={{ fontSize: 12, width: 66 }}>
+            {UNIDADES_MEDIDA.map((u) => <option key={u} value={u}>{u}</option>)}
+          </select>
+          <MiniBtn title={'Quitar ' + z.label} onClick={() => askConfirm({ title: '¿Quitar "' + z.label + '"?', text: 'Se quita la zona y todas sus medidas. Lo puedes deshacer con ↩ Deshacer durante unos segundos.', confirmLabel: 'Quitar', onConfirm: () => quitarZonaMedida(z.id) })}>🗑</MiniBtn>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export function MedidasCard() {
   const { state, addMedida, editMedida, delMedida, askConfirm } = useGym();
+  const zonas = (state.medidas && state.medidas.zonas) || ZONAS_DEFECTO;
+  const [gestor, setGestor] = useState(false);
   const [tipo, setTipo] = useState('cintura');
   const [valor, setValor] = useState(null);
   const [rango, setRango] = useState('todo');
   const [selId, setSelId] = useState(null);
   const [editando, setEditando] = useState(null);
-  const info = MEDIDAS_INFO[tipo];
+  const zonaSel = zonas.find((z) => z.id === tipo) || zonas[0] || { id: 'cintura', label: 'Cintura', unidad: 'cm' };
+  const info = [zonaSel.label, zonaSel.unidad];
   const todas = ((state.medidas && state.medidas.historial) || []).filter((m) => m.tipo === tipo).sort((a, b) => new Date(a.date) - new Date(b.date));
   const corte = rango === 'todo' ? 0 : rango === 'mes' ? Date.now() - 31 * 86400000 : Date.now() - (rango === '3m' ? 92 : 183) * 86400000;
   const lista = todas.filter((m) => new Date(m.date).getTime() >= corte);
@@ -235,7 +269,7 @@ export function MedidasCard() {
   return (
     <Card style={{ marginBottom: 14 }}>
       <div className="gt-scroll" style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 6, marginBottom: 10 }}>
-        {MEDIDAS_TIPOS.map((k) => <Chip key={k} active={tipo === k} onClick={() => { setTipo(k); setSelId(null); }} style={{ padding: '6px 12px', fontSize: 12 }}>{MEDIDAS_INFO[k][0]}</Chip>)}
+        {zonas.map((z) => <Chip key={z.id} active={tipo === z.id} onClick={() => { setTipo(z.id); setSelId(null); }} style={{ padding: '6px 12px', fontSize: 12 }}>{z.label}</Chip>)}
       </div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
         <div style={{ width: 110 }}><NumInput value={valor} onChange={setValor} placeholder={info[1]} className="font-body inp" /></div>
@@ -263,6 +297,8 @@ export function MedidasCard() {
       )}
       {dif !== null && <SupRow label={'Cambio en el periodo (' + info[0].toLowerCase() + ')'} value={(dif > 0 ? '+' : '') + fmt(dif) + ' ' + info[1]} highlight />}
       {editando && <EditRecordModal rec={editando} title={'Editar ' + info[0].toLowerCase()} unit={info[1]} onSave={(v, f) => editMedida(editando.id, v, f)} onClose={() => setEditando(null)} />}
+      <button onClick={() => setGestor(!gestor)} className="font-body btn btn-ghost" style={{ width: '100%', marginTop: 10, fontSize: 12 }}>{gestor ? '▴ Cerrar zonas' : '⚙️ Añadir, renombrar o quitar zonas'}</button>
+      {gestor && <div style={{ marginTop: 10 }}><GestorZonas zonas={zonas} /></div>}
     </Card>
   );
 }

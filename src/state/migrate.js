@@ -4,6 +4,7 @@ import { CARDIO, DAYS_SEED, SEED_EXERCISES } from '../data/seed.js';
 import { defaultComida, normalizeAgua, normalizeRecetas } from '../utils/comida.js';
 import { clone, stripAcc, uid } from '../utils/format.js';
 import { normalizeSet } from '../utils/training.js';
+import { normalizarZonas } from '../utils/medidasZonas.js';
 
 /* =========================================================================
    SECCIÓN 4 · ESTADO Y MIGRACIÓN
@@ -133,7 +134,7 @@ export function buildInitialState() {
     preferencias: preferenciasPorDefecto(),
     // Fase 3: registro diario (pasos, sueño y energía), medidas corporales y fotos de progreso
     registro: {},
-    medidas: { historial: [] },
+    medidas: { historial: [], zonas: normalizarZonas(null, []) },
     fotosProgreso: [],
     meta: { activeTab: 'rutina', activeDay: 'piernaA', editMode: false, progresoSec: 'progreso' },
   };
@@ -192,10 +193,12 @@ export function normalizeCurrent(loaded, seed, appVersion) {
   next.preferencias = normalizarPreferencias(loaded.preferencias);
   next.registro = normalizarRegistro(loaded.registro);
   const med = loaded.medidas && typeof loaded.medidas === 'object' ? loaded.medidas : {};
+  const medHist = (Array.isArray(med.historial) ? med.historial : [])
+    .filter((r) => r && typeof r === 'object' && typeof r.tipo === 'string' && r.tipo && typeof r.valor === 'number' && isFinite(r.valor) && !isNaN(new Date(r.date).getTime()))
+    .map((r) => ({ id: r.id || uid(), tipo: r.tipo, valor: r.valor, date: r.date }));
   next.medidas = {
-    historial: (Array.isArray(med.historial) ? med.historial : [])
-      .filter((r) => r && typeof r === 'object' && MEDIDAS_TIPOS.indexOf(r.tipo) !== -1 && typeof r.valor === 'number' && isFinite(r.valor) && !isNaN(new Date(r.date).getTime()))
-      .map((r) => ({ id: r.id || uid(), tipo: r.tipo, valor: r.valor, date: r.date })),
+    zonas: normalizarZonas(med.zonas, medHist.map((r) => r.tipo)),
+    historial: medHist,
   };
   next.fotosProgreso = (Array.isArray(loaded.fotosProgreso) ? loaded.fotosProgreso : [])
     .filter((f) => f && typeof f === 'object' && typeof f.id === 'string' && !isNaN(new Date(f.date).getTime()))

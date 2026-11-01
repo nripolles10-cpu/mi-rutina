@@ -19,6 +19,7 @@ import { ProgresoTab } from './tabs/ProgresoTab.jsx';
 import { RutinaTab } from './tabs/RutinaTab.jsx';
 import { stateFromDefaults } from './utils/defaults.js';
 import { clone, fmt, fmtMS, uid, ymd } from './utils/format.js';
+import { idZonaNueva } from './utils/medidasZonas.js';
 import { aplicarObjetivoPeso } from './utils/peso.js';
 import { RECORDATORIO_ID_BASE, duplicarDia as duplicarDiaPuro, duplicarEjercicio as duplicarEjercicioPuro, proximosRecordatorios } from './utils/entreno.js';
 import { applyImport } from './utils/share.js';
@@ -391,6 +392,24 @@ export function App() {
     });
   }, [commit]);
 
+  // Zonas de medidas: añadir, renombrar y quitar (quitar borra también sus medidas, con ↩ Deshacer)
+  const addZonaMedida = useCallback((nombre, unidad) => {
+    const cur = stateRef.current;
+    const zonas = (cur.medidas && cur.medidas.zonas) || [];
+    const id = idZonaNueva(nombre, zonas, uid);
+    return commitDeshacible((prev) => ({ ...prev, medidas: { ...prev.medidas, zonas: zonas.concat([{ id, label: nombre, unidad }]) } }), '"' + nombre + '" añadida ✓');
+  }, [commitDeshacible]);
+  const renombrarZonaMedida = useCallback((id, nombre, unidad) => {
+    commit((prev) => ({ ...prev, medidas: { ...prev.medidas, zonas: prev.medidas.zonas.map((z) => (z.id === id ? { ...z, label: nombre, unidad } : z)) } }));
+  }, [commit]);
+  const quitarZonaMedida = useCallback((id) => {
+    const cur = stateRef.current;
+    const nombre = ((cur.medidas.zonas || []).find((z) => z.id === id) || {}).label || id;
+    const n = (cur.medidas.historial || []).filter((m) => m.tipo === id).length;
+    commitDeshacible((prev) => ({ ...prev, medidas: { ...prev.medidas,
+      zonas: prev.medidas.zonas.filter((z) => z.id !== id),
+      historial: prev.medidas.historial.filter((m) => m.tipo !== id) } }), '"' + nombre + '" quitada' + (n ? ' · ' + n + ' medida(s) borradas' : ''));
+  }, [commitDeshacible]);
   const addMedida = useCallback((tipo, valor, fecha) => {
     commit((prev) => ({ ...prev, medidas: { ...prev.medidas, historial: (prev.medidas.historial || []).concat([{ id: uid(), tipo, valor, date: fecha ? new Date(fecha + 'T12:00:00').toISOString() : new Date().toISOString() }]) } }));
   }, [commit]);
@@ -516,7 +535,7 @@ export function App() {
     addExercise, removeFromDay, moveExercise, addSerie, removeSerieAt,
     saveEntry, logPeso, guardarFormulario, resetAll, importObj, restoreBackup, restaurarCopiaJson, hasBackup,
     suggestObjetivo, rellenarObjetivosFaltantes, setPreferencia, setObjetivoPeso, commitDeshacible, persistencia, pedirPersistencia,
-    duplicarDia, duplicarEjercicio, setRegistroDia, addMedida, editMedida, delMedida, addFotoProgreso, delFotoProgreso, editFotoProgreso, programarRecordatorios,
+    duplicarDia, duplicarEjercicio, setRegistroDia, addMedida, editMedida, delMedida, addZonaMedida, renombrarZonaMedida, quitarZonaMedida, addFotoProgreso, delFotoProgreso, editFotoProgreso, programarRecordatorios,
     timer, nowMs, startTimer, addTimer, stopTimer, hoy: ymd(new Date()),
   };
 

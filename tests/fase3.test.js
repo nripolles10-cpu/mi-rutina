@@ -182,7 +182,8 @@ describe('datos nuevos: migración y copias', () => {
     const m = A.migrateState(JSON.parse(JSON.stringify(st)));
     expect(m.version).toBe(A.APP_VERSION);
     expect(m.registro).toEqual({});
-    expect(m.medidas).toEqual({ historial: [] });
+    expect(m.medidas.historial).toEqual([]);
+    expect(m.medidas.zonas.length).toBe(8);
     expect(m.fotosProgreso).toEqual([]);
     expect(m.preferencias).toMatchObject({ pantallaEncendida: true, ultimaCopia: '2026-10-20T10:00:00Z', tema: 'cian', letra: 'normal', descanso: 90, objetivoDiasSemana: 3 });
     expect(m.preferencias.descarga).toEqual({ activa: false, cadaSemanas: 6, inicio: null });
@@ -197,7 +198,8 @@ describe('datos nuevos: migración y copias', () => {
     st.preferencias = { tema: 'rosa', letra: 'gigante', descanso: 5, recordatorios: { activos: true, dias: [9, 1, 1, 'x'], hora: '25:00' } };
     const m = A.migrateState(JSON.parse(JSON.stringify(st)));
     expect(m.registro).toEqual({ '2026-10-20': { pasos: null, sueno: null, energia: 3 } });
-    expect(m.medidas.historial.map((x) => x.tipo)).toEqual(['cintura']);
+    // Ninguna medida con dato válido se pierde (también las de zonas que no están en la lista); solo se descartan las no válidas
+    expect(m.medidas.historial.map((x) => x.tipo)).toEqual(['cintura', 'oreja']);
     expect(m.preferencias).toMatchObject({ tema: 'cian', letra: 'normal', descanso: 90 });
     expect(m.preferencias.recordatorios).toMatchObject({ activos: true, dias: [1], hora: '18:00' });
   });

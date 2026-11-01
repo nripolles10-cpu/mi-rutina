@@ -109,3 +109,43 @@ describe('copia espejo en IndexedDB: qué copia usar al arrancar', () => {
     expect(elegirCopia({ lsRaw: null, lsHora: 0, idbRaw: null, idbHora: 0 })).toBe(null);
   });
 });
+
+describe('zonas de medidas: añadir, renombrar, quitar sin perder datos', () => {
+  test('las zonas de serie conservan sus ids y se añaden si faltan', async () => {
+    const Z = await import('../src/utils/medidasZonas.js');
+    const z = Z.normalizarZonas(null, []);
+    expect(z.map((x) => x.id)).toEqual(['cintura', 'cadera', 'pecho', 'brazo', 'muslo', 'gemelo', 'cuello', 'grasa']);
+    const solo = Z.normalizarZonas([{ id: 'cintura', label: 'Cintura', unidad: 'cm' }], []);
+    expect(solo.length).toBe(8);
+  });
+  test('una zona con medidas nunca se descarta al normalizar', async () => {
+    const Z = await import('../src/utils/medidasZonas.js');
+    const z = Z.normalizarZonas([], ['z_antebrazo']);
+    expect(z.some((x) => x.id === 'z_antebrazo')).toBe(true);
+  });
+  test('nombre vacío o repetido se rechaza', async () => {
+    const Z = await import('../src/utils/medidasZonas.js');
+    const zonas = Z.normalizarZonas(null, []);
+    expect(Z.validarNombreZona('  ', zonas).ok).toBe(false);
+    expect(Z.validarNombreZona('cintura', zonas).ok).toBe(false);
+    expect(Z.validarNombreZona('Antebrazo', zonas).ok).toBe(true);
+  });
+  test('id nuevo estable y sin colisiones', async () => {
+    const Z = await import('../src/utils/medidasZonas.js');
+    const zonas = Z.normalizarZonas(null, []);
+    const a = Z.idZonaNueva('Antebrazo', zonas, () => 'x');
+    expect(a).toBe('z_antebrazo');
+    expect(Z.idZonaNueva('Cintura', zonas, () => 'x')).not.toBe('cintura');
+  });
+  test('la migración no descarta medidas de zonas propias', () => {
+    const st = A.buildInitialState();
+    st.medidas = { zonas: [{ id: 'z_antebrazo', label: 'Antebrazo', unidad: 'cm' }], historial: [
+      { id: 'a1', tipo: 'z_antebrazo', valor: 30, date: '2026-10-10T10:00:00Z' },
+      { id: 'a2', tipo: 'cintura', valor: 80, date: '2026-10-11T10:00:00Z' },
+      { id: 'a3', tipo: '', valor: 1, date: '2026-10-11T10:00:00Z' },
+    ] };
+    const out = A.migrateState(JSON.parse(JSON.stringify(st)));
+    expect(out.medidas.historial.map((m) => m.id)).toEqual(['a1', 'a2']);
+    expect(out.medidas.zonas.some((z) => z.id === 'z_antebrazo' && z.label === 'Antebrazo')).toBe(true);
+  });
+});
