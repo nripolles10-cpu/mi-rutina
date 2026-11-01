@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { LineChartSVG } from '../components/LineChart.jsx';
-import { Bar, Card, Chip, Label, LabeledNum, MiniBtn, Modal, NumField, SectionTitle, SupRow, useGym, useSwipe } from '../components/ui.jsx';
+import { Bar, Card, Chip, EditLockBar, Label, LabeledNum, MiniBtn, Modal, NumField, SectionTitle, SupRow, useGym, useSwipe } from '../components/ui.jsx';
 import { CATS, CAT_IDS, catInfo } from '../data/catalog.js';
 import { T } from '../data/theme.js';
 import { fmt, fmtDateLong, fmtDateShort, formatDecimal, groupByMonth, mean, monthLabel, ymd } from '../utils/format.js';
@@ -308,13 +308,14 @@ export function ProgresoTab() {
       {SECCIONES_PROGRESO.map((x) => <Chip key={x[0]} active={sec === x[0]} onClick={() => elegir(x[0])}>{x[1]}</Chip>)}
     </div>
   );
-  if (sec === 'calendario') return <div>{chips}<CalendarioSec /></div>;
-  if (sec === 'cuerpo') return <div>{chips}<CuerpoSec /></div>;
-  if (sec === 'logros') return <div>{chips}<LogrosSec /></div>;
-  return <ProgresoPrincipal chips={chips} />;
+  const lock = <EditLockBar />;
+  if (sec === 'calendario') return <div>{lock}{chips}<CalendarioSec /></div>;
+  if (sec === 'cuerpo') return <div>{lock}{chips}<CuerpoSec /></div>;
+  if (sec === 'logros') return <div>{lock}{chips}<LogrosSec /></div>;
+  return <ProgresoPrincipal chips={chips} lock={lock} />;
 }
 
-function ProgresoPrincipal({ chips }) {
+function ProgresoPrincipal({ chips, lock }) {
   const { state } = useGym();
   const allIds = useMemo(() => activeExerciseIds(state), [state.days, state.exercises]);
   const [selected, setSelected] = useState(allIds[0]);
@@ -328,6 +329,7 @@ function ProgresoPrincipal({ chips }) {
 
   return (
     <div>
+      {lock}
       {chips}
       <SectionTitle emoji="⚖️">Tu peso</SectionTitle>
       <PesoCard />

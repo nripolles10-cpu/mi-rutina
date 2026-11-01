@@ -268,6 +268,22 @@ export function MedidasCard() {
 }
 
 // Comparador antes / después: las dos fotos superpuestas, con una barra para deslizar
+function EditFotoModal({ foto, onSave, onClose }) {
+  const [fecha, setFecha] = useState(foto.fecha);
+  const [nota, setNota] = useState(foto.nota);
+  return (
+    <Modal title="Editar foto" onClose={onClose}>
+      <Card>
+        <Label>Fecha</Label>
+        <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className="font-body inp" />
+        <Label style={{ marginTop: 12 }}>Etiqueta o nota</Label>
+        <input type="text" maxLength={60} value={nota} onChange={(e) => setNota(e.target.value)} className="font-body inp" />
+        <button disabled={!fecha} onClick={() => { onSave(fecha, nota.trim()); onClose(); }} className="font-body btn btn-primary" style={{ width: '100%', marginTop: 16 }}>Guardar cambios</button>
+      </Card>
+    </Modal>
+  );
+}
+
 function Comparador({ antes, despues, srcDe }) {
   const [pos, setPos] = useState(50);
   return (
@@ -287,7 +303,8 @@ function Comparador({ antes, despues, srcDe }) {
 }
 
 export function FotosProgresoCard() {
-  const { state, fotos, addFotoProgreso, delFotoProgreso, askConfirm, showToast } = useGym();
+  const { state, fotos, addFotoProgreso, delFotoProgreso, editFotoProgreso, askConfirm, showToast } = useGym();
+  const [editandoFoto, setEditandoFoto] = useState(null);
   const [ocupado, setOcupado] = useState(false);
   const [nota, setNota] = useState('');
   const [antesId, setAntesId] = useState(null);
@@ -340,11 +357,13 @@ export function FotosProgresoCard() {
           </button>
         ))}
       </div>
+      {editandoFoto && <EditFotoModal foto={editandoFoto} onSave={(f, n) => { editFotoProgreso(editandoFoto.id, f, n); setVer(null); }} onClose={() => setEditandoFoto(null)} />}
       {ver && (
         <Modal title={'📸 ' + fmtDateShort(ver.date)} onClose={() => setVer(null)}>
           <img src={srcDe(ver)} alt="" style={{ width: '100%', borderRadius: 14 }} />
           {ver.nota && <div className="font-body" style={{ color: T.muted, fontSize: 13, marginTop: 8 }}>{ver.nota}</div>}
-          <button onClick={() => askConfirm({ title: '¿Borrar esta foto?', text: 'Se borrará la foto del ' + fmtDateLong(ver.date) + '.', confirmLabel: 'Borrar', onConfirm: () => { delFotoProgreso(ver.id); setVer(null); } })} className="font-body btn btn-danger" style={{ width: '100%', marginTop: 12 }}>🗑️ Borrar foto</button>
+          <button onClick={() => setEditandoFoto({ id: ver.id, fecha: ymd(ver.date), nota: ver.nota || '' })} className="font-body btn btn-ghost" style={{ width: '100%', marginTop: 10, fontSize: 12.5 }}>✏️ Cambiar fecha o etiqueta</button>
+                    <button onClick={() => askConfirm({ title: '¿Borrar esta foto?', text: 'Se borrará la foto del ' + fmtDateLong(ver.date) + '.', confirmLabel: 'Borrar', onConfirm: () => { delFotoProgreso(ver.id); setVer(null); } })} className="font-body btn btn-danger" style={{ width: '100%', marginTop: 12 }}>🗑️ Borrar foto</button>
         </Modal>
       )}
     </Card>

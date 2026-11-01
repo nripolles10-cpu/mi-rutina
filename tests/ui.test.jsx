@@ -322,7 +322,7 @@ describe('ajustes: compartir, importar, copia, exportar y restablecer', () => {
       for (const b of screen.getAllByText('⬇️ Descargar')) { fireEvent.click(b); await act(async () => { await new Promise((r) => setTimeout(r, 50)); }); }
       await act(async () => { await new Promise((r) => setTimeout(r, 300)); }); // el .docx se genera en segundo plano
       const por = (n) => llamadas.find((x) => x.name === n);
-      expect(llamadas.map((x) => x.name).sort()).toEqual(['mi_rutina.csv', 'mi_rutina.docx', 'mi_rutina.txt', 'mi_rutina.xlsx']);
+      expect(llamadas.map((x) => x.name).sort()).toEqual(['mi_rutina.csv', 'mi_rutina.docx', 'mi_rutina.txt', 'mi_rutina.xlsx', 'mi_rutina_copia.json', 'mi_rutina_historial.csv']);
       expect(por('mi_rutina.xlsx').base64).toBe(true);
       expect(por('mi_rutina.docx').base64).toBe(true);
       // un .xlsx y un .docx son ZIP: empiezan por "PK"

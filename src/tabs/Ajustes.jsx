@@ -5,13 +5,13 @@ import { ESCALAS_LETRA, T, TEMAS_COLOR } from '../data/theme.js';
 import { Native, esIOS, esWebInstalada } from '../native/index.js';
 import { RECOVERY_PREFIX, listRescueKeys } from '../state/storage.js';
 import { toastResult } from '../utils/clipboard.js';
-import { buildCsv, buildTxt } from '../utils/exportar.js';
+import { buildCsv, buildCsvSeries, buildTxt } from '../utils/exportar.js';
 import { buildXlsx, bytesToBase64, readXlsxRows } from '../utils/excel.js';
 import { buildDocxBase64 } from '../utils/word.js';
 import { PLANTILLA_CSV, parseCsv, rowsToRutina } from '../utils/importar.js';
 import { buildDefaultData } from '../utils/defaults.js';
 import { fmt, fmtDateLong, fromYmd, mondayOf as lunesDe, ymd } from '../utils/format.js';
-import { diasDesde } from '../utils/copias.js';
+import { DIAS_SIN_COPIA, diasDesde } from '../utils/copias.js';
 import { semanaDescarga } from '../utils/entreno.js';
 import { calcCalorias, estimaGrasaCorporal } from '../utils/health.js';
 import { buildShareObject, decodeShare, describeShare, encodeShare } from '../utils/share.js';
@@ -469,7 +469,7 @@ export function WebInfoCard({ onCopia }) {
         {ios ? ' En iPhone, Safari puede borrar los datos de una web que no usas durante un tiempo, sobre todo si no la has añadido a la pantalla de inicio.' : ' Si borras los datos del navegador, se borran también.'}
       </div>
       <SupRow label="Protección contra borrado" value={txtPers} />
-      <SupRow label="Última copia de seguridad" value={p.ultimaCopia ? (dias === 0 ? 'hoy' : 'hace ' + dias + ' día' + (dias === 1 ? '' : 's')) + ' (' + fmtDateLong(p.ultimaCopia) + ')' : 'nunca'} highlight={!p.ultimaCopia || dias > 14} />
+      <SupRow label="Última copia de seguridad" value={p.ultimaCopia ? (dias === 0 ? 'hoy' : 'hace ' + dias + ' día' + (dias === 1 ? '' : 's')) + ' (' + fmtDateLong(p.ultimaCopia) + ')' : 'nunca'} highlight={!p.ultimaCopia || dias > DIAS_SIN_COPIA} />
       <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
         <button onClick={onCopia} className="font-body btn btn-primary" style={{ flex: 2, fontSize: 12.5 }}>💾 Hacer copia ahora</button>
         {persistencia && persistencia.soportado && !persistencia.persistente && <button onClick={pedirPersistencia} className="font-body btn btn-ghost" style={{ flex: 1, fontSize: 12 }}>Pedir protección</button>}
@@ -538,6 +538,8 @@ export function AjustesScreen({ onClose }) {
         <div className="font-body" style={{ color: T.muted, fontSize: 12, lineHeight: 1.5, marginBottom: 4 }}>Todo tu plan en un archivo para guardarlo o enviarlo a quien quieras. En el móvil se abre el menú de compartir: desde ahí puedes guardarlo en Drive, en Archivos o enviarlo.</div>
         <ExportRow titulo="📗 Excel (.xlsx)" desc="Una hoja con la rutina (una fila por serie) y otra con tu peso. Se puede volver a importar." filename="mi_rutina.xlsx" mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" build={async () => ({ text: bytesToBase64(buildXlsx(state)), base64: true })} />
         <ExportRow titulo="📘 Word (.docx)" desc="Documento con una tabla por día; lo abren Word, LibreOffice y Google Docs." filename="mi_rutina.docx" mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document" build={async () => ({ text: await buildDocxBase64(state), base64: true })} />
+        <ExportRow titulo="📋 Historial en CSV (una fila por serie)" desc="Día, orden, ejercicio, músculo, serie, tipo, repeticiones, peso y fecha de cada registro. Se abre con Excel." filename="mi_rutina_historial.csv" mime="text/csv;charset=utf-8" build={async () => ({ text: buildCsvSeries(state) })} />
+        <ExportRow titulo="💾 Copia completa (JSON)" desc="Todo lo guardado (rutina, historial con fechas, peso, medidas, diario, diana, preferencias). No incluye las fotos." filename="mi_rutina_copia.json" mime="application/json;charset=utf-8" build={async () => ({ text: JSON.stringify(state, null, 2) })} />
         <ExportRow titulo="📊 CSV" desc="Lo mismo que el Excel en texto (separado por «;», con tildes). También se puede importar." filename="mi_rutina.csv" mime="text/csv;charset=utf-8" build={async () => ({ text: buildCsv(state) })} />
         <ExportRow titulo="📝 Texto (.txt)" desc="Todo junto y ordenado: días, ejercicios, series, objetivos, cardio, suplementos, diana, peso y nutrición." filename="mi_rutina.txt" mime="text/plain;charset=utf-8" build={async () => ({ text: buildTxt(state) })} />
       </Card>

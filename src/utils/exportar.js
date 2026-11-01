@@ -1,5 +1,5 @@
 import { catIdsDe, catInfo, catsDe } from '../data/catalog.js';
-import { escHtml, fmt } from '../utils/format.js';
+import { escHtml, fmt, ymd } from '../utils/format.js';
 import { effNutri } from '../utils/health.js';
 import { describeSet } from '../utils/training.js';
 
@@ -121,3 +121,40 @@ export function buildTxt(state) {
   }
   return L.join('\n');
 }
+
+/* =========================================================================
+   CSV DE HISTORIAL: una fila por serie y registro (día, orden, ejercicio, músculo, serie, tipo, reps, peso, fecha)
+   Las series de la rutina actual (sin registro) van al final con la fecha vacía.
+   ========================================================================= */
+
+export const CSV_SERIES_HEADER = ['Dia', 'Orden', 'Ejercicio', 'Musculo', 'Serie', 'Tipo', 'Repeticiones', 'Peso_kg', 'Fecha'];
+
+// Reps y peso de una serie en texto (mismo criterio que buildCsv: varias cifras separadas por " · ")
+export function textoRepsPeso(s) {
+  if (s.tipo === 'rp') return { reps: (s.tandas || []).map((r) => csvNum(r) || '–').join(' · '), peso: csvNum(s.weight) };
+  if (s.tipo === 'drop') return { reps: (s.drops || []).map((x) => csvNum(x.reps) || '–').join(' · '), peso: (s.drops || []).map((x) => csvNum(x.weight) || '–').join(' · ') };
+  return { reps: csvNum(s.reps), peso: csvNum(s.weight) };
+}
+
+export function buildCsvSeries(state) {
+  const lines = [CSV_SERIES_HEADER.join(';')];
+  const cats = catsDe(state);
+  (state.days || []).forEach((d) => {
+    (d.ids || []).forEach((id, orden) => {
+      const ex = state.exercises[id];
+      if (!ex) return;
+      const musculo = catInfo(cats, ex.cat).label;
+      const fila = (serie, i, fecha) => {
+        const rp = textoRepsPeso(serie);
+        return [d.label, orden + 1, ex.name, musculo, i + 1, TIPO_CSV[serie.tipo] || 'top set', rp.reps, rp.peso, fecha].map(csvEsc).join(';');
+      };
+      (ex.history || []).filter((h) => h && !h.seed && h.date && isFinite(new Date(h.date).getTime())).forEach((h) => {
+        const fecha = ymd(h.date);
+        (h.sets || []).forEach((s, i) => lines.push(fila(s, i, fecha)));
+      });
+      (ex.currentSets || []).forEach((s, i) => lines.push(fila(s, i, '')));
+    });
+  });
+  return '﻿' + lines.join('\r\n') + '\r\n';
+}
+

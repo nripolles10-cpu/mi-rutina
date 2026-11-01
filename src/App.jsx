@@ -405,6 +405,10 @@ export function App() {
     showToast('Foto de progreso guardada ✓');
     return true;
   }, [commit, showToast]);
+  // Cambia la fecha y la nota de una foto de progreso (la imagen no se toca)
+  const editFotoProgreso = useCallback((id, fecha, nota) => {
+    commit((prev) => ({ ...prev, fotosProgreso: (prev.fotosProgreso || []).map((f) => (f.id === id ? { ...f, date: new Date(fecha + 'T12:00:00').toISOString(), nota: String(nota || '').slice(0, 60) } : f)) }));
+  }, [commit]);
   const delFotoProgreso = useCallback(async (id) => {
     const r = await Native.deletePhoto('prog_' + id, fotosRef.current);
     if (r.ok) setFotosMap(r.mapa);
@@ -506,7 +510,7 @@ export function App() {
     addExercise, removeFromDay, moveExercise, addSerie, removeSerieAt,
     saveEntry, logPeso, guardarFormulario, resetAll, importObj, restoreBackup, hasBackup,
     suggestObjetivo, rellenarObjetivosFaltantes, setPreferencia, setObjetivoPeso, commitDeshacible, persistencia, pedirPersistencia,
-    duplicarDia, duplicarEjercicio, setRegistroDia, addMedida, editMedida, delMedida, addFotoProgreso, delFotoProgreso, programarRecordatorios,
+    duplicarDia, duplicarEjercicio, setRegistroDia, addMedida, editMedida, delMedida, addFotoProgreso, delFotoProgreso, editFotoProgreso, programarRecordatorios,
     timer, nowMs, startTimer, addTimer, stopTimer, hoy: ymd(new Date()),
   };
 

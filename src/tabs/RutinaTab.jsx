@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Chip, EditLockBar, Label, MiniBtn, NumField, TextField, chipStyle, useGym } from '../components/ui.jsx';
+import { Card, Chip, EditLockBar, Label, MiniBtn, NumField, Stepper, TextField, chipStyle, useGym } from '../components/ui.jsx';
 import { CATS, CAT_IDS, SET_TYPES, catInfo } from '../data/catalog.js';
 import { T } from '../data/theme.js';
 import { Native } from '../native/index.js';
@@ -66,7 +66,7 @@ export function idsDesdeBloques(bloques) {
 /* Opción de edición dentro de cada ejercicio: unirlo con otro, crear uno nuevo para alternar, o separarlos */
 export function AlternoPicker({ day, id }) {
   const { state, updateDay, addExercise, showToast } = useGym();
-  const [modo, setModo] = useState(null); // null | 'nuevo' | 'existente'
+  const [modo, setModo] = useState(null); // null | 'nuevo'
   const [nombre, setNombre] = useState('');
   const [cat, setCat] = useState(state.exercises[id] ? state.exercises[id].cat : 'pecho');
   const [pend, setPend] = useState(null); // ejercicio nuevo que se acaba de crear y falta unir
@@ -75,10 +75,6 @@ export function AlternoPicker({ day, id }) {
   const par = parDe(pares, id);
   const otroId = par ? (par.a === id ? par.b : par.a) : null;
   const otro = otroId ? state.exercises[otroId] : null;
-  const unidos = {};
-  pares.forEach((p) => { unidos[p.a] = true; unidos[p.b] = true; });
-  const libres = day.ids.filter((i) => i !== id && state.exercises[i] && !unidos[i]);
-
   // Une `otro` con este ejercicio: queda justo detrás y este es el que se ve al principio
   const unir = (otroEj) => {
     const sin = day.ids.filter((i) => i !== otroEj);
@@ -130,24 +126,9 @@ export function AlternoPicker({ day, id }) {
     );
   }
 
-  if (modo === 'existente') {
-    return (
-      <div className="card" style={{ padding: 12 }}>
-        <div className="font-body" style={{ color: T.muted, fontSize: 12, marginBottom: 8 }}>Elige con cuál alterna:</div>
-        {libres.map((i) => (
-          <button key={i} onClick={() => unir(i)} className="font-body btn btn-ghost" style={{ width: '100%', textAlign: 'left', marginBottom: 6, padding: '9px 12px', fontSize: 13, borderStyle: 'solid', borderColor: catInfo(CATS, state.exercises[i].cat).color + '88' }}>
-            {state.exercises[i].name} <span style={{ color: catInfo(CATS, state.exercises[i].cat).color, fontWeight: 700, fontSize: 11.5 }}>· {catInfo(CATS, state.exercises[i].cat).label}</span>
-          </button>
-        ))}
-        <button onClick={() => setModo(null)} className="font-body btn btn-ghost" style={{ width: '100%', padding: '8px', fontSize: 12.5 }}>Cancelar</button>
-      </div>
-    );
-  }
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <button onClick={() => setModo('nuevo')} className="font-body btn btn-ghost" style={{ padding: '9px 12px', fontSize: 12.5 }}>➕ Crear un ejercicio alterno</button>
-      {libres.length > 0 && <button onClick={() => setModo('existente')} className="font-body btn btn-ghost" style={{ padding: '9px 12px', fontSize: 12.5 }}>🔗 Usar uno que ya tengo en este día</button>}
     </div>
   );
 }
@@ -553,7 +534,7 @@ export function AvisoDescarga() {
 }
 
 export function RutinaTab() {
-  const { state, setActiveDay, updateDay, moveDay, removeDay, askConfirm, duplicarDia } = useGym();
+  const { state, setActiveDay, updateDay, moveDay, removeDay, askConfirm, duplicarDia, setPreferencia } = useGym();
   const [vivo, setVivo] = useState(null);
   const days = state.days || [];
   const editMode = state.meta.editMode;
@@ -610,6 +591,13 @@ export function RutinaTab() {
 
       <AvisoDescarga />
       {vivo && <EntrenoVivoModal dayId={vivo} onClose={() => setVivo(null)} />}
+      {!editMode && day.ids.length > 0 && (
+        <Card style={{ marginBottom: 12, padding: 12 }}>
+          <div className="font-body" style={{ color: T.text, fontSize: 13, fontWeight: 700, marginBottom: 2 }}>⏱️ Descanso entre series</div>
+          <div className="font-body" style={{ color: T.muted, fontSize: 11.5, marginBottom: 8 }}>Este tiempo se usa en todos tus entrenos en vivo. Cámbialo aquí y se guarda.</div>
+          <Stepper value={(state.preferencias && state.preferencias.descanso) || 90} onChange={(v) => setPreferencia({ descanso: v })} min={30} max={300} step={15} suffix="s" />
+        </Card>
+      )}
       {!editMode && day.ids.length > 0 && (
         <button onClick={() => setVivo(day.id)} className="font-body btn btn-primary" style={{ width: '100%', marginBottom: 14, padding: 13, fontSize: 14 }}>▶ Empezar entreno en vivo</button>
       )}

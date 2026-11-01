@@ -1,7 +1,7 @@
 /* Recordatorio de copia de seguridad para la versión web (iPhone y navegadores):
    allí el navegador puede borrar los datos de una web que no se usa, así que conviene tener una copia por código. */
 
-export const DIAS_SIN_COPIA = 14;
+export const DIAS_SIN_COPIA = 7;
 export const DIAS_POSPONER = 7;
 
 // ¿Hay datos propios que merezca la pena guardar? (registros de ejercicios, más de un peso o comidas apuntadas)
@@ -13,7 +13,7 @@ export function tieneDatosPropios(state) {
   return hist || pesos || diario;
 }
 
-// true si hay que enseñar el recordatorio: hay datos propios, la última copia tiene más de 14 días (o no hay)
+// true si hay que enseñar el recordatorio: hay datos propios, la última copia tiene más de 7 días (o no hay)
 // y no se ha pospuesto.
 export function necesitaRecordatorioCopia(state, ahoraMs) {
   const p = state.preferencias || {};
