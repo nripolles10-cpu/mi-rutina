@@ -253,9 +253,9 @@ export function SeriesSemanalesCard() {
           <div key={r.key}>
             <div className="font-body" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12.5, marginBottom: 4 }}>
               <span style={{ color: T.text, fontWeight: 600 }}>{r.emoji} {r.label}</span>
-              <span style={{ color: r.sets > 0 ? r.color : T.dim, fontWeight: 800 }}>{fmt(r.sets)}</span>
+              <span style={{ color: r.sets > 0 ? T.cyan : T.dim, fontWeight: 800 }}>{fmt(r.sets)}</span>
             </div>
-            <Bar pct={(r.sets / maxV) * 100} color={r.color} height={10} />
+            <Bar pct={(r.sets / maxV) * 100} color={T.cyan} height={10} />
           </div>
         ))}
       </div>
@@ -283,9 +283,9 @@ export function ObjetivosMusculoCard() {
                 <span style={{ color: T.text, fontWeight: 600 }}>{catInfo(CATS, k).emoji} {catInfo(CATS, k).label}</span>
                 {p.pct === null
                   ? <span style={{ color: T.dim, fontWeight: 600 }}>sin objetivos</span>
-                  : <span style={{ color: catInfo(CATS, k).color, fontWeight: 800 }}>{Math.round(p.pct)} % <span style={{ color: T.muted, fontWeight: 600 }}>· faltan {p.falta > 0 ? fmt(p.falta) + ' kg' : '0 kg'}</span></span>}
+                  : <span style={{ color: T.cyan, fontWeight: 800 }}>{Math.round(p.pct)} % <span style={{ color: T.muted, fontWeight: 600 }}>· faltan {p.falta > 0 ? fmt(p.falta) + ' kg' : '0 kg'}</span></span>}
               </div>
-              {p.pct !== null && <Bar pct={p.pct} color={catInfo(CATS, k).color} height={10} />}
+              {p.pct !== null && <Bar pct={p.pct} color={T.cyan} height={10} />}
             </div>
           );
         })}
