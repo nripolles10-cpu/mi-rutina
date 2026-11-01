@@ -5,6 +5,14 @@ del móvil, la versión de Android (Ajustes → Información del teléfono) y qu
 
 Antes de empezar: **⚙️ Ajustes → Compartir y copias → 💾 Copia de seguridad completa** y guárdala fuera del móvil.
 
+## Cambios de noviembre (lista de la compra y trofeo)
+- [ ] **Comida → Compra:** con alguna receta en el plan, "📋 Copiar lista" → abre Notas o Keep y pega: salen los
+      ingredientes con cantidades, uno por línea. Marca uno como comprado y vuelve a copiar: ya no sale.
+- [ ] "📤 Compartir": se abre el menú de Android y se puede mandar como texto a Keep, WhatsApp o Notas.
+- [ ] Abre una receta → "📋 Copiar ingredientes" con 2 raciones: las cantidades salen dobladas.
+- [ ] **Trofeo 🏆:** en un ejercicio, pon en la serie 1 un peso **menor** que tu récord y "💾 Guardar registro de
+      hoy": el trofeo pasa a ese peso. Tu mejor marca de siempre sigue en "📈 Historial, récords y 1RM".
+
 ## Fase 3 (versión de datos 9): hazlas primero
 - [ ] Antes de actualizar: copia de seguridad completa guardada fuera del móvil. Instala encima y comprueba que
       todo sigue (rutina, registros, músculos, recetas, alternos). En Copias de rescate hay una "premigracion_v8".
@@ -110,7 +118,7 @@ Antes de empezar: **⚙️ Ajustes → Compartir y copias → 💾 Copia de segu
 ## 8. Resto de la app (que todo siga como en la web)
 - [ ] Pestañas: Rutina, Progreso, Cardio, Comida, Extras… todas se abren y se ven igual que en la web.
 - [ ] Modo edición: añadir, mover y borrar ejercicios y días.
-- [ ] El trofeo muestra tu mejor marca.
+- [ ] El trofeo 🏆 muestra el peso de la serie 1 de tu último registro guardado.
 - [ ] No hay botones de deshacer/rehacer en la cabecera.
 - [ ] Gráficas de progreso y de peso.
 - [ ] Mantener la pantalla encendida: activado, la pantalla no se apaga sola; desactivado, sí.
