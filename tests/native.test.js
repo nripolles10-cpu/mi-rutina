@@ -54,6 +54,7 @@ vi.mock('@capacitor/share', () => ({
   Share: { share: async (o) => { if (sim.shareCancela) throw new Error('Share canceled'); sim.compartido.push(o); } },
 }));
 vi.mock('@capacitor/keyboard', () => ({ Keyboard: { addListener: async () => ({ remove() {} }) } }));
+vi.mock('@capacitor/clipboard', () => ({ Clipboard: { write: async ({ string }) => { if (sim.clipboardFalla) throw new Error('no'); sim.copiado = string; } } }));
 vi.mock('@capacitor/app', () => ({ App: { addListener: async () => ({ remove() {} }), exitApp: async () => {} } }));
 vi.mock('@capacitor/camera', () => ({ Camera: {}, MediaTypeSelection: { Photo: 'photo' } }));
 vi.mock('@capacitor/haptics', () => ({ Haptics: { vibrate: async () => {} } }));
@@ -282,5 +283,13 @@ describe('recordatorios de entrenamiento en el móvil', () => {
   test('las fotos de progreso pueden pedir más tamaño que las de los ejercicios', async () => {
     const N = await cargarNative();
     expect(N.pickPhoto.length).toBe(3);
+  });
+});
+
+describe('copiar al portapapeles en el móvil', () => {
+  test('usa el portapapeles de Android', async () => {
+    const N = await cargarNative();
+    expect(await N.copiar('🛒 Lista de la compra\n• Arroz — 80 g')).toBe(true);
+    expect(sim.copiado).toBe('🛒 Lista de la compra\n• Arroz — 80 g');
   });
 });

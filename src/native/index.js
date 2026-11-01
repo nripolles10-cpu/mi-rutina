@@ -16,6 +16,8 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import { KeepAwake } from '@capacitor-community/keep-awake';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { Keyboard } from '@capacitor/keyboard';
+import { Clipboard } from '@capacitor/clipboard';
+import { copyText } from '../utils/clipboard.js';
 import { safeUrl } from '../utils/format.js';
 
 export const STORAGE_KEY = 'gymtracker_nacho_v2';
@@ -334,6 +336,16 @@ export const Native = {
       if (!shared) setTimeout(() => { try { ctx.close(); } catch (e) { /* ya cerrado */ } }, 600);
       return true;
     } catch (e) { return false; }
+  },
+
+  /* ---------- Copiar al portapapeles ----------
+     En el móvil usa el portapapeles de Android (el plugin oficial, más fiable que el del navegador dentro de la app).
+     Devuelve Promise<boolean>. */
+  async copiar(texto) { // NATIVE-HOOK
+    if (isNative()) {
+      try { await Clipboard.write({ string: String(texto || '') }); return true; } catch (e) { return copyText(texto); }
+    }
+    return copyText(texto);
   },
 
   /* ---------- Compartir y guardar archivos ----------
