@@ -31,9 +31,10 @@ const guardado = () => JSON.parse(localStorage.getItem(A.STORAGE_KEY));
 async function flush() { act(() => { document.dispatchEvent(new Event('visibilitychange')); window.dispatchEvent(new Event('pagehide')); }); }
 
 // Datos guardados de un usuario con todo lo necesario para la calculadora
+function pesa84ConObjetivo80(st) { st.peso.historial = [{ id: 'p0', date: '2026-10-01T10:00:00.000Z', kg: 84 }]; st.peso.objetivoKg = 80; st.formulario = { ...st.formulario, pesoInicialKg: 84, objetivoPesoKg: 80 }; }
 function guardarEstado(fn) {
   const st = A.buildInitialState();
-  st.formulario = { ...st.formulario, edad: 30, alturaCm: 175, sexo: 'M', actividad: 'moderado' };
+  st.formulario = { ...st.formulario, nombre: 'Prueba', edad: 30, alturaCm: 175, sexo: 'M', actividad: 'moderado' };
   st.peso.historial = [{ id: 'p1', date: '2026-10-20T10:00:00.000Z', kg: 75 }];
   st.nutricion = { ...st.nutricion, objetivo: 'definicion', ritmo: 'normal' };
   if (fn) fn(st);
@@ -43,6 +44,7 @@ function guardarEstado(fn) {
 
 describe('1) objetivo de peso en la tarjeta de Progreso', () => {
   test('cambiarlo con coma, que se guarde en el mismo sitio que Ajustes, y deshacer', async () => {
+    guardarEstado(pesa84ConObjetivo80);
     await montar();
     await tab('Progreso');
     await click(screen.getByTitle('Cambiar el objetivo de peso'));
@@ -66,6 +68,7 @@ describe('1) objetivo de peso en la tarjeta de Progreso', () => {
   });
 
   test('quitar el objetivo y volver a ponerlo; Ajustes lo ve', async () => {
+    guardarEstado(pesa84ConObjetivo80);
     await montar();
     await tab('Progreso');
     await click(screen.getByTitle('Cambiar el objetivo de peso'));

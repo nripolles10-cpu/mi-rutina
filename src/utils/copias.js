@@ -8,7 +8,7 @@ export const DIAS_POSPONER = 7;
 export function tieneDatosPropios(state) {
   const exs = state.exercises || {};
   const hist = Object.keys(exs).some((id) => (exs[id].history || []).some((h) => h && !h.seed));
-  const pesos = ((state.peso && state.peso.historial) || []).length > 1;
+  const pesos = ((state.peso && state.peso.historial) || []).length > 0;
   const diario = Object.keys((state.comida && state.comida.diario) || {}).length > 0;
   return hist || pesos || diario;
 }

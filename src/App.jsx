@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { AvisoCopiaWeb } from './components/AvisoCopia.jsx';
+import { Bienvenida } from './components/Bienvenida.jsx';
 import { GlobalStyle } from './components/GlobalStyle.jsx';
 import { TimerModal } from './components/TimerModal.jsx';
 import { ConfirmDialog, GymContext, Toast } from './components/ui.jsx';
@@ -20,7 +21,7 @@ import { RutinaTab } from './tabs/RutinaTab.jsx';
 import { stateFromDefaults } from './utils/defaults.js';
 import { clone, fmt, fmtMS, uid, ymd } from './utils/format.js';
 import { idZonaNueva } from './utils/medidasZonas.js';
-import { aplicarObjetivoPeso } from './utils/peso.js';
+import { aplicarObjetivoPeso, pesoActualDe } from './utils/peso.js';
 import { RECORDATORIO_ID_BASE, duplicarDia as duplicarDiaPuro, duplicarEjercicio as duplicarEjercicioPuro, proximosRecordatorios } from './utils/entreno.js';
 import { applyImport } from './utils/share.js';
 import { activeExerciseIds, bestSerie1, computeScore, normalizeSet } from './utils/training.js';
@@ -294,8 +295,11 @@ export function App() {
 
   const guardarFormulario = useCallback((draft) => {
     commit((prev) => {
-      const pesoHistorial = prev.peso.historial.length ? prev.peso.historial : [{ id: uid(), date: new Date().toISOString(), kg: draft.pesoInicialKg }];
-      const base = { ...prev, formulario: { ...prev.formulario, ...draft }, peso: { ...prev.peso, historial: pesoHistorial } };
+      // Si cambias el "peso actual" en Ajustes, se anota como una pesada nueva: así es el mismo peso que ve Progreso y la calculadora
+      const nuevoKg = typeof draft.pesoInicialKg === 'number' && isFinite(draft.pesoInicialKg) ? draft.pesoInicialKg : null;
+      let historial = prev.peso.historial;
+      if (nuevoKg !== null && nuevoKg !== pesoActualDe(prev)) historial = historial.concat([{ id: uid(), date: new Date().toISOString(), kg: nuevoKg }]);
+      const base = { ...prev, formulario: { ...prev.formulario, ...draft }, peso: { ...prev.peso, historial } };
       // El objetivo de peso es el mismo dato que se edita en Progreso (aplicarObjetivoPeso lo mantiene sincronizado)
       const objetivo = draft.objetivoPesoKg === undefined ? prev.peso.objetivoKg : draft.objetivoPesoKg;
       return aplicarObjetivoPeso(base, objetivo === undefined ? null : objetivo);
@@ -574,6 +578,7 @@ export function App() {
 
         <Toast toast={toast} />
         <ConfirmDialog dlg={confirmDlg} onClose={() => setConfirmDlg(null)} />
+        {!String(state.formulario.nombre || '').trim() && <Bienvenida />}
         {timerOpen && <TimerModal timer={timer} nowMs={nowMs} startTimer={startTimer} addTimer={addTimer} stopTimer={stopTimer} onClose={() => setTimerOpen(false)} />}
 
         {screen === 'settings' ? (

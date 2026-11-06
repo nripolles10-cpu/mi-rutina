@@ -10,6 +10,7 @@ import { buildXlsx, bytesToBase64, readXlsxRows } from '../utils/excel.js';
 import { buildDocxBase64 } from '../utils/word.js';
 import { PLANTILLA_CSV, parseCsv, rowsToRutina } from '../utils/importar.js';
 import { buildDefaultData } from '../utils/defaults.js';
+import { pesoActualDe } from '../utils/peso.js';
 import { fmt, fmtDateLong, fromYmd, mondayOf as lunesDe, ymd } from '../utils/format.js';
 import { DIAS_SIN_COPIA, diasDesde } from '../utils/copias.js';
 import { leerCopiaJson } from '../utils/copiaJson.js';
@@ -28,7 +29,7 @@ export function FormularioCard({ onDone }) {
   const [edad, setEdad] = useState(f0.edad);
   const [sexo, setSexo] = useState(f0.sexo || 'M');
   const [alturaCm, setAlturaCm] = useState(f0.alturaCm);
-  const [pesoInicialKg, setPesoInicialKg] = useState(f0.pesoInicialKg);
+  const [pesoInicialKg, setPesoInicialKg] = useState(pesoActualDe(state));
   const [grasaPct, setGrasaPct] = useState(f0.grasaPct);
   const [actividad, setActividad] = useState(f0.actividad || 'intenso');
   const [objetivoPesoKg, setObjetivoPesoKg] = useState(f0.objetivoPesoKg);
@@ -76,7 +77,7 @@ export function FormularioCard({ onDone }) {
           {grasa !== null && <SupRow label="Grasa corporal estimada" value={'~' + grasa + '%'} />}
         </div>
       )}
-      <button disabled={!pesoInicialKg} onClick={() => { guardarFormulario(draft); if (onDone) onDone(); }} className="font-body btn btn-primary" style={{ width: '100%', padding: '14px', fontSize: 14 }}>Guardar cambios</button>
+      <button onClick={() => { guardarFormulario(draft); if (onDone) onDone(); }} className="font-body btn btn-primary" style={{ width: '100%', padding: '14px', fontSize: 14 }}>Guardar cambios</button>
     </Card>
   );
 }

@@ -4,6 +4,8 @@ import { loadApp } from './loadApp.js';
 
 let A;
 beforeEach(() => { localStorage.clear(); A = loadApp(); A.aplicarCatalogo(A.MUSCULOS_POR_DEFECTO); });
+// Estado con un peso registrado (84 kg) y objetivo 80 kg, como los datos de siempre
+const conPesoObjetivo = (st) => { st.peso.historial = [{ id: 'p0', date: '2026-10-01T10:00:00.000Z', kg: 84 }]; st.peso.objetivoKg = 80; st.formulario = { ...st.formulario, pesoInicialKg: 84, objetivoPesoKg: 80 }; return st; };
 
 /* ---------------------------------------------------------------- 1) objetivo de peso */
 describe('objetivo de peso corporal', () => {
@@ -20,7 +22,7 @@ describe('objetivo de peso corporal', () => {
   });
 
   test('el mismo dato en Progreso (peso.objetivoKg) y en Ajustes (formulario.objetivoPesoKg); la calculadora lo lee', () => {
-    const st = A.buildInitialState(); // pesa 84 y el objetivo es 80
+    const st = conPesoObjetivo(A.buildInitialState()); // pesa 84 y el objetivo es 80
     const n = A.aplicarObjetivoPeso(st, 90);
     expect(n.peso.objetivoKg).toBe(90);
     expect(n.formulario.objetivoPesoKg).toBe(90);
@@ -31,7 +33,7 @@ describe('objetivo de peso corporal', () => {
   });
 
   test('"alcanzado" solo se reinicia si el objetivo cambia; quitar el objetivo', () => {
-    const st = A.buildInitialState();
+    const st = conPesoObjetivo(A.buildInitialState());
     st.peso.objetivoAlcanzado = true;
     expect(A.aplicarObjetivoPeso(st, 80)).toBe(st); // mismo objetivo: no cambia nada
     const n = A.aplicarObjetivoPeso(st, 79);

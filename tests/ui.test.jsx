@@ -27,7 +27,11 @@ async function type(el, value) { fireEvent.change(el, { target: { value } }); aw
 const btn = (name) => screen.getByRole('button', { name });
 const texto = () => document.body.textContent;
 function sinBasura() { expect(texto()).not.toMatch(/undefined|NaN|Infinity|\[object Object\]/); }
-async function montar() { const r = render(<A.App />); await tick(); return r; }
+// Primera vez sin datos: la app pide tu nombre (Bienvenida). Los tests van con un nombre ya puesto.
+async function montar(retoque) {
+  if (!localStorage.getItem(A.STORAGE_KEY)) { const s = A.buildInitialState(); s.formulario.nombre = 'Prueba'; if (retoque) retoque(s); localStorage.setItem(A.STORAGE_KEY, JSON.stringify(s)); }
+  const r = render(<A.App />); await tick(); return r;
+}
 async function tab(nombre) { await click(screen.getAllByText(nombre, { selector: 'span' }).slice(-1)[0]); sinBasura(); } // la barra inferior es lo último
 const guardado = () => JSON.parse(localStorage.getItem(A.STORAGE_KEY));
 async function flush() { act(() => { document.dispatchEvent(new Event('visibilitychange')); window.dispatchEvent(new Event('pagehide')); }); }
@@ -272,7 +276,7 @@ describe('extras', () => {
   });
 
   test('calculadora nutricional con datos y sin datos', async () => {
-    await montar();
+    await montar((s) => { s.peso.historial = [{ id: 'p0', date: '2026-10-01T10:00:00.000Z', kg: 84 }]; });
     await tab('Extras');
     expect(texto()).toMatch(/necesito tu peso, edad y altura/);
     await type(screen.getByText('Edad').parentElement.querySelector('input'), '30');

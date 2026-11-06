@@ -112,8 +112,9 @@ export function buildInitialState() {
     diana: { estados: {}, titulos: {} },
     musculos: MUSCULOS_POR_DEFECTO.map((m) => ({ ...m })),
     cardio: CARDIO.map((c) => ({ ...c })),
-    formulario: { nombre: '', edad: null, sexo: 'M', alturaCm: null, pesoInicialKg: 84, actividad: 'intenso', grasaPct: null, objetivoPesoKg: 80, objetivoPasosDiarios: 10000 },
-    peso: { historial: [{ id: uid(), date: new Date().toISOString(), kg: 84 }], objetivoKg: 80, direccion: 'bajar', objetivoAlcanzado: false },
+    formulario: { nombre: '', edad: null, sexo: 'M', alturaCm: null, pesoInicialKg: null, actividad: 'intenso', grasaPct: null, objetivoPesoKg: null, objetivoPasosDiarios: 10000 },
+    // Primer arranque: sin peso ni objetivo (los pone cada persona). Nada de datos personales de nadie.
+    peso: { historial: [], objetivoKg: null, direccion: 'bajar', objetivoAlcanzado: false },
     extras: {
       movilidad: { titulo: 'Rutina de movilidad matutina', url: 'https://www.youtube.com/watch?v=Pnbwyxh4LJs&t=160s' },
       suplementos: [
