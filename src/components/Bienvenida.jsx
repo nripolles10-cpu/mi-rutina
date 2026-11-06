@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
 import { Card, Chip, Label, LabeledNum, useGym } from './ui.jsx';
 import { T } from '../data/theme.js';
+import { pesoActualDe } from '../utils/peso.js';
 
 // Ficha inicial: se muestra mientras la persona no ha puesto su nombre. Solo rellena sus propios datos.
 export function Bienvenida() {
   const { state, guardarFormulario } = useGym();
+  const f = state.formulario;
   const [nombre, setNombre] = useState('');
-  const [sexo, setSexo] = useState('M');
-  const [alturaCm, setAlturaCm] = useState(null);
-  const [pesoKg, setPesoKg] = useState(null);
+  const [sexo, setSexo] = useState(f.sexo || 'M');
+  const [alturaCm, setAlturaCm] = useState(f.alturaCm);
+  const [pesoKg, setPesoKg] = useState(pesoActualDe(state)); // si ya había un peso guardado, se ve y se puede cambiar
   const listo = nombre.trim().length > 0;
 
   const empezar = () => {
     if (!listo) return;
-    guardarFormulario({ ...state.formulario, nombre: nombre.trim(), sexo, alturaCm, pesoInicialKg: pesoKg, objetivoPesoKg: state.peso.objetivoKg });
+    guardarFormulario({ ...f, nombre: nombre.trim(), sexo, alturaCm, pesoInicialKg: pesoKg, objetivoPesoKg: state.peso.objetivoKg });
   };
 
   return (
