@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { ComidaIAModal, RecetasIAModal } from '../components/IA.jsx';
 import { Bar, chipAcento, Card, Chip, Label, LabeledNum, MacroLine, MiniBtn, Modal, NumInput, SectionTitle, Stepper, SupRow, useGym } from '../components/ui.jsx';
 import { DIAS_SEMANA, MOMENTOS, OBJETIVOS, TIPO_RECETA, tipoRecetaLabel } from '../data/catalog.js';
 import { T } from '../data/theme.js';
@@ -95,6 +96,7 @@ export function DiarioSec({ fecha, setFecha }) {
   const tot = entryTotals(lista);
   const [addMomento, setAddMomento] = useState(null);
   const [manual, setManual] = useState(null);
+  const [ia, setIa] = useState(null);
   const hoy = ymd(new Date());
 
   const addEntry = (momento, e) => commit((prev) => ({ ...prev, comida: { ...prev.comida, diario: { ...prev.comida.diario, [fecha]: (prev.comida.diario[fecha] || []).concat([{ id: uid(), momento, ...e }]) } } }));
@@ -142,6 +144,7 @@ export function DiarioSec({ fecha, setFecha }) {
               <div style={{ display: 'flex', gap: 6 }}>
                 <button onClick={() => setAddMomento(m[0])} className="font-body btn btn-ghost" style={{ padding: '6px 10px', fontSize: 12 }}>🍳 Receta</button>
                 <button onClick={() => setManual(m[0])} className="font-body btn btn-ghost" style={{ padding: '6px 10px', fontSize: 12 }}>✍️ A mano</button>
+                <button onClick={() => setIa(m[0])} className="font-body btn btn-ghost" style={{ padding: '6px 10px', fontSize: 12 }} aria-label={'Apuntar con IA en ' + m[1]}>📷 IA</button>
               </div>
             </div>
             {items.map((e) => (
@@ -167,6 +170,7 @@ export function DiarioSec({ fecha, setFecha }) {
       {addMomento && <PickRecetaModal titulo={'Añadir al diario · ' + addMomento} tipoInicial={addMomento}
         onPick={(r, rac) => addEntry(addMomento, { nombre: r.nombre, recetaId: r.id, raciones: rac, por: recTotals(r, 1), ...recTotals(r, rac) })} onClose={() => setAddMomento(null)} />}
       {manual && <AddManualModal momento={manual} onAdd={(e) => addEntry(manual, e)} onClose={() => setManual(null)} />}
+      {ia && <ComidaIAModal fecha={fecha} momento={ia} onClose={() => setIa(null)} />}
     </div>
   );
 }
@@ -319,6 +323,7 @@ export function RecetasSec() {
   const [q, setQ] = useState('');
   const [det, setDet] = useState(null);
   const [edit, setEdit] = useState(null); // null | 'nueva' | receta
+  const [verIa, setVerIa] = useState(false);
   const lista = state.comida.recetas.filter((r) => (obj === 'todos' || r.objetivos.indexOf(obj) !== -1) && (tipo === 'todos' || r.tipo === tipo) && (!soloFav || favs.indexOf(r.id) !== -1)
     && stripAcc(r.nombre).toLowerCase().indexOf(stripAcc(q).toLowerCase()) !== -1);
   const detR = det ? state.comida.recetas.find((r) => r.id === det) : null;
@@ -335,7 +340,11 @@ export function RecetasSec() {
         {TIPO_RECETA.map((t) => <Chip key={t[0]} active={tipo === t[0]} onClick={() => setTipo(t[0])}>{t[1]}</Chip>)}
         <Chip active={soloFav} accent="#FBBF24" onClick={() => setSoloFav(!soloFav)}>⭐ Favoritas</Chip>
       </div>
-      <button onClick={() => setEdit('nueva')} className="font-body btn btn-ghost" style={{ width: '100%', padding: '12px', borderRadius: 14, marginBottom: 12 }}>➕ Crear mi receta</button>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+        <button onClick={() => setEdit('nueva')} className="font-body btn btn-ghost" style={{ flex: 1, padding: '12px 8px', borderRadius: 14 }}>➕ Crear mi receta</button>
+        <button onClick={() => setVerIa(true)} className="font-body btn btn-primary" style={{ flex: 1, padding: '12px 8px', borderRadius: 14 }}>✨ Recetas con IA</button>
+      </div>
+      {verIa && <RecetasIAModal onClose={() => setVerIa(false)} onVer={(id) => { setVerIa(false); setDet(id); }} />}
       <div className="font-body" style={{ color: T.dim, fontSize: 11.5, marginBottom: 8, lineHeight: 1.5 }}>{lista.length} recetas · toca una para ver los ingredientes con sus cantidades exactas y los pasos para cocinarla.</div>
       {lista.map((r) => (
         <div key={r.id} onClick={() => setDet(r.id)} className="card" style={{ marginBottom: 8, padding: 12, cursor: 'pointer' }}>

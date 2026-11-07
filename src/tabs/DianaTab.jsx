@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Card, Chip, Label, MiniBtn, Modal, SectionTitle, useGym } from '../components/ui.jsx';
 import { CATS, CAT_IDS, ESTADO_COLOR, ESTADO_LABEL, REGIONES_MAPA, catInfo } from '../data/catalog.js';
 import { T } from '../data/theme.js';
+import { DianaConsejosCard } from '../components/IA.jsx';
 import { fmt } from '../utils/format.js';
 import { muscleProgress } from '../utils/training.js';
 import { borrarMusculo, cambiarRegionMusculo, crearMusculo, ejerciciosDeMusculo, musculosDeRegion, renombrarMusculo } from '../utils/musculos.js';
@@ -267,7 +268,10 @@ export function DianaFisicaTab() {
           </div>
         );
       })}
-      <button onClick={() => setEditando(true)} className="font-body btn btn-ghost" style={{ width: '100%', marginTop: 4, marginBottom: 8 }}>✏️ Crear, renombrar o quitar músculos</button>
+      <button onClick={() => setEditando(true)} className="font-body btn btn-ghost" style={{ width: '100%', marginTop: 4, marginBottom: 18 }}>✏️ Crear, renombrar o quitar músculos</button>
+
+      <SectionTitle emoji="💡">Cómo mejorar tus puntos débiles</SectionTitle>
+      <DianaConsejosCard />
     </div>
   );
 }

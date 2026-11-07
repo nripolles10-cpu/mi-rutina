@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { PreguntaIACard } from '../components/IA.jsx';
 import { chipAcento, Card, Chip, EditLockBar, Label, LabeledNum, MiniBtn, SectionTitle, SupRow, TextField, useGym } from '../components/ui.jsx';
 import { ACTIVIDADES, ACTIVIDAD_FACTOR, OBJETIVOS, RITMOS } from '../data/catalog.js';
 import { T } from '../data/theme.js';
@@ -354,6 +355,9 @@ export function ExtrasTab() {
   return (
     <div>
       <EditLockBar />
+      <SectionTitle emoji="🤖">Pregúntale a tu entrenador IA</SectionTitle>
+      <PreguntaIACard />
+
       <SectionTitle emoji="🥗">Calculadora nutricional</SectionTitle>
       <NutricionCard />
 

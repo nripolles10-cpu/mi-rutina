@@ -6,6 +6,7 @@ import { Native } from '../native/index.js';
 import { fmt, fmtDateShort, parseNum } from '../utils/format.js';
 import { computeScore, ensureStruct, latestSerie1 } from '../utils/training.js';
 import { EntrenoVivoModal } from '../components/EntrenoVivo.jsx';
+import { VozEntrenoModal } from '../components/IA.jsx';
 import { HistorialEjercicioModal, SugerenciaProgresion } from '../components/HistorialEjercicio.jsx';
 import { semanaDescarga } from '../utils/entreno.js';
 
@@ -536,6 +537,7 @@ export function AvisoDescarga() {
 export function RutinaTab() {
   const { state, setActiveDay, updateDay, moveDay, removeDay, askConfirm, duplicarDia, setPreferencia } = useGym();
   const [vivo, setVivo] = useState(null);
+  const [voz, setVoz] = useState(false);
   const days = state.days || [];
   const editMode = state.meta.editMode;
   const dayIndex = Math.max(0, days.findIndex((d) => d.id === state.meta.activeDay));
@@ -599,8 +601,12 @@ export function RutinaTab() {
         </Card>
       )}
       {!editMode && day.ids.length > 0 && (
-        <button onClick={() => setVivo(day.id)} className="font-body btn btn-primary" style={{ width: '100%', marginBottom: 14, padding: 13, fontSize: 14 }}>▶ Empezar entreno en vivo</button>
+        <button onClick={() => setVivo(day.id)} className="font-body btn btn-primary" style={{ width: '100%', marginBottom: 8, padding: 13, fontSize: 14 }}>▶ Empezar entreno en vivo</button>
       )}
+      {!editMode && day.ids.length > 0 && (
+        <button onClick={() => setVoz(true)} className="font-body btn btn-ghost" style={{ width: '100%', marginBottom: 14, padding: 11, fontSize: 13, borderStyle: 'solid' }}>🎙️ Apuntar el entreno hablando</button>
+      )}
+      {voz && <VozEntrenoModal dayId={day.id} onClose={() => setVoz(false)} />}
 
       {editMode ? (
         <Card style={{ marginBottom: 14 }}>

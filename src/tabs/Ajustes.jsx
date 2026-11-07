@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { GeminiAjustesCard } from '../components/IA.jsx';
 import { Card, CheckRow, Chip, Label, LabeledNum, Modal, SectionTitle, Stepper, SupRow, useGym } from '../components/ui.jsx';
 import { ACTIVIDADES } from '../data/catalog.js';
 import { ESCALAS_LETRA, T, TEMAS_COLOR } from '../data/theme.js';
@@ -534,6 +535,9 @@ export function AjustesScreen({ onClose }) {
 
       <SectionTitle emoji="🏋️">Entreno</SectionTitle>
       <EntrenoAjustesCard />
+
+      <SectionTitle emoji="✨">Gemini (IA gratis)</SectionTitle>
+      <GeminiAjustesCard />
 
       <SectionTitle emoji="🎨">Apariencia</SectionTitle>
       <AparienciaCard />

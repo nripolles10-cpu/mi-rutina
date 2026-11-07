@@ -52,6 +52,10 @@
          y no se usa para enviar datos a ningún sitio (la app no tiene servidor). -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Micrófono: solo para "Apuntar hablando" con Gemini (lo pide la primera vez que lo usas). -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+
     <!-- Aviso del descanso a la hora exacta aunque la pantalla esté apagada.
          Android 13+: USE_EXACT_ALARM (se concede solo, la app es un temporizador).
          Android 12: SCHEDULE_EXACT_ALARM (también concedido al instalar).
