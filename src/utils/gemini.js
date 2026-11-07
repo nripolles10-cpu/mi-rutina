@@ -16,6 +16,7 @@ import { effNutri, entryTotals, kcalOfMacros } from './health.js';
 import { activeExerciseIds, computeScore, describeSet, muscleProgress, normalizeSet, weeklySets } from './training.js';
 
 const API = 'https://generativelanguage.googleapis.com/v1beta';
+const ESPERA_MAX_MS = 75000; // 75 s: de sobra incluso para audios largos
 const CLAVE_LS = 'mirutina_gemini_v1';
 
 /* ---------- Configuración (clave y modelo), fuera del estado de la app ---------- */
@@ -41,7 +42,13 @@ export function geminiActivo() { const c = leerConfig(); return !!(c.clave && c.
 
 async function pedir(url, opciones) {
   let r;
-  try { r = await fetch(url, opciones); } catch (e) { throw new Error('Sin conexión a internet (Gemini necesita internet).'); }
+  // Tiempo máximo: si Gemini no contesta, se corta y se avisa (en vez de quedarse "pensando" para siempre)
+  const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const reloj = ctrl ? setTimeout(() => ctrl.abort(), ESPERA_MAX_MS) : null;
+  try { r = await fetch(url, ctrl ? { ...(opciones || {}), signal: ctrl.signal } : opciones); } catch (e) {
+    if (e && e.name === 'AbortError') throw new Error('Gemini no ha contestado a tiempo. Revisa tu conexión e inténtalo otra vez.');
+    throw new Error('Sin conexión a internet (Gemini necesita internet).');
+  } finally { if (reloj) clearTimeout(reloj); }
   let datos = null;
   try { datos = await r.json(); } catch (e) { datos = null; }
   if (!r.ok) {
