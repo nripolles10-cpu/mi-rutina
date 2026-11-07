@@ -10,7 +10,7 @@ import { empezarGrabacion, microDisponible } from '../utils/grabadora.js';
 import {
   CARDIO_INTENSIDAD, CARDIO_MATERIAL, CARDIO_OBJETIVO, alCambiarConfig, aplicarEntreno, cardioParaGuardar, consejosDiana, debilesDe,
   dondeComprar, entenderComida, entenderEntreno, escalarPor100, firmaCompra, generarRecetas, guardarConfig, hayQueRehacerDiana,
-  leerConfig, listarModelos, planSemanal, preguntar, recomendarCardio, repasoSemanal,
+  leerConfig, listarModelos, NUTRI_MODOS, nutricionista, planSemanal, preguntar, recomendarCardio, repasoSemanal,
 } from '../utils/gemini.js';
 import { DIAS_SEMANA } from '../data/catalog.js';
 import { recTotals } from '../utils/comida.js';
@@ -805,5 +805,71 @@ export function FotoMini({ id, size }) {
       <img src={src} alt="Foto" onClick={(e) => { e.stopPropagation(); setGrande(true); }} style={{ width: t, height: t, objectFit: 'cover', borderRadius: 10, flexShrink: 0, cursor: 'zoom-in' }} />
       {grande && <Modal title="📷 Foto" onClose={() => setGrande(false)}><img src={src} alt="Foto en grande" style={{ width: '100%', borderRadius: 14 }} /></Modal>}
     </>
+  );
+}
+
+/* ---------- 11) Nutricionista IA: modos, lo que tienes en casa, recetas para guardar ---------- */
+
+const PLACEHOLDER_NUTRI = {
+  casa: 'Dime lo que tienes: "tengo pollo, 3 huevos, arroz, un tomate y yogur griego"…',
+  sustituir: 'Qué quieres cambiar y por qué: "no puedo con los lácteos, cambio la leche de mi batido"…',
+  macros: 'Cuéntame lo que te falta hoy o déjalo en blanco y miro tus macros…',
+  entreno: 'Qué entrenas hoy y a qué hora: "pierna a las 19:00"…',
+  fuera: 'Dónde comes: "menú del día en un bar", "burger king", "sushi"…',
+  libre: 'Escribe tu pregunta de nutrición…',
+};
+
+export function NutricionistaCard() {
+  const { state, commit, showToast } = useGym();
+  const g = useGemini();
+  const [modo, setModo] = useState('casa');
+  const [cargando, setCargando] = useState(false);
+  const [err, setErr] = useState('');
+  const [res, setRes] = useState(null);
+  const [guardadas, setGuardadas] = useState({});
+  if (!g.activo) return <SinGemini que="El nutricionista IA te propone comidas con lo que tengas en casa, cambios de ingredientes y qué pedir fuera." />;
+
+  const enviar = async (e) => {
+    setCargando(true); setErr(''); setGuardadas({});
+    try { setRes(await nutricionista(state, { modo, ...e })); } catch (x) { setErr(x.message); }
+    setCargando(false);
+  };
+  const guardar = (r, i) => {
+    const id = 'r_' + uid();
+    const receta = { id, nombre: r.nombre, tipo: r.tipo, objetivos: r.objetivos, p: r.p, c: r.c, g: r.g, ingredientes: r.ingredientes, pasos: r.pasos.length ? r.pasos : ['Prepara los ingredientes y cocina a tu gusto.'], propia: true };
+    commit((prev) => ({ ...prev, comida: { ...prev.comida, recetas: prev.comida.recetas.concat([receta]) } }));
+    setGuardadas((x) => ({ ...x, [i]: true }));
+    showToast('✓ Guardada en tus recetas');
+  };
+
+  return (
+    <Card style={{ marginBottom: 14 }}>
+      <div className="font-body" style={{ color: T.text, fontWeight: 800, fontSize: 14, marginBottom: 4 }}>🥗 Tu nutricionista IA</div>
+      <div className="font-body" style={{ ...txtPeq, marginBottom: 10 }}>Elige qué necesitas. Con lo que tengas en casa, te propone comidas fáciles; cada receta la puedes guardar.</div>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+        {NUTRI_MODOS.map((m) => <Chip key={m[0]} active={modo === m[0]} onClick={() => { setModo(m[0]); setRes(null); setErr(''); }}>{m[1]}</Chip>)}
+      </div>
+      <Entrada key={modo} conFoto={modo === 'casa'} placeholder={PLACEHOLDER_NUTRI[modo]} cargando={cargando} onEnviar={enviar} boton="✨ Pedir ayuda" />
+      <AvisoError msg={err} />
+      {res && (
+        <div style={{ marginTop: 12 }}>
+          {res.respuesta && <div className="font-body" style={{ ...caja, color: T.text, fontSize: 13, lineHeight: 1.55, whiteSpace: 'pre-wrap', marginBottom: 10 }}>{res.respuesta}</div>}
+          {res.faltaria.length > 0 && <div className="font-body" style={{ ...txtPeq, marginBottom: 10 }}>🛒 Te haría falta: <b style={{ color: T.text }}>{res.faltaria.join(', ')}</b></div>}
+          {res.recetas.map((r, i) => (
+            <div key={i} style={{ ...caja, marginBottom: 10 }}>
+              <div className="font-body" style={{ color: T.text, fontWeight: 800, fontSize: 14 }}>{r.nombre}</div>
+              <div style={{ margin: '4px 0 6px' }}><MacroLine t={{ kcal: kcalOfMacros(r.p, r.c, r.g), p: r.p, c: r.c, g: r.g }} /></div>
+              {r.porQue && <div className="font-body" style={{ ...txtPeq, marginBottom: 6 }}>💡 {r.porQue}</div>}
+              {r.ingredientes.map((x, j) => <div key={j} className="font-body" style={txtPeq}>• {x.q !== null ? fmt(x.q, 2) + ' ' + x.u + ' ' : ''}{x.n}</div>)}
+              {r.pasos.map((p, j) => <div key={j} className="font-body" style={{ ...txtPeq, marginTop: 2 }}>{j + 1}. {p}</div>)}
+              {guardadas[i]
+                ? <div className="font-body" style={{ color: '#A3E635', fontSize: 12.5, marginTop: 8 }}>✓ Guardada en tus recetas</div>
+                : <button onClick={() => guardar(r, i)} className="font-body btn btn-ghost" style={{ width: '100%', marginTop: 8, fontSize: 12.5 }}>💾 Guardar en mis recetas</button>}
+            </div>
+          ))}
+          {res.consejo && <div className="font-body" style={{ ...txtPeq }}>💡 {res.consejo}</div>}
+        </div>
+      )}
+    </Card>
   );
 }

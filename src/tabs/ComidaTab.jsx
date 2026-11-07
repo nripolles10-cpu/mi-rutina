@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ComidaIAModal, CompraIACard, FotoMini, FotoRecetaCabecera, PlanSemanaIAModal, PreguntaIACard, RecetasIAModal, useGemini } from '../components/IA.jsx';
+import { ComidaIAModal, CompraIACard, FotoMini, FotoRecetaCabecera, NutricionistaCard, PlanSemanaIAModal, RecetasIAModal, useGemini } from '../components/IA.jsx';
 import { Bar, chipAcento, Card, Chip, Label, LabeledNum, MacroLine, MiniBtn, Modal, NumInput, SectionTitle, Stepper, SupRow, useGym } from '../components/ui.jsx';
 import { DIAS_SEMANA, MOMENTOS, OBJETIVOS, TIPO_RECETA, tipoRecetaLabel } from '../data/catalog.js';
 import { T } from '../data/theme.js';
@@ -585,12 +585,12 @@ export function ComidaIASec({ fecha, irA }) {
       {boton('foto', '📷', 'Apuntar lo que como', 'Foto de la etiqueta o del plato, audio o texto. La foto se queda en tu diario.')}
       {boton('recetas', '🍳', 'Recetas nuevas para mis macros', 'Fáciles y fitness, para lo que te apetezca o lo que te falta hoy.')}
       {boton('plan', '📅', 'Planificar mi semana', 'Reparte tus recetas para que cada día cuadre con tus macros.')}
-      {boton('compra', '🏪', 'Dónde comprar más barato', 'Te dice en qué súper comprar cada cosa de tu lista.', () => irA('compra'))}
+      {boton('compra', '🏪', 'Dónde comprar más barato', 'Aldi, Mercadona, Alcampo o Carrefour: en cuál comprar cada cosa.', () => irA('compra'))}
       {modal === 'foto' && <ComidaIAModal fecha={fecha} momento={null} onClose={() => setModal(null)} />}
       {modal === 'recetas' && <RecetasIAModal onClose={() => setModal(null)} onVer={() => { setModal(null); irA('recetas'); }} />}
       {modal === 'plan' && <PlanSemanaIAModal onClose={() => setModal(null)} />}
-      <SectionTitle emoji="🥗">Pregúntale a tu nutricionista IA</SectionTitle>
-      <PreguntaIACard tema="comida" />
+      
+      <NutricionistaCard />
     </div>
   );
 }

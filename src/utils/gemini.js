@@ -564,7 +564,8 @@ export async function planSemanal(state, { peticion, dias }) {
    5d) LISTA DE LA COMPRA → dónde comprar cada cosa (precio y calidad)
    ========================================================================= */
 
-export const SUPERS = ['Mercadona', 'Lidl', 'Aldi', 'Carrefour', 'Dia', 'Alcampo', 'Ahorramas', 'El Corte Inglés', 'Eroski', 'Consum', 'Mercado / frutería', 'Online'];
+// Los supermercados que él usa: son los únicos que se recomiendan
+export const SUPERS = ['Aldi', 'Mercadona', 'Alcampo', 'Carrefour'];
 
 export function firmaCompra(items) { return items.map((x) => x.key).sort().join(','); }
 
@@ -588,8 +589,9 @@ export async function dondeComprar(state, items, zona) {
   if (!items.length) throw new Error('La lista de la compra está vacía.');
   const sistema = [
     BASE_COMUN,
-    'Eres experto en hacer la compra barata en España sin perder calidad. Para cada producto de su lista, di en qué supermercado le conviene comprarlo (mejor relación calidad-precio), un precio aproximado de lo que necesita y un consejo corto (marca blanca que merece la pena, formato, congelado vs fresco…).',
-    'Su zona: ' + (zona || 'Madrid') + '. Supermercados posibles: ' + SUPERS.join(', ') + '. Agrupa para que vaya a 1-3 sitios como mucho (no merece la pena ir a 5 súper para ahorrar céntimos).',
+    'Eres experto en hacer la compra barata en España sin perder calidad. Para cada producto de su lista, di en qué supermercado le conviene comprarlo (mejor relación calidad-precio), un precio aproximado y un consejo corto (marca blanca que merece la pena, formato, congelado vs fresco…).',
+    'Su zona: ' + (zona || 'Madrid') + '. SOLO puedes recomendar estos supermercados: ' + SUPERS.join(', ') + '. No nombres ningún otro.',
+    'Sé lista: Aldi suele ser lo más barato en básicos (huevos, lácteos, pasta, verdura, carne); Mercadona tiene buena calidad en fresco y marca Hacendado; Alcampo y Carrefour para lo que no tienen los otros o cuando hay ofertas. Agrupa para ir a 2 sitios como mucho, y prioriza Aldi y Mercadona si el ahorro es parecido.',
     'Los precios son orientativos: dilo en "consejos" si cambian mucho según la temporada.',
     'Devuelve: {"resumen":"dónde ir y por qué, 1-2 frases","supers":[{"nombre":"","que_comprar":["producto"],"por_que":""}],"productos":[{"producto":"nombre EXACTO de la lista","super":"","precio_aprox":"≈ 2,50 €","consejo":""}],"total_aprox":"≈ 45 €","consejos":[""]}',
   ].join('\n');
@@ -618,4 +620,56 @@ export async function preguntar(state, { texto, audio, tema }) {
   if (!partes.length) throw new Error('Escribe o graba tu pregunta.');
   const j = await generar(sistema, partes, 0.6);
   return { pregunta: txt(j && j.pregunta, 600) || txt(texto, 600), respuesta: txt(j && j.respuesta, 4000) || 'No he podido responder. Prueba otra vez.' };
+}
+
+/* =========================================================================
+   5e) NUTRICIONISTA IA: modos (con lo que tienes en casa, sustituciones…)
+   ========================================================================= */
+
+export const NUTRI_MODOS = [
+  ['casa', '🧊 Con lo que tengo en casa'],
+  ['sustituir', '🔁 Cambiar un ingrediente'],
+  ['macros', '🎯 Cerrar mis macros de hoy'],
+  ['entreno', '🏋️ Antes y después de entrenar'],
+  ['fuera', '🍔 Pedir fuera o comer en un bar'],
+  ['libre', '💬 Pregunta libre'],
+];
+
+const MODO_TEXTO = {
+  casa: 'El usuario tiene POCOS productos en casa. Con lo que te diga (texto, audio o foto de su nevera/despensa) propón entre 2 y 4 recetas fitness y rápidas que pueda hacer SOLO con eso y básicos (sal, aceite, especias, agua). Si falta algo clave, dilo en "faltaria" (máximo 2 cosas). Prioriza que cuadren con sus macros de hoy.',
+  sustituir: 'El usuario quiere CAMBIAR un ingrediente de algo que come o cocina. Dile 2-4 sustitutos concretos, con la cantidad equivalente en macros y el motivo (más proteína, menos calorías, sin lácteos…), y cómo cambia el plato.',
+  macros: 'El usuario quiere cerrar lo que le falta de macros HOY. Mira lo que lleva y lo que le falta, y propón 2-3 opciones (comida o snack) con cantidades concretas que cuadren con lo que falta, sin pasarse de calorías.',
+  entreno: 'El usuario quiere saber qué comer ANTES y DESPUÉS de entrenar. Propón 1-2 opciones para antes (energía, poca grasa) y 1-2 para después (proteína y carbohidratos), con cantidades y el tiempo recomendado.',
+  fuera: 'El usuario come fuera o en un bar/restaurante. Dile cómo elegir lo mejor de la carta (qué pedir, qué evitar, cómo pedirlo) y qué macros aproximados tendría. Sé práctico.',
+  libre: 'Responde a su pregunta de nutrición deportiva con claridad y números cuando ayuden.',
+};
+
+export function normalizarNutri(json) {
+  return {
+    respuesta: txt(json && json.respuesta, 3000),
+    faltaria: lista(json && json.faltaria, 3),
+    recetas: normalizarRecetas({ recetas: json && json.recetas }),
+    consejo: txt(json && json.consejo, 240),
+  };
+}
+
+export async function nutricionista(state, { modo, texto, audio, foto }) {
+  const m = NUTRI_MODOS.find((x) => x[0] === modo) ? modo : 'libre';
+  const sistema = [
+    BASE_COMUN,
+    'Eres su NUTRICIONISTA deportivo de confianza. ' + MODO_TEXTO[m],
+    contextoNutricion(state, ymd(new Date())).texto,
+    'Sus recetas guardadas (no las repitas): ' + (state.comida.recetas || []).map((r) => r.nombre).slice(0, 80).join('; ') + '.',
+    'Si propones recetas, que sean fáciles (pocos ingredientes, pocos pasos) y usa los ingredientes con su nombre EXACTO de esta lista cuando puedas: ' + INGREDIENTES.join(', ') + '.',
+    'Devuelve: {"respuesta":"explicación breve y práctica en 2-6 frases","faltaria":["…"],"recetas":[{"nombre":"","tipo":"desayuno|comida|cena|snack","objetivos":["volumen|definicion|mantenimiento"],"ingredientes":[{"n":"","q":100,"u":"g"}],"pasos":["…"],"p":0,"c":0,"g":0,"por_que":""}],"consejo":""}',
+    'Si el modo no pide recetas, "recetas" debe ser [].',
+  ].join('\n');
+  const partes = [];
+  if (foto) partes.push({ imagen: foto }, { text: 'Esta foto es mi nevera o despensa (o lo que tengo a mano).' });
+  if (audio) partes.push({ audio, mime: 'audio/wav' }, { text: 'Esto es lo que te digo.' });
+  if (texto) partes.push({ text: texto });
+  if (!partes.length) throw new Error(m === 'casa' ? 'Dime qué tienes en casa (escribe, dicta o haz una foto).' : 'Escribe o dicta tu pregunta.');
+  const r = normalizarNutri(await generar(sistema, partes, 0.6));
+  if (!r.respuesta && !r.recetas.length) throw new Error('No he sabido responder. Prueba a contarlo de otra forma.');
+  return r;
 }
