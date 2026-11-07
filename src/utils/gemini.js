@@ -53,12 +53,18 @@ async function pedir(url, opciones) {
   try { datos = await r.json(); } catch (e) { datos = null; }
   if (!r.ok) {
     const msg = (datos && datos.error && datos.error.message) || ('Error ' + r.status);
-    if (r.status === 400 && /api key/i.test(msg)) throw new Error('La clave de Gemini no es válida. Revísala en Ajustes.');
-    if (r.status === 403) throw new Error('La clave no tiene permiso para Gemini. Crea otra en AI Studio.');
-    if (r.status === 429) throw new Error('Has llegado al límite gratuito de Gemini por ahora. Prueba en un rato.');
-    if (r.status === 404) throw new Error('Ese modelo ya no existe. En Ajustes pulsa "Probar" para elegir otro.');
-    if (r.status >= 500) throw new Error('Gemini está saturado ahora mismo. Prueba en un momento.');
-    throw new Error('Gemini: ' + msg);
+    const cual = (datos && datos.error && datos.error.status) ? ' [' + datos.error.status + ']' : '';
+    let texto;
+    if (r.status === 400 && /api key/i.test(msg)) texto = 'La clave de Gemini no es válida. Revísala en Ajustes.';
+    else if (r.status === 403) texto = 'La clave no tiene permiso para este modelo de Gemini.';
+    else if (r.status === 429) texto = 'Se ha agotado el cupo gratuito de Gemini para este modelo' + cual + '.';
+    else if (r.status === 404) texto = 'Ese modelo no existe para tu clave.';
+    else if (r.status >= 500) texto = 'Gemini está saturado ahora mismo. Prueba en un momento.';
+    else texto = 'Gemini: ' + msg;
+    // Detalle literal de Google, para saber exactamente qué ha pasado (se muestra en Ajustes → Gemini)
+    const err = new Error(texto + ' Detalle de Google: ' + msg.slice(0, 220));
+    err.status = r.status;
+    throw err;
   }
   return datos;
 }
@@ -87,21 +93,38 @@ export function leerJSON(bruto) {
 export async function generar(sistema, partes, temperatura) {
   const cfg = leerConfig();
   if (!cfg.clave) throw new Error('Falta la clave de Gemini (Ajustes → Gemini).');
-  let modelo = cfg.modelo;
-  if (!modelo) { const l = await listarModelos(cfg.clave); modelo = l[0] || 'gemini-flash-latest'; guardarConfig({ modelo }); }
+  // Lista de modelos a probar: el elegido primero; si da cupo agotado / no existe / saturado, el siguiente
+  let candidatos = cfg.modelo ? [cfg.modelo] : [];
+  if (!candidatos.length) {
+    try { candidatos = await listarModelos(cfg.clave); } catch (e) { candidatos = []; }
+    if (!candidatos.length) candidatos = ['gemini-flash-latest'];
+  }
   const parts = partes.filter(Boolean).map((p) => {
     if (p.audio) return { inline_data: { mime_type: p.mime || 'audio/wav', data: p.audio } };
     if (p.imagen) { const m = /^data:([^;]+);base64,(.*)$/.exec(p.imagen); return { inline_data: { mime_type: m ? m[1] : (p.mime || 'image/jpeg'), data: m ? m[2] : p.imagen } }; }
     return { text: String(p.text || '') };
   });
-  const d = await pedir(API + '/models/' + encodeURIComponent(modelo) + ':generateContent?key=' + encodeURIComponent(cfg.clave), {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      system_instruction: { parts: [{ text: sistema }] },
-      contents: [{ role: 'user', parts }],
-      generationConfig: { temperature: typeof temperatura === 'number' ? temperatura : 0.3, responseMimeType: 'application/json' },
-    }),
+  const cuerpo = JSON.stringify({
+    system_instruction: { parts: [{ text: sistema }] },
+    contents: [{ role: 'user', parts }],
+    generationConfig: { temperature: typeof temperatura === 'number' ? temperatura : 0.3, responseMimeType: 'application/json' },
   });
+  let d = null, ultimo = null;
+  for (const modelo of candidatos.slice(0, 4)) {
+    try {
+      d = await pedir(API + '/models/' + encodeURIComponent(modelo) + ':generateContent?key=' + encodeURIComponent(cfg.clave), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: cuerpo,
+      });
+      if (modelo !== cfg.modelo) guardarConfig({ modelo });
+      ultimo = null;
+      break;
+    } catch (e) {
+      ultimo = e;
+      // Solo cambiamos de modelo si el problema es de cupo, modelo o saturación; clave o red → se para
+      if (![429, 404, 500, 503].includes(e.status) && !(e.status >= 500)) throw e;
+    }
+  }
+  if (ultimo) throw ultimo;
   const c = (((d && d.candidates) || [])[0] || {}).content;
   const bruto = c && Array.isArray(c.parts) ? c.parts.map((p) => p.text || '').join('') : '';
   if (!bruto) throw new Error('Gemini no ha respondido nada. Inténtalo otra vez.');

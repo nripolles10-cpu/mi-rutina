@@ -66,7 +66,7 @@ describe('configuración', () => {
   test('errores de Gemini con mensajes claros', async () => {
     G.guardarConfig({ clave: 'AIzaPRUEBA', modelo: 'gemini-2.5-flash' });
     globalThis.fetch = vi.fn(async () => ({ ok: false, status: 429, json: async () => ({ error: { message: 'quota' } }) }));
-    await expect(G.preguntar(estado(), { texto: 'hola' })).rejects.toThrow(/límite gratuito/);
+    await expect(G.preguntar(estado(), { texto: 'hola' })).rejects.toThrow(/cupo gratuito/);
     expect(() => G.leerJSON('nada')).toThrow(/no ha devuelto/);
     expect(G.leerJSON('```json\n{"a":1}\n```')).toEqual({ a: 1 });
   });
