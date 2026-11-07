@@ -5,7 +5,7 @@ import { T } from '../data/theme.js';
 import { Native } from '../native/index.js';
 import { fmt, uid } from '../utils/format.js';
 import { effNutri, entryTotals } from '../utils/health.js';
-import { recetasConLoQueTienes, sugerirParaFaltan, consejosDebiles, diaParaMusculo, CARDIO_OBJETIVOS_SIN_IA, CARDIO_PRESETS, cardioPresetParaGuardar, resumenSemanaLocal, frasesResumen } from '../utils/sinIA.js';
+import { recetasConLoQueTienes, sugerirParaFaltan, consejosDebiles, CARDIO_OBJETIVOS_SIN_IA, CARDIO_PRESETS, cardioPresetParaGuardar, resumenSemanaLocal, frasesResumen } from '../utils/sinIA.js';
 
 const txtPeq = { color: T.muted, fontSize: 12, lineHeight: 1.5 };
 const caja = { background: 'rgba(7,11,22,0.7)', border: '1px solid rgba(140,170,255,0.18)', borderRadius: 14, padding: 12 };
