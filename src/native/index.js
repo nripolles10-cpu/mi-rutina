@@ -49,23 +49,29 @@ export function plataforma() { return isNative() ? 'android' : esIOS() ? 'ios' :
 // Reduce una imagen (File, Blob o URL) a un máximo de px y la devuelve como dataURL JPEG
 export function compressImage(input, maxDim, quality) {
   return new Promise((resolve, reject) => {
+    // Tiempo máximo: si la imagen no se puede decodificar, no se queda esperando para siempre
+    const reloj = setTimeout(() => reject(new Error('La foto tarda demasiado en procesarse')), 15000);
+    const resolver = (v) => { clearTimeout(reloj); resolve(v); };
+    const rechazar = (e) => { clearTimeout(reloj); reject(e); };
     const fromUrl = (url, revoke) => {
       const img = new Image();
-      img.onerror = () => { if (revoke) URL.revokeObjectURL(url); reject(new Error('No se pudo leer la imagen')); };
+      img.onerror = () => { if (revoke) URL.revokeObjectURL(url); rechazar(new Error('No se pudo leer la imagen')); };
       img.onload = () => {
-        let w = img.width, h = img.height;
-        if (w > h && w > maxDim) { h = Math.round(h * (maxDim / w)); w = maxDim; }
-        else if (h >= w && h > maxDim) { w = Math.round(w * (maxDim / h)); h = maxDim; }
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        if (revoke) URL.revokeObjectURL(url);
-        resolve(canvas.toDataURL('image/jpeg', quality));
+        try {
+          let w = img.width, h = img.height;
+          if (w > h && w > maxDim) { h = Math.round(h * (maxDim / w)); w = maxDim; }
+          else if (h >= w && h > maxDim) { w = Math.round(w * (maxDim / h)); h = maxDim; }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          if (revoke) URL.revokeObjectURL(url);
+          resolver(canvas.toDataURL('image/jpeg', quality));
+        } catch (e) { if (revoke) URL.revokeObjectURL(url); rechazar(e); }
       };
       img.src = url;
     };
     if (typeof input === 'string') { fromUrl(input, false); return; }
-    try { fromUrl(URL.createObjectURL(input), true); } catch (e) { reject(e); }
+    try { fromUrl(URL.createObjectURL(input), true); } catch (e) { rechazar(e); }
   });
 }
 

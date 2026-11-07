@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'vitest';
 import * as C from '../src/utils/cardio.js';
 import * as G from '../src/utils/gemini.js';
-import { fromYmd, ymd } from '../src/utils/format.js';
+import { ymd } from '../src/utils/format.js';
 
 describe('cardio: días y cumplimiento', () => {
   const miercoles = new Date(2026, 10, 4, 18, 0); // 4 nov 2026 = miércoles

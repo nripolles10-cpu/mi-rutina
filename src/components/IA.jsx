@@ -259,7 +259,7 @@ export function VozEntrenoModal({ dayId, onClose }) {
 /* ---------- 2) Comida por foto, voz o texto ---------- */
 
 export function ComidaIAModal({ fecha, momento, onClose }) {
-  const { state, commit, showToast } = useGym();
+  const { state, commit, showToast, setFoto } = useGym();
   const [cargando, setCargando] = useState(false);
   const [err, setErr] = useState('');
   const [res, setRes] = useState(null);
@@ -267,7 +267,6 @@ export function ComidaIAModal({ fecha, momento, onClose }) {
   const [foto, setFotoUsada] = useState(null);
   const [conFoto, setConFoto] = useState(true);
   const g = useGemini();
-  const { setFoto } = useGym();
 
   const enviar = async (e) => {
     setCargando(true); setErr('');
@@ -292,7 +291,7 @@ export function ComidaIAModal({ fecha, momento, onClose }) {
     let fotoId = null;
     if (foto && conFoto) {
       fotoId = 'com_' + uid();
-      try { const peq = await compressImage(foto, 900, 0.72); if (!(await setFoto(fotoId, peq))) fotoId = null; } catch (x) { fotoId = null; }
+      try { const peq = await compressImage(foto, 900, 0.72); if (!(await setFoto(fotoId, peq))) fotoId = null; } catch (x) { fotoId = null; showToast('No se pudo guardar la foto; la comida sí se añade'); }
     }
     const nuevas = sel.map((c) => ({ id: uid(), momento: c.momento, nombre: c.nombre.trim() + (c.gramos ? ' (' + fmt(c.gramos, 0) + ' g)' : c.cantidad ? ' (' + c.cantidad + ')' : ''), kcal: Math.round(c.kcal || 0), p: c.p || 0, c: c.c || 0, g: c.g || 0, ...(fotoId ? { fotoId } : {}) }));
     commit((prev) => ({ ...prev, comida: { ...prev.comida, diario: { ...prev.comida.diario, [fecha]: (prev.comida.diario[fecha] || []).concat(nuevas) } } }));
