@@ -321,7 +321,7 @@ describe('recetas nuevas', () => {
     const m = A.migrateState(JSON.parse(JSON.stringify(st)));
     const ids = m.comida.recetas.map((r) => r.id);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(m.comida.recetas.length).toBe(5 + 1 + 29);
+    expect(m.comida.recetas.length).toBe(5 + 1 + 29 + 26);
     expect(m.comida.recetas[0].nombre).toBe('Mi avena cambiada');
     expect(m.comida.recetas.find((r) => r.id === 'r_mia').nombre).toBe('Mi receta');
     expect(m.comida.recetas.find((r) => r.id === yaEstaba.id).nombre).toBe('Mi porridge');
@@ -337,7 +337,7 @@ describe('recetas nuevas', () => {
     viejo.appVersion = 7;
     viejo.recetas = A.mkRecetasOriginales();
     const res = A.applyImport(A.buildInitialState(), viejo, 'todo');
-    expect(res.comida.recetas.length).toBe(60);
+    expect(res.comida.recetas.length).toBe(86);
   });
 });
 

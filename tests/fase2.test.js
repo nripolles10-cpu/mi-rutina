@@ -119,7 +119,7 @@ describe('datos por defecto (defaultData.json)', () => {
     const a = A.stateFromDefaults(A.defaultData);
     const b = A.buildInitialState();
     expect(resumenRutina(a)).toEqual(resumenRutina(b));
-    expect(a.comida.recetas.length).toBe(60); // las 31 del archivo + las 29 nuevas
+    expect(a.comida.recetas.length).toBe(86); // 31 del archivo + 29 de la v8 + 26 de la v10
     // cada ejercicio arranca con su marca de referencia
     Object.values(a.exercises).forEach((ex) => expect(ex.history.length).toBe(1));
   });

@@ -205,7 +205,7 @@ describe('4) recetas nuevas', () => {
     expect(screen.getByText('Preparación')).toBeTruthy();
     expect(texto()).toMatch(/Pon el bacalao encima/);
     await flush();
-    expect(guardado().comida.recetas.length).toBe(60);
+    expect(guardado().comida.recetas.length).toBe(86);
     sinBasura();
   });
 });

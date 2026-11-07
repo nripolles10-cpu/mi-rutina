@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ComidaIAModal, RecetasIAModal } from '../components/IA.jsx';
+import { ComidaIAModal, CompraIACard, FotoMini, FotoRecetaCabecera, PlanSemanaIAModal, PreguntaIACard, RecetasIAModal, useGemini } from '../components/IA.jsx';
 import { Bar, chipAcento, Card, Chip, Label, LabeledNum, MacroLine, MiniBtn, Modal, NumInput, SectionTitle, Stepper, SupRow, useGym } from '../components/ui.jsx';
 import { DIAS_SEMANA, MOMENTOS, OBJETIVOS, TIPO_RECETA, tipoRecetaLabel } from '../data/catalog.js';
 import { T } from '../data/theme.js';
@@ -104,7 +104,15 @@ export function DiarioSec({ fecha, setFecha }) {
     if (e.id !== id || !e.por) return e;
     return { ...e, raciones: r, kcal: e.por.kcal * r, p: e.por.p * r, c: e.por.c * r, g: e.por.g * r };
   }) } } }), { key: 'dia:' + id });
-  const del = (id) => commit((prev) => ({ ...prev, comida: { ...prev.comida, diario: { ...prev.comida.diario, [fecha]: (prev.comida.diario[fecha] || []).filter((e) => e.id !== id) } } }));
+  const { delFoto } = useGym();
+  const del = (id) => {
+    const ent = lista.find((e) => e.id === id);
+    commit((prev) => ({ ...prev, comida: { ...prev.comida, diario: { ...prev.comida.diario, [fecha]: (prev.comida.diario[fecha] || []).filter((e) => e.id !== id) } } }));
+    if (ent && ent.fotoId) {
+      const usada = Object.keys(state.comida.diario).some((k) => (state.comida.diario[k] || []).some((e) => e.id !== id && e.fotoId === ent.fotoId));
+      if (!usada) delFoto(ent.fotoId);
+    }
+  };
 
   const filas = plan.falta ? [] : [
     ['Calorías', tot.kcal, plan.kcal, 'kcal', '#F5F7FF'], ['Proteína', tot.p, plan.protG, 'g', '#22D3EE'], ['Hidratos', tot.c, plan.carbG, 'g', '#A3E635'], ['Grasas', tot.g, plan.fatG, 'g', '#F472B6'],
@@ -150,7 +158,8 @@ export function DiarioSec({ fecha, setFecha }) {
             {items.map((e) => (
               <div key={e.id} style={{ padding: '8px 0', borderTop: '1px solid rgba(140,170,255,0.12)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                  <div style={{ minWidth: 0 }}>
+                  <FotoMini id={e.fotoId || (e.recetaId ? 'rec_' + e.recetaId : null)} size={42} />
+                  <div style={{ minWidth: 0, flex: 1 }}>
                     <div className="font-body" style={{ color: T.text, fontWeight: 600, fontSize: 13 }}>{e.nombre}{e.por ? ' × ' + fmt(e.raciones, 2) : ''}</div>
                     <MacroLine t={e} small />
                   </div>
@@ -232,7 +241,7 @@ export function RecetaEditor({ receta, onClose }) {
 }
 
 export function RecetaDetalle({ receta, onClose, onEdit }) {
-  const { state, commit, askConfirm, showToast } = useGym();
+  const { state, commit, askConfirm, showToast, delFoto } = useGym();
   const [rac, setRac] = useState(1);
   const [destino, setDestino] = useState(null); // 'diario' | 'plan'
   const [momento, setMomento] = useState(receta.tipo);
@@ -257,6 +266,7 @@ export function RecetaDetalle({ receta, onClose, onEdit }) {
 
   return (
     <Modal title="Receta" onClose={onClose}>
+      <FotoRecetaCabecera recetaId={receta.id} />
       <Card style={{ marginBottom: 12 }}>
         <div className="font-body" style={{ color: T.text, fontWeight: 800, fontSize: 17 }}>{receta.nombre}</div>
         <div className="font-body" style={{ color: T.muted, fontSize: 12, margin: '4px 0 8px' }}>{tipoRecetaLabel(receta.tipo)} · {receta.objetivos.map((o) => OBJETIVOS[o] ? OBJETIVOS[o].label : o).join(', ') || 'sin objetivo'}</div>
@@ -288,7 +298,7 @@ export function RecetaDetalle({ receta, onClose, onEdit }) {
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={() => toggleFavorita(commit, receta.id)} className="font-body btn btn-ghost" style={{ flex: 1, color: (state.comida.favoritos || []).indexOf(receta.id) !== -1 ? '#FBBF24' : undefined }}>{(state.comida.favoritos || []).indexOf(receta.id) !== -1 ? '★ Favorita' : '☆ Favorita'}</button>
             <button onClick={onEdit} className="font-body btn btn-ghost" style={{ flex: 1 }}>✏️ Editar</button>
-            <button onClick={() => askConfirm({ title: '¿Borrar receta?', text: '"' + receta.nombre + '" se borrará de tus recetas.', confirmLabel: 'Borrar', onConfirm: () => { commit((prev) => ({ ...prev, comida: { ...prev.comida, recetas: prev.comida.recetas.filter((x) => x.id !== receta.id), favoritos: (prev.comida.favoritos || []).filter((x) => x !== receta.id) } })); onClose(); } })} className="font-body btn btn-danger" style={{ flex: 1 }}>🗑️ Borrar</button>
+            <button onClick={() => askConfirm({ title: '¿Borrar receta?', text: '"' + receta.nombre + '" se borrará de tus recetas.', confirmLabel: 'Borrar', onConfirm: () => { commit((prev) => ({ ...prev, comida: { ...prev.comida, recetas: prev.comida.recetas.filter((x) => x.id !== receta.id), favoritos: (prev.comida.favoritos || []).filter((x) => x !== receta.id) } })); delFoto('rec_' + receta.id); onClose(); } })} className="font-body btn btn-danger" style={{ flex: 1 }}>🗑️ Borrar</button>
           </div>
         </div>
       ) : (
@@ -347,7 +357,9 @@ export function RecetasSec() {
       {verIa && <RecetasIAModal onClose={() => setVerIa(false)} onVer={(id) => { setVerIa(false); setDet(id); }} />}
       <div className="font-body" style={{ color: T.dim, fontSize: 11.5, marginBottom: 8, lineHeight: 1.5 }}>{lista.length} recetas · toca una para ver los ingredientes con sus cantidades exactas y los pasos para cocinarla.</div>
       {lista.map((r) => (
-        <div key={r.id} onClick={() => setDet(r.id)} className="card" style={{ marginBottom: 8, padding: 12, cursor: 'pointer' }}>
+        <div key={r.id} onClick={() => setDet(r.id)} className="card" style={{ marginBottom: 8, padding: 12, cursor: 'pointer', display: 'flex', gap: 10, alignItems: 'center' }}>
+          <FotoMini id={'rec_' + r.id} size={58} />
+          <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
             <div className="font-body" style={{ color: T.text, fontWeight: 700, fontSize: 13.5 }}>{r.nombre}</div>
             <span style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
@@ -357,6 +369,7 @@ export function RecetasSec() {
           </div>
           <div style={{ marginTop: 4 }}><MacroLine t={recTotals(r, 1)} small /></div>
           <div className="font-body" style={{ color: T.dim, fontSize: 10.5, marginTop: 3 }}>{r.objetivos.map((o) => OBJETIVOS[o] ? OBJETIVOS[o].label : o).join(' · ')}{r.propia ? ' · ✍️ mía' : ''} · {r.ingredientes.length} ingredientes · {r.pasos.length} pasos</div>
+          </div>
         </div>
       ))}
       {detR && !edit && <RecetaDetalle receta={detR} onClose={() => setDet(null)} onEdit={() => setEdit(detR)} />}
@@ -371,6 +384,8 @@ export function PlanSec() {
   const { state, commit, showToast } = useGym();
   const { plan: obj } = effNutri(state);
   const [pick, setPick] = useState(null); // {dia, momento}
+  const [planIa, setPlanIa] = useState(false);
+  const gem = useGemini();
   const rec = (id) => state.comida.recetas.find((r) => r.id === id);
   const diaPlan = (i) => ({ desayuno: [], comida: [], cena: [], snack: [], ...(state.comida.plan[i] || {}) });
   const totDia = (i) => { const d = diaPlan(i); let t = { kcal: 0, p: 0, c: 0, g: 0 }; MOMENTOS.forEach((m) => d[m[0]].forEach((it) => { const r = rec(it.recetaId); if (r) { const x = recTotals(r, it.raciones); t = { kcal: t.kcal + x.kcal, p: t.p + x.p, c: t.c + x.c, g: t.g + x.g }; } })); return t; };
@@ -387,6 +402,8 @@ export function PlanSec() {
   return (
     <div>
       <div className="font-body" style={{ color: T.muted, fontSize: 12, lineHeight: 1.5, marginBottom: 12 }}>Planifica una semana tipo. Con ella se genera la lista de la compra.</div>
+      {gem.activo && <button onClick={() => setPlanIa(true)} className="font-body btn btn-primary" style={{ width: '100%', marginBottom: 12 }}>✨ Planificar mi semana con IA</button>}
+      {planIa && <PlanSemanaIAModal onClose={() => setPlanIa(false)} />}
       {DIAS_SEMANA.map((nombre, i) => {
         const d = diaPlan(i); const t = totDia(i);
         const hay = MOMENTOS.some((m) => d[m[0]].length);
@@ -427,6 +444,7 @@ export function CompraSec() {
   const { state, commit, showToast } = useGym();
   const items = useMemo(() => listaCompra(state), [state.comida.plan, state.comida.recetas]);
   const marcados = state.comida.compra || {};
+  const dondeIa = (state.ia && state.ia.compra && state.ia.compra.productos) || {};
   const toggle = (key) => commit((prev) => ({ ...prev, comida: { ...prev.comida, compra: { ...prev.comida.compra, [key]: !prev.comida.compra[key] } } }), { noUndo: true });
   const texto = () => textoListaCompra(items.filter((x) => !marcados[x.key]));
   const pendientes = items.filter((x) => !marcados[x.key]).length;
@@ -443,12 +461,15 @@ export function CompraSec() {
   if (!items.length) return <Card><div className="font-body" style={{ color: T.muted, fontSize: 13, textAlign: 'center', lineHeight: 1.5 }}>Todavía no hay nada planificado. Añade recetas en el planificador y aquí aparecerá la lista de la compra.</div></Card>;
   return (
     <div>
+      <CompraIACard items={items} />
       <div className="font-body" style={{ color: T.muted, fontSize: 12, marginBottom: 10 }}>{pendientes} por comprar de {items.length}</div>
       <Card style={{ marginBottom: 12 }}>
         {items.map((x) => (
           <div key={x.key} onClick={() => toggle(x.key)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderTop: '1px solid rgba(140,170,255,0.1)', cursor: 'pointer' }}>
             <span style={{ width: 22, height: 22, borderRadius: 7, border: '2px solid ' + (marcados[x.key] ? '#A3E635' : 'rgba(140,170,255,0.5)'), background: marcados[x.key] ? '#A3E635' : 'transparent', color: '#04101C', fontWeight: 900, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{marcados[x.key] ? '✓' : ''}</span>
-            <span className="font-body" style={{ flex: 1, color: marcados[x.key] ? T.dim : T.text, fontSize: 13.5, textDecoration: marcados[x.key] ? 'line-through' : 'none' }}>{x.nombre}</span>
+            <span className="font-body" style={{ flex: 1, minWidth: 0, color: marcados[x.key] ? T.dim : T.text, fontSize: 13.5, textDecoration: marcados[x.key] ? 'line-through' : 'none' }}>{x.nombre}
+              {dondeIa[x.key] && <span style={{ display: 'block', color: T.cyan, fontSize: 11, textDecoration: 'none', marginTop: 1 }}>🏪 {dondeIa[x.key].super}{dondeIa[x.key].precio ? ' · ' + dondeIa[x.key].precio : ''}{dondeIa[x.key].consejo ? ' · ' + dondeIa[x.key].consejo : ''}</span>}
+            </span>
             <span className="font-body" style={{ color: T.muted, fontSize: 12.5, fontWeight: 700 }}>{x.q ? fmt(x.q, 1) + ' ' + (x.u || '') : x.u}</span>
           </div>
         ))}
@@ -533,7 +554,7 @@ export function AguaSec() {
 export function ComidaTab() {
   const [sec, setSec] = useState('diario');
   const [fecha, setFecha] = useState(ymd(new Date()));
-  const secs = [['diario', '📓 Diario'], ['recetas', '🍳 Recetas'], ['plan', '📅 Plan'], ['compra', '🛒 Compra'], ['agua', '💧 Agua']];
+  const secs = [['diario', '📓 Diario'], ['ia', '✨ IA'], ['recetas', '🍳 Recetas'], ['plan', '📅 Plan'], ['compra', '🛒 Compra'], ['agua', '💧 Agua']];
   return (
     <div>
       <SectionTitle emoji="🍽️">Comida</SectionTitle>
@@ -541,10 +562,35 @@ export function ComidaTab() {
         {secs.map((s) => <Chip key={s[0]} active={sec === s[0]} onClick={() => setSec(s[0])}>{s[1]}</Chip>)}
       </div>
       {sec === 'diario' && <DiarioSec fecha={fecha} setFecha={setFecha} />}
+      {sec === 'ia' && <ComidaIASec fecha={fecha} irA={setSec} />}
       {sec === 'recetas' && <RecetasSec />}
       {sec === 'plan' && <PlanSec />}
       {sec === 'compra' && <CompraSec />}
       {sec === 'agua' && <AguaSec />}
+    </div>
+  );
+}
+
+/* ---------- ✨ IA: todo lo de Gemini para la comida en un sitio ---------- */
+export function ComidaIASec({ fecha, irA }) {
+  const [modal, setModal] = useState(null);
+  const boton = (id, emoji, titulo, texto, accion) => (
+    <div key={id} onClick={accion || (() => setModal(id))} className="card" role="button" aria-label={titulo} style={{ padding: 12, marginBottom: 8, cursor: 'pointer', display: 'flex', gap: 12, alignItems: 'center' }}>
+      <span style={{ fontSize: 26 }}>{emoji}</span>
+      <div><div className="font-body" style={{ color: T.text, fontWeight: 800, fontSize: 13.5 }}>{titulo}</div><div className="font-body" style={{ color: T.muted, fontSize: 11.5, lineHeight: 1.4, marginTop: 2 }}>{texto}</div></div>
+    </div>
+  );
+  return (
+    <div>
+      {boton('foto', '📷', 'Apuntar lo que como', 'Foto de la etiqueta o del plato, audio o texto. La foto se queda en tu diario.')}
+      {boton('recetas', '🍳', 'Recetas nuevas para mis macros', 'Fáciles y fitness, para lo que te apetezca o lo que te falta hoy.')}
+      {boton('plan', '📅', 'Planificar mi semana', 'Reparte tus recetas para que cada día cuadre con tus macros.')}
+      {boton('compra', '🏪', 'Dónde comprar más barato', 'Te dice en qué súper comprar cada cosa de tu lista.', () => irA('compra'))}
+      {modal === 'foto' && <ComidaIAModal fecha={fecha} momento={null} onClose={() => setModal(null)} />}
+      {modal === 'recetas' && <RecetasIAModal onClose={() => setModal(null)} onVer={() => { setModal(null); irA('recetas'); }} />}
+      {modal === 'plan' && <PlanSemanaIAModal onClose={() => setModal(null)} />}
+      <SectionTitle emoji="🥗">Pregúntale a tu nutricionista IA</SectionTitle>
+      <PreguntaIACard tema="comida" />
     </div>
   );
 }

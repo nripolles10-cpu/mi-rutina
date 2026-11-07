@@ -1,6 +1,6 @@
 import LZString from 'lz-string';
 import { APP_VERSION, MUSCULOS_POR_DEFECTO, normalizarMusculos } from '../data/catalog.js';
-import { anadirRecetasNuevas, migrateState } from '../state/migrate.js';
+import { anadirRecetasNuevas, anadirRecetasV10, migrateState } from '../state/migrate.js';
 
 /* =========================================================================
    SECCIÓN 5 · COMPARTIR Y EXPORTAR
@@ -125,9 +125,12 @@ export function applyImport(prev, obj, mode) {
       next.comida = { ...prev.comida, plan: obj.nutricion.plan || prev.comida.plan };
     }
     if (obj.recetas) {
-      // Un código de antes de la versión 8 no trae las recetas nuevas: se añaden (sin tocar las suyas)
-      const antiguo = !(Number(obj.appVersion) >= 8);
-      next.comida = { ...next.comida, recetas: antiguo ? anadirRecetasNuevas(obj.recetas) : obj.recetas, favoritos: obj.favoritos || [] };
+      // Un código antiguo no trae las recetas que llegaron después (v8 y v10): se añaden (sin tocar las suyas)
+      const v = Number(obj.appVersion) || 0;
+      let recetas = obj.recetas;
+      if (v < 8) recetas = anadirRecetasNuevas(recetas);
+      if (v < 10) recetas = anadirRecetasV10(recetas);
+      next.comida = { ...next.comida, recetas, favoritos: obj.favoritos || [] };
     }
     if (obj.extra) {
       const x = obj.extra;

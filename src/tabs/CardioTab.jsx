@@ -1,14 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { CardioIAModal } from '../components/IA.jsx';
 import { Card, EditLockBar, Label, SectionTitle, TextField, useGym } from '../components/ui.jsx';
 import { T } from '../data/theme.js';
 
 export function CardioTab() {
   const { state, updateCardio, addCardio, removeCardio, askConfirm } = useGym();
   const editMode = state.meta.editMode;
+  const [ia, setIa] = useState(false);
   return (
     <div>
       <EditLockBar />
       <SectionTitle emoji="🏃">Cardio</SectionTitle>
+      <button onClick={() => setIa(true)} className="font-body btn btn-primary" style={{ width: '100%', marginBottom: 12, padding: 12 }}>✨ Cardio a mi medida (IA)</button>
+      {ia && <CardioIAModal onClose={() => setIa(false)} />}
       {state.cardio.length === 0 && (
         <Card style={{ marginBottom: 10 }}><p className="font-body" style={{ color: T.muted, fontSize: 13, textAlign: 'center', margin: 0 }}>No tienes cardio apuntado.{editMode ? '' : ' Desbloquea la edición para añadirlo.'}</p></Card>
       )}

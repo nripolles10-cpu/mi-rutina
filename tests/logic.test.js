@@ -147,9 +147,9 @@ describe('recetas e ingredientes', () => {
     expect(A.ingMacros('No existe', 100, 'g')).toEqual([0, 0, 0]);
   });
 
-  test('las 60 recetas de serie (31 de siempre + 29 nuevas): cada ingrediente existe en NUTRI_DB con una unidad válida, y los macros salen de las cantidades', () => {
+  test('las 86 recetas de serie (31 de siempre + 29 de la v8 + 26 de la v10): cada ingrediente existe en NUTRI_DB con una unidad válida, y los macros salen de las cantidades', () => {
     const recetas = A.mkRecetas();
-    expect(recetas.length).toBe(60);
+    expect(recetas.length).toBe(86);
     expect(A.mkRecetasOriginales().length).toBe(31);
     expect(A.RECETAS_NUEVAS_V8().length).toBe(29);
     const ids = new Set();

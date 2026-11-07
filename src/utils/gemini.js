@@ -395,12 +395,35 @@ export async function repasoSemanal(state) {
 }
 
 /* =========================================================================
-   5) DIANA FÍSICA → qué hacer con tus puntos débiles
+   5) DIANA FÍSICA → qué hacer SOLO con tus puntos débiles
+   Los consejos se guardan por músculo. Si un músculo deja de ser débil, su consejo
+   desaparece; si cambias la diana de otra forma, se rehacen solos.
    ========================================================================= */
 
 export function firmaDiana(state) {
   const e = (state.diana && state.diana.estados) || {};
-  return Object.keys(e).sort().map((k) => k + ':' + e[k]).join('|');
+  return Object.keys(e).filter((k) => e[k]).sort().map((k) => k + ':' + e[k]).join('|');
+}
+export function debilesDe(state) {
+  const e = (state.diana && state.diana.estados) || {};
+  return Object.keys(e).filter((k) => e[k] === 'debil' && CATS[k]);
+}
+
+// ¿Hace falta pedir consejos nuevos? No, si lo único que ha cambiado es que algún débil ya no lo es
+// (su consejo simplemente se deja de enseñar). Sí, en cualquier otro cambio.
+export function hayQueRehacerDiana(guardado, state) {
+  const deb = debilesDe(state);
+  if (!deb.length) return false;
+  if (!guardado || !guardado.estados) return true;
+  const ahora = (state.diana && state.diana.estados) || {};
+  const antes = guardado.estados;
+  const claves = {};
+  Object.keys(ahora).concat(Object.keys(antes)).forEach((k) => { claves[k] = true; });
+  return Object.keys(claves).some((k) => {
+    const a = antes[k] || null, b = ahora[k] || null;
+    if (a === b) return false;
+    return !(a === 'debil' && b !== 'debil');
+  }) || deb.some((k) => !(guardado.porMusculo || {})[k]);
 }
 
 export function datosDiana(state) {
@@ -410,57 +433,181 @@ export function datosDiana(state) {
   const enDias = {};
   (state.days || []).forEach((d) => d.ids.forEach((id) => { (enDias[id] = enDias[id] || []).push(d.label); }));
   const musculo = (k) => ({
-    id: k, nombre: catInfo(CATS, k).label, estado: estados[k] || 'sin marcar', seriesSemana: plan[k] || 0,
+    id: k, nombre: catInfo(CATS, k).label, titulo: (state.diana.titulos || {})[k] || '', seriesSemana: plan[k] || 0,
     progresoObjetivos: prog[k] && prog[k].pct !== null ? Math.round(prog[k].pct) + ' %' : null,
     ejercicios: activeExerciseIds(state).filter((id) => state.exercises[id].cat === k).map((id) => {
       const ex = state.exercises[id];
-      return { nombre: ex.name, dias: enDias[id] || [], series: (ex.currentSets || []).map(describeSet), estancado: sugerenciaProgresion(ex).aviso ? true : false };
+      return { nombre: ex.name, dias: enDias[id] || [], series: (ex.currentSets || []).map(describeSet), estancado: !!sugerenciaProgresion(ex).aviso };
     }),
   });
-  const debiles = Object.keys(estados).filter((k) => estados[k] === 'debil');
-  const intermedios = Object.keys(estados).filter((k) => estados[k] === 'intermedio');
+  const por = (est) => Object.keys(estados).filter((k) => estados[k] === est && CATS[k]).map((k) => catInfo(CATS, k).label);
   return {
-    debiles: debiles.map(musculo), intermedios: intermedios.map(musculo),
-    fuertes: Object.keys(estados).filter((k) => estados[k] === 'fuerte').map((k) => catInfo(CATS, k).label),
-    dias: (state.days || []).map((d) => ({ id: d.id, nombre: d.label, ejercicios: d.ids.length })),
+    debiles: debilesDe(state).map(musculo), intermedios: por('intermedio'), fuertes: por('fuerte'),
+    dias: (state.days || []).map((d) => ({ id: d.id, nombre: d.label, ejercicios: d.ids.filter((id) => state.exercises[id]).map((id) => state.exercises[id].name + ' (' + catInfo(CATS, state.exercises[id].cat).label + ')') })),
     sexo: state.formulario && state.formulario.sexo, objetivo: effNutri(state).obj.label,
   };
 }
 
 export function normalizarDiana(json, state) {
   const dias = (state.days || []).map((d) => d.id);
-  const consejos = (Array.isArray(json && json.consejos) ? json.consejos : []).filter((c) => c && (CATS[c.musculo] || txt(c.titulo))).slice(0, 8).map((c) => ({
-    musculo: CATS[c.musculo] ? c.musculo : null,
-    titulo: txt(c.titulo, 80) || (CATS[c.musculo] ? catInfo(CATS, c.musculo).label : ''),
-    porQue: txt(c.por_que, 300), acciones: lista(c.acciones, 5),
-    ejercicios: (Array.isArray(c.ejercicios) ? c.ejercicios : []).filter((e) => e && txt(e.nombre)).slice(0, 3).map((e) => ({
-      nombre: txt(e.nombre, 60), pauta: txt(e.pauta, 60), dia: dias.indexOf(e.dia) !== -1 ? e.dia : null,
-    })),
-  }));
-  return { general: txt(json && json.general, 400), consejos };
+  const deb = debilesDe(state);
+  const porMusculo = {};
+  (Array.isArray(json && json.consejos) ? json.consejos : []).forEach((c) => {
+    if (!c || deb.indexOf(c.musculo) === -1 || porMusculo[c.musculo]) return;
+    porMusculo[c.musculo] = {
+      titulo: txt(c.titulo, 80) || catInfo(CATS, c.musculo).label,
+      porQue: txt(c.por_que, 300), acciones: lista(c.acciones, 5),
+      ejercicios: (Array.isArray(c.ejercicios) ? c.ejercicios : []).filter((e) => e && txt(e.nombre)).slice(0, 3).map((e) => ({
+        nombre: txt(e.nombre, 60), pauta: txt(e.pauta, 60), dia: dias.indexOf(e.dia) !== -1 ? e.dia : null,
+      })),
+    };
+  });
+  return { general: txt(json && json.general, 400), porMusculo };
 }
 
 export async function consejosDiana(state) {
   const d = datosDiana(state);
-  if (!d.debiles.length && !d.intermedios.length) throw new Error('Marca primero algún músculo como punto débil o intermedio.');
+  if (!d.debiles.length) throw new Error('Marca primero algún músculo como punto débil.');
   const sistema = [
     BASE_COMUN,
-    'Mira su Diana física: los músculos marcados como PUNTO DÉBIL (y los intermedios) y dile qué hacer para mejorarlos con la rutina que ya tiene. Empieza por los débiles.',
-    'Para cada músculo: por qué puede estar flojo (pocas series, poca frecuencia, ejercicio que no le va, estancado…), acciones concretas (series por semana, frecuencia, técnica, rango de reps, orden en el día) y hasta 2 ejercicios que añadir o cambiar, con su pauta (ej. "3×10-12") y el id del día de su rutina donde encajaría mejor.',
-    'Ten en cuenta no pasarte de volumen en los días que ya tienen muchos ejercicios.',
-    'Devuelve: {"general":"una o dos frases","consejos":[{"musculo":"id","titulo":"","por_que":"","acciones":[""],"ejercicios":[{"nombre":"","pauta":"3×10-12","dia":"id del día"}]}]}',
+    'Mira su Diana física y dale consejos SOLO para los músculos que ha marcado como PUNTO DÉBIL (no des consejos de los demás; los fuertes e intermedios son solo contexto para no quitarles volumen ni pasarte en esos días).',
+    'Para cada punto débil: por qué puede estar flojo (pocas series, poca frecuencia, ejercicio que no le va, estancado…), 2-4 acciones concretas que pueda aplicar ya en su rutina (series por semana, frecuencia, técnica, rango de reps, orden en el día) y hasta 2 ejercicios que añadir o cambiar, con su pauta (ej. "3×10-12") y el id del día de su rutina donde encajarían mejor.',
+    'Devuelve: {"general":"una frase","consejos":[{"musculo":"id","titulo":"","por_que":"","acciones":[""],"ejercicios":[{"nombre":"","pauta":"3×10-12","dia":"id del día"}]}]}',
   ].join('\n');
-  return { ...normalizarDiana(await generar(sistema, [{ text: JSON.stringify(d) }], 0.5), state), firma: firmaDiana(state), fecha: new Date().toISOString() };
+  const r = normalizarDiana(await generar(sistema, [{ text: JSON.stringify(d) }], 0.5), state);
+  if (!Object.keys(r.porMusculo).length) throw new Error('Gemini no ha dado consejos esta vez. Pulsa "Actualizar" para intentarlo otra vez.');
+  return { ...r, estados: { ...((state.diana && state.diana.estados) || {}) }, fecha: new Date().toISOString() };
+}
+
+/* =========================================================================
+   5b) CARDIO a tu medida (cuestionario → propuestas que puedes añadir)
+   ========================================================================= */
+
+export const CARDIO_INTENSIDAD = [['suave', '🌿 Suave'], ['moderado', '🚶 Moderado'], ['intenso', '🔥 Intenso'], ['agresivo', '⚡ Muy intenso']];
+export const CARDIO_OBJETIVO = [['grasa', 'Perder grasa'], ['resistencia', 'Más resistencia'], ['salud', 'Salud del corazón'], ['rendimiento', 'Rendimiento / explosividad'], ['recuperacion', 'Recuperación activa']];
+export const CARDIO_MATERIAL = ['Cinta', 'Bici estática', 'Elíptica', 'Remo', 'Escaladora / escaleras', 'Assault bike', 'Comba', 'Al aire libre', 'En casa sin material', 'Piscina'];
+
+export function normalizarCardio(json) {
+  const props = (Array.isArray(json && json.propuestas) ? json.propuestas : []).filter((p) => p && txt(p.nombre)).slice(0, 6).map((p) => ({
+    nombre: txt(p.nombre, 60), modalidad: txt(p.modalidad, 40), metodo: txt(p.metodo, 40), intensidad: txt(p.intensidad, 30),
+    duracion: pos(p.duracion_min), frecuencia: txt(p.frecuencia, 60), detalle: lista(p.detalle, 10), porQue: txt(p.por_que, 240), cuando: txt(p.cuando, 120),
+  }));
+  return { resumen: txt(json && json.resumen, 400), propuestas: props, avisos: lista(json && json.avisos, 3) };
+}
+
+// Lo que se guarda en tu pestaña Cardio al pulsar "Añadir"
+export function cardioParaGuardar(p) {
+  const cab = [p.metodo, p.duracion ? Math.round(p.duracion) + ' min' : '', p.intensidad].filter(Boolean).join(' · ');
+  return { name: p.nombre, frecuencia: p.frecuencia || '', detalle: [cab].concat(p.detalle.map((x) => '• ' + x)).concat(p.cuando ? ['🕒 ' + p.cuando] : []).filter(Boolean).join('\n') };
+}
+
+export async function recomendarCardio(state, cuest) {
+  const pesas = (state.days || []).map((d) => d.label);
+  const sistema = [
+    BASE_COMUN,
+    'Diseña su CARDIO según su cuestionario. Da entre 4 y 6 propuestas DISTINTAS: varía la modalidad (cinta, bici, remo, elíptica, escaleras, comba, aire libre…) y el método (LISS / zona 2, MISS, HIIT, intervalos, Tabata, fartlek, cuestas, circuito metabólico, EMOM…), siempre respetando la intensidad que pide (si pide suave, nada de HIIT).',
+    'Cada propuesta: nombre corto, modalidad, método, intensidad (con % FC máx o RPE 1-10), duración en minutos, frecuencia semanal, detalle paso a paso con calentamiento, bloques/intervalos con tiempos, velocidades o inclinaciones orientativas, y vuelta a la calma, por qué le sirve, y cuándo hacerlo respecto a sus pesas (para no comprometer la fuerza ni la recuperación de piernas).',
+    'Contexto: entrena pesas ' + pesas.length + ' días (' + pesas.join(', ') + '), objetivo de físico: ' + effNutri(state).obj.label + ', cardio que ya tiene: ' + ((state.cardio || []).map((c) => c.name + ' ' + (c.frecuencia || '')).join('; ') || 'ninguno') + '.',
+    'Devuelve: {"resumen":"1-2 frases","propuestas":[{"nombre":"","modalidad":"","metodo":"","intensidad":"","duracion_min":25,"frecuencia":"2 días/semana","detalle":["5 min calentamiento a…"],"por_que":"","cuando":""}],"avisos":[""]}',
+  ].join('\n');
+  const pide = 'Mi cuestionario: ' + JSON.stringify({
+    intensidad: cuest.intensidad, objetivo: cuest.objetivo, minutos_por_sesion: cuest.minutos, dias_por_semana: cuest.dias,
+    material_disponible: cuest.material && cuest.material.length ? cuest.material : 'cualquiera', notas: cuest.nota || '',
+  });
+  const r = normalizarCardio(await generar(sistema, [{ text: pide }], 0.8));
+  if (!r.propuestas.length) throw new Error('No han salido propuestas. Prueba otra vez.');
+  return r;
+}
+
+/* =========================================================================
+   5c) PLAN SEMANAL de comidas con tus recetas
+   ========================================================================= */
+
+export function normalizarPlanSemana(json, state) {
+  const ids = {};
+  (state.comida.recetas || []).forEach((r) => { ids[r.id] = r; });
+  const momentos = MOMENTOS.map((m) => m[0]);
+  const dias = {};
+  (Array.isArray(json && json.dias) ? json.dias : []).forEach((d) => {
+    const i = n0(d && d.dia);
+    if (i === null || i < 0 || i > 6 || dias[i]) return;
+    const out = { desayuno: [], comida: [], cena: [], snack: [] };
+    (Array.isArray(d.comidas) ? d.comidas : []).forEach((c) => {
+      if (!c || !ids[c.receta] || momentos.indexOf(c.momento) === -1) return;
+      const rac = Math.max(0.5, Math.min(3, Math.round((n0(c.raciones) || 1) * 2) / 2));
+      out[c.momento].push({ recetaId: c.receta, raciones: rac });
+    });
+    if (momentos.some((m) => out[m].length)) dias[i] = out;
+  });
+  return { dias, consejo: txt(json && json.consejo, 300) };
+}
+
+export async function planSemanal(state, { peticion, dias }) {
+  const { plan, obj } = effNutri(state);
+  const fav = state.comida.favoritos || [];
+  const recetas = (state.comida.recetas || []).map((r) => r.id + ' | ' + r.nombre + ' | ' + r.tipo + ' | P' + r.p + ' H' + r.c + ' G' + r.g + ' | ' + kcalOfMacros(r.p, r.c, r.g) + ' kcal' + (fav.indexOf(r.id) !== -1 ? ' | ⭐favorita' : ''));
+  const sistema = [
+    BASE_COMUN,
+    'Monta su plan de comidas de la semana usando SOLO sus recetas (por id). Días: 0 = lunes … 6 = domingo. Momentos: desayuno, comida, cena, snack.',
+    plan.falta ? 'No tiene calculadora rellena: objetivo ' + obj.label + ', unas 2.200 kcal y mucha proteína.' : 'Cada día debe acercarse a ' + Math.round(plan.kcal) + ' kcal, ' + Math.round(plan.protG) + ' g de proteína, ' + Math.round(plan.carbG) + ' g de hidratos y ' + Math.round(plan.fatG) + ' g de grasa (±7 %). Ajusta con raciones de 0,5 en 0,5.',
+    'Varía las recetas, prioriza las favoritas y repite como mucho 2 veces la misma comida principal en la semana para que la compra sea sencilla.',
+    'Recetas (id | nombre | tipo | macros por ración | kcal): \n' + recetas.join('\n'),
+    'Devuelve: {"dias":[{"dia":0,"comidas":[{"momento":"desayuno","receta":"id","raciones":1}]}],"consejo":"una frase"}',
+  ].join('\n');
+  const pide = 'Planifica estos días: ' + (dias && dias.length ? dias.join(', ') : '0,1,2,3,4,5,6') + '.' + (peticion ? ' Preferencias: ' + peticion : '');
+  const r = normalizarPlanSemana(await generar(sistema, [{ text: pide }], 0.6), state);
+  if (!Object.keys(r.dias).length) throw new Error('No ha salido ningún día. Prueba otra vez.');
+  return r;
+}
+
+/* =========================================================================
+   5d) LISTA DE LA COMPRA → dónde comprar cada cosa (precio y calidad)
+   ========================================================================= */
+
+export const SUPERS = ['Mercadona', 'Lidl', 'Aldi', 'Carrefour', 'Dia', 'Alcampo', 'Ahorramas', 'El Corte Inglés', 'Eroski', 'Consum', 'Mercado / frutería', 'Online'];
+
+export function firmaCompra(items) { return items.map((x) => x.key).sort().join(','); }
+
+export function normalizarCompra(json, items) {
+  const porClave = {};
+  items.forEach((x) => { porClave[clave(x.nombre)] = x.key; });
+  const productos = {};
+  (Array.isArray(json && json.productos) ? json.productos : []).forEach((p) => {
+    if (!p) return;
+    const k = porClave[clave(p.producto)];
+    if (!k || productos[k]) return;
+    productos[k] = { super: txt(p.super, 40), precio: txt(p.precio_aprox, 40), consejo: txt(p.consejo, 160) };
+  });
+  const supers = (Array.isArray(json && json.supers) ? json.supers : []).filter((x) => x && txt(x.nombre)).slice(0, 5).map((x) => ({
+    nombre: txt(x.nombre, 40), que: lista(x.que_comprar, 30), porQue: txt(x.por_que, 200),
+  }));
+  return { resumen: txt(json && json.resumen, 400), supers, productos, total: txt(json && json.total_aprox, 60), consejos: lista(json && json.consejos, 4) };
+}
+
+export async function dondeComprar(state, items, zona) {
+  if (!items.length) throw new Error('La lista de la compra está vacía.');
+  const sistema = [
+    BASE_COMUN,
+    'Eres experto en hacer la compra barata en España sin perder calidad. Para cada producto de su lista, di en qué supermercado le conviene comprarlo (mejor relación calidad-precio), un precio aproximado de lo que necesita y un consejo corto (marca blanca que merece la pena, formato, congelado vs fresco…).',
+    'Su zona: ' + (zona || 'Madrid') + '. Supermercados posibles: ' + SUPERS.join(', ') + '. Agrupa para que vaya a 1-3 sitios como mucho (no merece la pena ir a 5 súper para ahorrar céntimos).',
+    'Los precios son orientativos: dilo en "consejos" si cambian mucho según la temporada.',
+    'Devuelve: {"resumen":"dónde ir y por qué, 1-2 frases","supers":[{"nombre":"","que_comprar":["producto"],"por_que":""}],"productos":[{"producto":"nombre EXACTO de la lista","super":"","precio_aprox":"≈ 2,50 €","consejo":""}],"total_aprox":"≈ 45 €","consejos":[""]}',
+  ].join('\n');
+  const pide = 'Mi lista: ' + items.map((x) => x.nombre + (x.q ? ' (' + fmt(x.q, 1) + ' ' + (x.u || '') + ')' : '')).join('; ');
+  const r = normalizarCompra(await generar(sistema, [{ text: pide }], 0.4), items);
+  if (!r.supers.length && !Object.keys(r.productos).length) throw new Error('No ha salido ninguna recomendación. Prueba otra vez.');
+  return { ...r, zona: zona || 'Madrid', firma: firmaCompra(items), fecha: new Date().toISOString() };
 }
 
 /* =========================================================================
    6) PREGÚNTALE A TU ENTRENADOR (sobre tu rutina, tu comida o tu progreso)
    ========================================================================= */
 
-export async function preguntar(state, { texto, audio }) {
+export async function preguntar(state, { texto, audio, tema }) {
   const d = datosRepaso(state);
   const sistema = [
     BASE_COMUN,
+    tema === 'comida' ? 'Ahora haces de NUTRICIONISTA deportivo: ideas de comidas, ingredientes, sustituciones, cómo cuadrar macros, qué comer antes o después de entrenar… Sus recetas: ' + (state.comida.recetas || []).map((r) => r.nombre).slice(0, 80).join('; ') + '. ' + contextoNutricion(state, ymd(new Date())).texto : '',
     'Responde a su pregunta sobre entrenamiento, técnica, nutrición o su progreso usando sus datos (JSON abajo). Respuesta clara y práctica, de 3 a 10 frases, con números concretos cuando ayuden.',
     'Datos: ' + JSON.stringify({ ...d, rutina: (state.days || []).map((x) => x.label + ': ' + x.ids.filter((id) => state.exercises[id]).map((id) => state.exercises[id].name).join(', ')) }),
     'Devuelve: {"pregunta":"su pregunta (transcrita si era audio)","respuesta":"…"}',

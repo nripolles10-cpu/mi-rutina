@@ -146,17 +146,57 @@ describe('repaso y diana', () => {
     expect(JSON.stringify(d)).not.toMatch(/NaN|undefined/);
     expect(G.normalizarRepaso({ titular: 'Buena', puntuacion: 14, bien: ['a', 3], plan: 'x' })).toMatchObject({ puntuacion: 10, bien: ['a'], plan: [] });
   });
-  test('consejos de la diana: pide marcar algo y valida días y músculos', async () => {
+  test('consejos de la diana: solo puntos débiles, y cuándo se rehacen', async () => {
     G.guardarConfig({ clave: 'AIzaPRUEBA', modelo: 'gemini-2.5-flash' });
     const st = estado();
+    const [m1, m2, m3] = Object.keys(A.CATS);
+    st.diana.estados = { [m3]: 'intermedio' };
     await expect(G.consejosDiana(st)).rejects.toThrow(/Marca primero/);
-    const musc = Object.keys(A.CATS)[0];
-    st.diana.estados = { [musc]: 'debil' };
-    respuesta = { general: 'Ok', consejos: [{ musculo: musc, titulo: 'Más volumen', acciones: ['Sube a 12 series'], ejercicios: [{ nombre: 'Ejercicio nuevo', pauta: '3×12', dia: st.days[0].id }, { nombre: 'Otro', dia: 'inventado' }] }] };
+    expect(G.hayQueRehacerDiana(null, st)).toBe(false);
+    st.diana.estados = { [m1]: 'debil', [m2]: 'debil', [m3]: 'intermedio' };
+    respuesta = { general: 'Ok', consejos: [
+      { musculo: m1, titulo: 'Más volumen', acciones: ['Sube a 12 series'], ejercicios: [{ nombre: 'Ejercicio nuevo', pauta: '3×12', dia: st.days[0].id }, { nombre: 'Otro', dia: 'inventado' }] },
+      { musculo: m2, acciones: ['Más frecuencia'] },
+      { musculo: m3, acciones: ['No debería salir: es intermedio'] },
+    ] };
     const r = await G.consejosDiana(st);
-    expect(r.consejos[0].ejercicios[0].dia).toBe(st.days[0].id);
-    expect(r.consejos[0].ejercicios[1].dia).toBe(null);
-    expect(r.firma).toBe(musc + ':debil');
+    expect(Object.keys(r.porMusculo).sort()).toEqual([m1, m2].sort());
+    expect(r.porMusculo[m1].ejercicios[0].dia).toBe(st.days[0].id);
+    expect(r.porMusculo[m1].ejercicios[1].dia).toBe(null);
+    expect(G.hayQueRehacerDiana(r, st)).toBe(false);
+    // un débil pasa a intermedio → su consejo se deja de enseñar, sin volver a preguntar
+    const menos = { ...st, diana: { ...st.diana, estados: { [m1]: 'debil', [m2]: 'intermedio', [m3]: 'intermedio' } } };
+    expect(G.hayQueRehacerDiana(r, menos)).toBe(false);
+    expect(G.debilesDe(menos)).toEqual([m1]);
+    // cualquier otro cambio (un intermedio pasa a débil o a fuerte) → se rehacen
+    expect(G.hayQueRehacerDiana(r, { ...st, diana: { ...st.diana, estados: { [m1]: 'debil', [m2]: 'debil', [m3]: 'debil' } } })).toBe(true);
+    expect(G.hayQueRehacerDiana(r, { ...st, diana: { ...st.diana, estados: { [m1]: 'debil', [m2]: 'debil', [m3]: 'fuerte' } } })).toBe(true);
+  });
+});
+
+describe('cardio, plan y compra', () => {
+  test('cardio: propuestas normalizadas y lo que se guarda', () => {
+    const r = G.normalizarCardio({ resumen: 'x', propuestas: [{ nombre: 'HIIT en bici', modalidad: 'Bici', metodo: 'HIIT', intensidad: 'RPE 8', duracion_min: '20', frecuencia: '2 días/semana', detalle: ['5 min suave', '8×30 s fuerte / 90 s suave'], cuando: 'Día aparte de pierna' }, { sin: 'nombre' }] });
+    expect(r.propuestas).toHaveLength(1);
+    const g = G.cardioParaGuardar(r.propuestas[0]);
+    expect(g).toMatchObject({ name: 'HIIT en bici', frecuencia: '2 días/semana' });
+    expect(g.detalle).toContain('HIIT · 20 min · RPE 8');
+    expect(g.detalle).toContain('• 8×30 s fuerte / 90 s suave');
+  });
+  test('plan semanal: solo recetas que existen y raciones razonables', () => {
+    const st = estado();
+    const r1 = st.comida.recetas[0].id;
+    const r = G.normalizarPlanSemana({ dias: [{ dia: 0, comidas: [{ momento: 'desayuno', receta: r1, raciones: 1.3 }, { momento: 'comida', receta: 'no_existe' }] }, { dia: 9, comidas: [] }, { dia: 2, comidas: [{ momento: 'cena', receta: r1, raciones: 7 }] }] }, st);
+    expect(Object.keys(r.dias)).toEqual(['0', '2']);
+    expect(r.dias[0].desayuno).toEqual([{ recetaId: r1, raciones: 1.5 }]);
+    expect(r.dias[2].cena[0].raciones).toBe(3);
+  });
+  test('compra: empareja productos de la lista por nombre', () => {
+    const items = [{ key: 'pechuga de pollo|g', nombre: 'Pechuga de pollo' }, { key: 'arroz|g', nombre: 'Arroz' }];
+    const r = G.normalizarCompra({ resumen: 'Ve a Mercadona', supers: [{ nombre: 'Mercadona', que_comprar: ['Pechuga de pollo'] }], productos: [{ producto: 'pechuga  de POLLO', super: 'Mercadona', precio_aprox: '≈ 6 €' }, { producto: 'Caviar', super: 'X' }] }, items);
+    expect(r.productos['pechuga de pollo|g']).toMatchObject({ super: 'Mercadona', precio: '≈ 6 €' });
+    expect(Object.keys(r.productos)).toHaveLength(1);
+    expect(G.firmaCompra(items)).toBe('arroz|g,pechuga de pollo|g');
   });
 });
 
@@ -226,5 +266,44 @@ describe('pantallas', () => {
     expect(texto()).toContain('Entrena 4 días');
     await flush();
     expect(guardado().ia.repaso.titular).toBe('Semana sólida');
+  });
+
+  test('cardio a mi medida: cuestionario → añadir a mi cardio', async () => {
+    G.guardarConfig({ clave: 'AIzaPRUEBA', modelo: 'gemini-2.5-flash' });
+    guardarEstado();
+    render(<A.App />); await tick();
+    await tab('Cardio');
+    await click(screen.getByRole('button', { name: '✨ Cardio a mi medida (IA)' }));
+    await click(screen.getByText('⚡ Muy intenso'));
+    await click(screen.getByText('Remo'));
+    respuesta = { resumen: 'Dos opciones duras', propuestas: [{ nombre: 'Tabata en remo', modalidad: 'Remo', metodo: 'Tabata', intensidad: 'RPE 9', duracion_min: 16, frecuencia: '2 días/semana', detalle: ['8×20 s a tope / 10 s descanso'] }] };
+    await click(screen.getByRole('button', { name: '✨ Proponme cardio' }));
+    const pide = JSON.stringify(peticiones.slice(-1)[0].body);
+    expect(pide).toContain('Muy intenso');
+    expect(pide).toContain('Remo');
+    await click(screen.getByRole('button', { name: '➕ Añadir a mi cardio' }));
+    await flush();
+    const c = guardado().cardio.find((x) => x.name === 'Tabata en remo');
+    expect(c.detalle).toContain('8×20 s a tope');
+  });
+
+  test('diana: consejos solo de los débiles; al quitar un débil desaparece sin volver a preguntar', async () => {
+    G.guardarConfig({ clave: 'AIzaPRUEBA', modelo: 'gemini-2.5-flash' });
+    const st = guardarEstado();
+    const [m1, m2] = Object.keys(A.CATS);
+    st.diana.estados = { [m1]: 'debil', [m2]: 'debil' };
+    st.ia = { dianaDebiles: { general: 'Hola', estados: { [m1]: 'debil', [m2]: 'debil' }, fecha: new Date().toISOString(), porMusculo: { [m1]: { titulo: 'T1', porQue: '', acciones: ['Acción uno'], ejercicios: [] }, [m2]: { titulo: 'T2', porQue: '', acciones: ['Acción dos'], ejercicios: [] } } } };
+    localStorage.setItem(A.STORAGE_KEY, JSON.stringify(st));
+    render(<A.App />); await tick();
+    await tab('Diana');
+    expect(texto()).toContain('Acción uno');
+    expect(texto()).toContain('Acción dos');
+    const antes = peticiones.length;
+    const tarjeta = screen.getByTestId('diana-' + m2);
+    await click(Array.from(tarjeta.querySelectorAll('*')).find((el) => el.textContent === 'Intermedio'));
+    expect(texto()).not.toContain('Acción dos');
+    expect(texto()).toContain('Acción uno');
+    await act(async () => { await new Promise((r) => setTimeout(r, 2300)); });
+    expect(peticiones.length).toBe(antes);
   });
 });

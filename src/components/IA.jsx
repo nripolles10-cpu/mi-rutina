@@ -2,15 +2,18 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Card, CheckRow, Chip, Label, MacroLine, Modal, NumInput, Stepper, useGym } from './ui.jsx';
 import { CATS, MOMENTOS, OBJETIVOS, catInfo } from '../data/catalog.js';
 import { T } from '../data/theme.js';
-import { Native } from '../native/index.js';
+import { Native, compressImage } from '../native/index.js';
 import { fmt, fromYmd, uid, ymd } from '../utils/format.js';
 import { kcalOfMacros } from '../utils/health.js';
 import { describeSet } from '../utils/training.js';
 import { empezarGrabacion, microDisponible } from '../utils/grabadora.js';
 import {
-  alCambiarConfig, aplicarEntreno, consejosDiana, entenderComida, entenderEntreno, escalarPor100, firmaDiana, generarRecetas,
-  guardarConfig, leerConfig, listarModelos, preguntar, repasoSemanal,
+  CARDIO_INTENSIDAD, CARDIO_MATERIAL, CARDIO_OBJETIVO, alCambiarConfig, aplicarEntreno, cardioParaGuardar, consejosDiana, debilesDe,
+  dondeComprar, entenderComida, entenderEntreno, escalarPor100, firmaCompra, generarRecetas, guardarConfig, hayQueRehacerDiana,
+  leerConfig, listarModelos, planSemanal, preguntar, recomendarCardio, repasoSemanal,
 } from '../utils/gemini.js';
+import { DIAS_SEMANA } from '../data/catalog.js';
+import { recTotals } from '../utils/comida.js';
 
 /* =========================================================================
    IA (Gemini, gratis con tu clave). Todo se revisa antes de guardarse.
@@ -261,11 +264,15 @@ export function ComidaIAModal({ fecha, momento, onClose }) {
   const [err, setErr] = useState('');
   const [res, setRes] = useState(null);
   const [fuera, setFuera] = useState({});
+  const [foto, setFotoUsada] = useState(null);
+  const [conFoto, setConFoto] = useState(true);
   const g = useGemini();
+  const { setFoto } = useGym();
 
   const enviar = async (e) => {
     setCargando(true); setErr('');
     try {
+      setFotoUsada(e.foto || null);
       const r = await entenderComida(state, { ...e, fecha });
       if (momento) r.comidas = r.comidas.map((c) => ({ ...c, momento: e.texto && /desayun|comida|cena|merienda|snack|almuerzo/i.test(e.texto) ? c.momento : momento }));
       setRes(r); setFuera({});
@@ -279,10 +286,15 @@ export function ComidaIAModal({ fecha, momento, onClose }) {
     else if (patch.p !== undefined || patch.c !== undefined || patch.g !== undefined) n.kcal = kcalOfMacros(n.p, n.c, n.g);
     return n;
   }) }));
-  const guardar = () => {
+  const guardar = async () => {
     const sel = res.comidas.filter((c, i) => !fuera[i] && c.nombre.trim());
     if (!sel.length) { setErr('No hay nada marcado para añadir.'); return; }
-    const nuevas = sel.map((c) => ({ id: uid(), momento: c.momento, nombre: c.nombre.trim() + (c.gramos ? ' (' + fmt(c.gramos, 0) + ' g)' : c.cantidad ? ' (' + c.cantidad + ')' : ''), kcal: Math.round(c.kcal || 0), p: c.p || 0, c: c.c || 0, g: c.g || 0 }));
+    let fotoId = null;
+    if (foto && conFoto) {
+      fotoId = 'com_' + uid();
+      try { const peq = await compressImage(foto, 900, 0.72); if (!(await setFoto(fotoId, peq))) fotoId = null; } catch (x) { fotoId = null; }
+    }
+    const nuevas = sel.map((c) => ({ id: uid(), momento: c.momento, nombre: c.nombre.trim() + (c.gramos ? ' (' + fmt(c.gramos, 0) + ' g)' : c.cantidad ? ' (' + c.cantidad + ')' : ''), kcal: Math.round(c.kcal || 0), p: c.p || 0, c: c.c || 0, g: c.g || 0, ...(fotoId ? { fotoId } : {}) }));
     commit((prev) => ({ ...prev, comida: { ...prev.comida, diario: { ...prev.comida.diario, [fecha]: (prev.comida.diario[fecha] || []).concat(nuevas) } } }));
     showToast('✓ Añadido al diario');
     onClose();
@@ -334,6 +346,12 @@ export function ComidaIAModal({ fecha, momento, onClose }) {
             </Card>
           ))}
           {res.consejo && <div className="font-body" style={{ ...caja, ...txtPeq, marginBottom: 12 }}>💡 {res.consejo}</div>}
+          {foto && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+              <img src={foto} alt="Tu foto" style={{ width: 54, height: 54, objectFit: 'cover', borderRadius: 10 }} />
+              <CheckRow on={conFoto} onClick={() => setConFoto(!conFoto)}>Guardar la foto en el diario</CheckRow>
+            </div>
+          )}
           <AvisoError msg={err} />
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={() => setRes(null)} className="font-body btn btn-ghost" style={{ flex: 1 }}>↺ Otra vez</button>
@@ -466,7 +484,7 @@ export function RepasoSemanalCard() {
   );
 }
 
-/* ---------- 5) Diana: consejos para los puntos débiles ---------- */
+/* ---------- 5) Diana: consejos SOLO para los puntos débiles (se reajustan solos) ---------- */
 
 export function DianaConsejosCard() {
   const { state, commit, addExercise, showToast } = useGym();
@@ -474,55 +492,63 @@ export function DianaConsejosCard() {
   const [cargando, setCargando] = useState(false);
   const [err, setErr] = useState('');
   const [anadidos, setAnadidos] = useState({});
-  const d = state.ia && state.ia.diana;
+  const intentado = useRef('');
+  const d = state.ia && state.ia.dianaDebiles;
   const estados = (state.diana && state.diana.estados) || {};
-  const hayMarcados = Object.keys(estados).some((k) => estados[k] === 'debil' || estados[k] === 'intermedio');
-  if (!g.activo) return <SinGemini que="Gemini puede decirte qué hacer para mejorar tus puntos débiles." />;
+  const debiles = debilesDe(state);
+  const firma = debiles.join(',') + '#' + Object.keys(estados).sort().map((k) => k + ':' + estados[k]).join('|');
+  const rehacer = g.activo && hayQueRehacerDiana(d, state);
+
   const hacer = async () => {
     setCargando(true); setErr('');
-    try { const nuevo = await consejosDiana(state); commit((prev) => ({ ...prev, ia: { ...(prev.ia || {}), diana: nuevo } })); setAnadidos({}); } catch (x) { setErr(x.message); }
+    try { const nuevo = await consejosDiana(state); commit((prev) => ({ ...prev, ia: { ...(prev.ia || {}), dianaDebiles: nuevo } }), { noUndo: true }); setAnadidos({}); } catch (x) { setErr(x.message); }
     setCargando(false);
   };
-  const desactualizado = d && d.firma !== firmaDiana(state);
+  // Cambias la diana → a los 2 s se rehacen los consejos (una sola vez por cambio, aunque falle)
+  useEffect(() => {
+    if (!rehacer || cargando || intentado.current === firma) return undefined;
+    const t = setTimeout(() => { intentado.current = firma; hacer(); }, 2000);
+    return () => clearTimeout(t);
+  }, [firma, rehacer, cargando]);
+
+  if (!g.activo) return <SinGemini que="Gemini puede decirte qué hacer para mejorar los músculos que marques como punto débil." />;
   const nombreDia = (id) => { const x = (state.days || []).find((y) => y.id === id); return x ? x.label : ''; };
-  const anadir = (c, e, k) => {
-    const cat = c.musculo && CATS[c.musculo] ? c.musculo : Object.keys(CATS)[0];
-    addExercise(e.dia, e.nombre, cat);
+  const anadir = (musc, e, k) => {
+    addExercise(e.dia, e.nombre, musc);
     setAnadidos((x) => ({ ...x, [k]: true }));
     showToast('➕ ' + e.nombre + ' añadido a ' + nombreDia(e.dia) + (e.pauta ? ' (' + e.pauta + ')' : ''));
   };
+  const visibles = debiles.filter((k) => d && d.porMusculo && d.porMusculo[k]);
   return (
     <Card style={{ marginBottom: 14 }}>
-      {!d && <div className="font-body" style={txtPeq}>{hayMarcados ? 'Gemini mira tus puntos débiles (y los intermedios), los ejercicios y las series que les das y te dice qué cambiar para que mejoren.' : 'Marca arriba algún músculo como "Punto débil" o "Intermedio" y Gemini te dirá qué hacer para mejorarlo.'}</div>}
-      {d && (
-        <div>
-          {desactualizado && <div className="font-body" style={{ color: '#FDE68A', fontSize: 12, marginBottom: 8 }}>ℹ️ Has cambiado la diana desde estos consejos: actualízalos abajo.</div>}
-          {d.general && <div className="font-body" style={{ color: T.text, fontSize: 13, lineHeight: 1.5, marginBottom: 6 }}>{d.general}</div>}
-          {d.consejos.map((c, i) => {
-            const info = c.musculo ? catInfo(CATS, c.musculo) : null;
-            return (
-              <div key={i} style={{ ...caja, borderLeft: '3px solid ' + (info ? info.color : T.cyan), marginTop: 10 }}>
-                <div className="font-body" style={{ color: T.text, fontWeight: 800, fontSize: 13.5 }}>{info ? info.emoji + ' ' : ''}{c.titulo}{c.musculo && estados[c.musculo] === 'debil' ? <span style={{ color: '#F43F5E', fontSize: 11, marginLeft: 6 }}>punto débil</span> : null}</div>
-                {c.porQue && <div className="font-body" style={{ ...txtPeq, marginTop: 4 }}>{c.porQue}</div>}
-                {c.acciones.map((a, j) => <div key={j} className="font-body" style={{ ...txtPeq, color: T.text, marginTop: 3 }}>✓ {a}</div>)}
-                {c.ejercicios.map((e, j) => {
-                  const k = i + '-' + j;
-                  return (
-                    <div key={j} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 8 }}>
-                      <div className="font-body" style={{ color: T.text, fontSize: 12.5, minWidth: 0 }}>🏋️ <b>{e.nombre}</b>{e.pauta ? ' · ' + e.pauta : ''}{e.dia ? <span style={{ color: T.dim }}> · {nombreDia(e.dia)}</span> : null}</div>
-                      {e.dia && (anadidos[k]
-                        ? <span className="font-body" style={{ color: '#A3E635', fontSize: 12, flexShrink: 0 }}>✓ Añadido</span>
-                        : <button onClick={() => anadir(c, e, k)} className="font-body btn btn-ghost" style={{ padding: '5px 9px', fontSize: 11.5, flexShrink: 0 }}>➕ Añadir</button>)}
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
-          <div className="font-body" style={{ color: T.dim, fontSize: 11, marginTop: 10 }}>Hecho el {cuando(d.fecha)}. "Añadir" pone el ejercicio en ese día de tu rutina; luego ajusta sus series.</div>
-        </div>
-      )}
-      <button disabled={cargando || !hayMarcados} onClick={hacer} className={'font-body btn ' + (d && !desactualizado ? 'btn-ghost' : 'btn-primary')} style={{ width: '100%', marginTop: 12 }}>{cargando ? '✨ Pensando…' : d ? '↺ Actualizar consejos' : '✨ ¿Qué hago con mis puntos débiles?'}</button>
+      {!debiles.length && <div className="font-body" style={txtPeq}>Marca arriba algún músculo como <b style={{ color: '#F43F5E' }}>Punto débil</b> y aquí te saldrá qué hacer para mejorarlo. Si lo cambias a intermedio o fuerte, su consejo se quita solo.</div>}
+      {debiles.length > 0 && d && d.general && visibles.length > 0 && <div className="font-body" style={{ color: T.text, fontSize: 13, lineHeight: 1.5, marginBottom: 6 }}>{d.general}</div>}
+      {visibles.map((k) => {
+        const c = d.porMusculo[k];
+        const info = catInfo(CATS, k);
+        return (
+          <div key={k} data-testid={'consejo-' + k} style={{ ...caja, borderLeft: '3px solid ' + info.color, marginTop: 10 }}>
+            <div className="font-body" style={{ color: T.text, fontWeight: 800, fontSize: 13.5 }}>{info.emoji} {info.label} <span style={{ color: '#F43F5E', fontSize: 11, marginLeft: 4 }}>punto débil</span></div>
+            {c.titulo && c.titulo !== info.label && <div className="font-body" style={{ color: T.cyan, fontWeight: 700, fontSize: 12.5, marginTop: 2 }}>{c.titulo}</div>}
+            {c.porQue && <div className="font-body" style={{ ...txtPeq, marginTop: 4 }}>{c.porQue}</div>}
+            {c.acciones.map((a, j) => <div key={j} className="font-body" style={{ ...txtPeq, color: T.text, marginTop: 3 }}>✓ {a}</div>)}
+            {c.ejercicios.map((e, j) => {
+              const kk = k + '-' + j;
+              return (
+                <div key={j} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 8 }}>
+                  <div className="font-body" style={{ color: T.text, fontSize: 12.5, minWidth: 0 }}>🏋️ <b>{e.nombre}</b>{e.pauta ? ' · ' + e.pauta : ''}{e.dia ? <span style={{ color: T.dim }}> · {nombreDia(e.dia)}</span> : null}</div>
+                  {e.dia && (anadidos[kk]
+                    ? <span className="font-body" style={{ color: '#A3E635', fontSize: 12, flexShrink: 0 }}>✓ Añadido</span>
+                    : <button onClick={() => anadir(k, e, kk)} className="font-body btn btn-ghost" style={{ padding: '5px 9px', fontSize: 11.5, flexShrink: 0 }}>➕ Añadir</button>)}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+      {debiles.length > 0 && (cargando || (rehacer && !err)) && <div className="font-body" style={{ ...txtPeq, marginTop: 10 }}>✨ {d ? 'Has cambiado la diana: reajustando los consejos…' : 'Preparando consejos para tus puntos débiles…'}</div>}
+      {d && visibles.length > 0 && <div className="font-body" style={{ color: T.dim, fontSize: 11, marginTop: 10 }}>"Añadir" pone el ejercicio en ese día de tu rutina; luego ajusta sus series. Los consejos se reajustan solos cuando cambias la diana.</div>}
+      {debiles.length > 0 && <button disabled={cargando} onClick={() => { intentado.current = firma; hacer(); }} className="font-body btn btn-ghost" style={{ width: '100%', marginTop: 12 }}>{cargando ? '✨ Pensando…' : '↺ Actualizar consejos'}</button>}
       <AvisoError msg={err} />
     </Card>
   );
@@ -530,7 +556,7 @@ export function DianaConsejosCard() {
 
 /* ---------- 6) Pregúntale a tu entrenador ---------- */
 
-export function PreguntaIACard() {
+export function PreguntaIACard({ tema }) {
   const { state } = useGym();
   const g = useGemini();
   const [cargando, setCargando] = useState(false);
@@ -539,12 +565,14 @@ export function PreguntaIACard() {
   if (!g.activo) return <SinGemini que="Pregunta lo que quieras sobre tu rutina, técnica o comida." />;
   const enviar = async (e) => {
     setCargando(true); setErr('');
-    try { const r = await preguntar(state, e); setHilo((h) => [r].concat(h).slice(0, 5)); } catch (x) { setErr(x.message); }
+    try { const r = await preguntar(state, { ...e, tema }); setHilo((h) => [r].concat(h).slice(0, 5)); } catch (x) { setErr(x.message); }
     setCargando(false);
   };
   return (
     <Card style={{ marginBottom: 14 }}>
-      <div className="font-body" style={{ ...txtPeq, marginBottom: 10 }}>Conoce tu rutina, tus marcas, tu peso y tu plan de comida. Ej.: <i style={{ color: T.text }}>"¿Por qué no subo en press banca?"</i>, <i style={{ color: T.text }}>"¿Qué ceno si me faltan 40 g de proteína?"</i></div>
+      <div className="font-body" style={{ ...txtPeq, marginBottom: 10 }}>{tema === 'comida'
+        ? <>Conoce tus macros, lo que llevas hoy y tus recetas. Ej.: <i style={{ color: T.text }}>"¿Qué ceno si me faltan 40 g de proteína?"</i>, <i style={{ color: T.text }}>"Tengo pollo, arroz y calabacín, ¿qué hago?"</i>, <i style={{ color: T.text }}>"¿Por qué sustituyo el pan?"</i></>
+        : <>Conoce tu rutina, tus marcas, tu peso y tu plan de comida. Ej.: <i style={{ color: T.text }}>"¿Por qué no subo en press banca?"</i>, <i style={{ color: T.text }}>"¿Cómo hago bien el peso muerto?"</i></>}</div>
       <Entrada placeholder="Escribe tu pregunta…" cargando={cargando} onEnviar={enviar} boton="✨ Preguntar" />
       <AvisoError msg={err} />
       {hilo.map((h, i) => (
@@ -557,3 +585,225 @@ export function PreguntaIACard() {
   );
 }
 
+
+/* ---------- 7) Cardio: cuestionario → propuestas para añadir ---------- */
+
+export function CardioIAModal({ onClose }) {
+  const { state, commit, showToast } = useGym();
+  const g = useGemini();
+  const [q, setQ] = useState({ intensidad: 'moderado', objetivo: 'grasa', minutos: 30, dias: 3, material: [], nota: '' });
+  const [cargando, setCargando] = useState(false);
+  const [err, setErr] = useState('');
+  const [res, setRes] = useState(null);
+  const [anadidos, setAnadidos] = useState({});
+  const set = (k, v) => setQ((x) => ({ ...x, [k]: v }));
+  const pedir = async () => {
+    setCargando(true); setErr('');
+    try { setRes(await recomendarCardio(state, { ...q, intensidad: (CARDIO_INTENSIDAD.find((x) => x[0] === q.intensidad) || [])[1], objetivo: (CARDIO_OBJETIVO.find((x) => x[0] === q.objetivo) || [])[1] })); setAnadidos({}); } catch (x) { setErr(x.message); }
+    setCargando(false);
+  };
+  const anadir = (p, i) => {
+    commit((prev) => ({ ...prev, cardio: (prev.cardio || []).concat([{ id: 'cardio_' + uid(), ...cardioParaGuardar(p) }]) }));
+    setAnadidos((x) => ({ ...x, [i]: true }));
+    showToast('🏃 Añadido a tu cardio');
+  };
+  return (
+    <Modal title="✨ Cardio a tu medida" onClose={onClose}>
+      {!g.activo ? <SinGemini que="Para que te proponga cardio según lo que quieras." /> : (
+        <div>
+          <Card style={{ marginBottom: 14 }}>
+            <Label>¿Qué intensidad quieres?</Label>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>{CARDIO_INTENSIDAD.map((x) => <Chip key={x[0]} active={q.intensidad === x[0]} onClick={() => set('intensidad', x[0])}>{x[1]}</Chip>)}</div>
+            <Label>¿Para qué?</Label>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>{CARDIO_OBJETIVO.map((x) => <Chip key={x[0]} active={q.objetivo === x[0]} onClick={() => set('objetivo', x[0])}>{x[1]}</Chip>)}</div>
+            <Label>Minutos por sesión</Label>
+            <Stepper value={q.minutos} onChange={(v) => set('minutos', v)} min={10} max={90} step={5} suffix="min" />
+            <Label style={{ marginTop: 12 }}>Días de cardio por semana</Label>
+            <Stepper value={q.dias} onChange={(v) => set('dias', v)} min={1} max={7} step={1} suffix="días" />
+            <Label style={{ marginTop: 12 }}>¿Qué tienes a mano? (si no marcas nada, vale cualquiera)</Label>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>{CARDIO_MATERIAL.map((m) => {
+              const on = q.material.indexOf(m) !== -1;
+              return <Chip key={m} active={on} onClick={() => set('material', on ? q.material.filter((x) => x !== m) : q.material.concat([m]))}>{m}</Chip>;
+            })}</div>
+            <Label>Algo más (opcional)</Label>
+            <textarea value={q.nota} onChange={(e) => set('nota', e.target.value)} rows={2} placeholder="ej. me molesta la rodilla, lo hago después de pesas, quiero algo divertido…" className="font-body inp" style={{ resize: 'vertical' }} />
+            <button disabled={cargando} onClick={pedir} className="font-body btn btn-primary" style={{ width: '100%', marginTop: 12 }}>{cargando ? '✨ Preparando propuestas…' : res ? '✨ Dame otras' : '✨ Proponme cardio'}</button>
+            <AvisoError msg={err} />
+          </Card>
+          {res && res.resumen && <div className="font-body" style={{ ...caja, ...txtPeq, color: T.text, marginBottom: 12 }}>💡 {res.resumen}</div>}
+          {res && res.propuestas.map((p, i) => (
+            <Card key={i} style={{ marginBottom: 12 }}>
+              <div className="font-body" style={{ color: T.text, fontWeight: 800, fontSize: 15 }}>{p.nombre}</div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '6px 0' }}>
+                {[p.modalidad, p.metodo, p.duracion ? Math.round(p.duracion) + ' min' : '', p.intensidad, p.frecuencia].filter(Boolean).map((t, j) => <span key={j} className="font-body" style={{ fontSize: 11, color: T.cyan, border: '1px solid rgba(var(--ac-rgb),0.4)', borderRadius: 999, padding: '2px 8px' }}>{t}</span>)}
+              </div>
+              {p.detalle.map((x, j) => <div key={j} className="font-body" style={{ ...txtPeq, color: T.text, marginBottom: 2 }}>• {x}</div>)}
+              {p.porQue && <div className="font-body" style={{ ...txtPeq, marginTop: 6 }}>💡 {p.porQue}</div>}
+              {p.cuando && <div className="font-body" style={{ ...txtPeq, marginTop: 2 }}>🕒 {p.cuando}</div>}
+              {anadidos[i]
+                ? <div className="font-body" style={{ color: '#A3E635', fontSize: 12.5, marginTop: 10, textAlign: 'center' }}>✓ Añadido a tu cardio</div>
+                : <button onClick={() => anadir(p, i)} className="font-body btn btn-primary" style={{ width: '100%', marginTop: 10 }}>➕ Añadir a mi cardio</button>}
+            </Card>
+          ))}
+          {res && res.avisos.map((a, i) => <div key={i} className="font-body" style={{ ...txtPeq, marginBottom: 4 }}>⚠️ {a}</div>)}
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+/* ---------- 8) Plan de la semana con tus recetas ---------- */
+
+export function PlanSemanaIAModal({ onClose }) {
+  const { state, commit, showToast } = useGym();
+  const g = useGemini();
+  const [dias, setDias] = useState([0, 1, 2, 3, 4, 5, 6]);
+  const [peticion, setPeticion] = useState('');
+  const [cargando, setCargando] = useState(false);
+  const [err, setErr] = useState('');
+  const [res, setRes] = useState(null);
+  const rec = (id) => state.comida.recetas.find((r) => r.id === id);
+  const pedir = async () => {
+    setCargando(true); setErr('');
+    try { setRes(await planSemanal(state, { peticion, dias })); } catch (x) { setErr(x.message); }
+    setCargando(false);
+  };
+  const totales = (d) => { let t = { kcal: 0, p: 0, c: 0, g: 0 }; MOMENTOS.forEach((m) => d[m[0]].forEach((it) => { const r = rec(it.recetaId); if (r) { const x = recTotals(r, it.raciones); t = { kcal: t.kcal + x.kcal, p: t.p + x.p, c: t.c + x.c, g: t.g + x.g }; } })); return t; };
+  const aplicar = () => {
+    commit((prev) => {
+      const plan = { ...prev.comida.plan };
+      Object.keys(res.dias).forEach((i) => {
+        const d = res.dias[i];
+        const o = {};
+        MOMENTOS.forEach((m) => { o[m[0]] = d[m[0]].map((it) => ({ id: uid(), recetaId: it.recetaId, raciones: it.raciones })); });
+        plan[i] = o;
+      });
+      return { ...prev, comida: { ...prev.comida, plan } };
+    });
+    showToast('📅 Plan guardado. Ya tienes la lista de la compra');
+    onClose();
+  };
+  return (
+    <Modal title="✨ Planificar mi semana" onClose={onClose}>
+      {!g.activo ? <SinGemini que="Para que te monte el plan de comidas de la semana." /> : (
+        <div>
+          <Card style={{ marginBottom: 14 }}>
+            <div className="font-body" style={{ ...txtPeq, marginBottom: 10 }}>Gemini reparte tus recetas en la semana para que cada día cuadre con tus calorías y macros. Los macros los calcula la app con tus recetas.</div>
+            <Label>Días</Label>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>{DIAS_SEMANA.map((n, i) => {
+              const on = dias.indexOf(i) !== -1;
+              return <Chip key={i} active={on} onClick={() => setDias(on ? dias.filter((x) => x !== i) : dias.concat([i]).sort())}>{n.slice(0, 3)}</Chip>;
+            })}</div>
+            <Label>Preferencias (opcional)</Label>
+            <textarea value={peticion} onChange={(e) => setPeticion(e.target.value)} rows={2} placeholder="ej. entre semana cosas rápidas, sin pescado, el finde algo especial…" className="font-body inp" style={{ resize: 'vertical' }} />
+            <button disabled={cargando || !dias.length} onClick={pedir} className="font-body btn btn-primary" style={{ width: '100%', marginTop: 12 }}>{cargando ? '✨ Planificando…' : res ? '✨ Hacer otro' : '✨ Planificar'}</button>
+            <AvisoError msg={err} />
+          </Card>
+          {res && (
+            <div>
+              {res.consejo && <div className="font-body" style={{ ...caja, ...txtPeq, color: T.text, marginBottom: 12 }}>💡 {res.consejo}</div>}
+              {Object.keys(res.dias).sort().map((i) => (
+                <Card key={i} style={{ marginBottom: 10 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+                    <div className="font-body" style={{ color: T.text, fontWeight: 800, fontSize: 14 }}>{DIAS_SEMANA[i]}</div>
+                    <MacroLine t={totales(res.dias[i])} small />
+                  </div>
+                  {MOMENTOS.map((m) => res.dias[i][m[0]].map((it, j) => (
+                    <div key={m[0] + j} className="font-body" style={{ ...txtPeq, color: T.text }}>{m[1].split(' ')[0]} {rec(it.recetaId).nombre}{it.raciones !== 1 ? ' ×' + fmt(it.raciones, 1) : ''}</div>
+                  )))}
+                </Card>
+              ))}
+              <div className="font-body" style={{ ...txtPeq, marginBottom: 8 }}>Al guardar se sustituyen esos días en tu planificador.</div>
+              <button onClick={aplicar} className="font-body btn btn-primary" style={{ width: '100%' }}>💾 Guardar en mi planificador</button>
+            </div>
+          )}
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+/* ---------- 9) Dónde comprar la lista de la compra ---------- */
+
+export function CompraIACard({ items }) {
+  const { state, commit } = useGym();
+  const g = useGemini();
+  const guardado = state.ia && state.ia.compra;
+  const [zona, setZona] = useState((guardado && guardado.zona) || (state.ia && state.ia.zonaCompra) || 'Madrid');
+  const [cargando, setCargando] = useState(false);
+  const [err, setErr] = useState('');
+  const [abierto, setAbierto] = useState(false);
+  if (!g.activo) return null;
+  const vigente = guardado && guardado.firma === firmaCompra(items);
+  const pedir = async () => {
+    setCargando(true); setErr('');
+    try { const r = await dondeComprar(state, items, zona.trim()); commit((prev) => ({ ...prev, ia: { ...(prev.ia || {}), compra: r, zonaCompra: zona.trim() } }), { noUndo: true }); setAbierto(true); } catch (x) { setErr(x.message); }
+    setCargando(false);
+  };
+  return (
+    <Card style={{ marginBottom: 12 }}>
+      <div className="font-body" style={{ color: T.text, fontWeight: 800, fontSize: 14, marginBottom: 4 }}>🏪 ¿Dónde lo compro más barato?</div>
+      <div className="font-body" style={{ ...txtPeq, marginBottom: 8 }}>Gemini te dice en qué súper comprar cada cosa con buena relación calidad-precio, agrupado para ir a pocos sitios. Precios orientativos.</div>
+      {guardado && (
+        <div style={{ marginBottom: 8 }}>
+          {!vigente && <div className="font-body" style={{ color: '#FDE68A', fontSize: 12, marginBottom: 6 }}>ℹ️ Tu lista ha cambiado: actualiza las recomendaciones.</div>}
+          {guardado.resumen && <div className="font-body" style={{ color: T.text, fontSize: 13, lineHeight: 1.5 }}>{guardado.resumen}</div>}
+          {guardado.total && <div className="font-body" style={{ color: '#A3E635', fontSize: 12.5, fontWeight: 700, marginTop: 4 }}>Total aproximado: {guardado.total}</div>}
+          {(abierto || vigente) && guardado.supers.map((x, i) => (
+            <div key={i} style={{ ...caja, marginTop: 8 }}>
+              <div className="font-body" style={{ color: T.cyan, fontWeight: 800, fontSize: 13 }}>🛒 {x.nombre}</div>
+              {x.porQue && <div className="font-body" style={{ ...txtPeq, marginTop: 2 }}>{x.porQue}</div>}
+              {x.que.length > 0 && <div className="font-body" style={{ ...txtPeq, color: T.text, marginTop: 4 }}>{x.que.join(' · ')}</div>}
+            </div>
+          ))}
+          {guardado.consejos.map((c, i) => <div key={i} className="font-body" style={{ ...txtPeq, marginTop: 6 }}>💡 {c}</div>)}
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <input value={zona} onChange={(e) => setZona(e.target.value)} placeholder="Tu zona (ej. Chamberí, Madrid)" className="font-body inp" aria-label="Tu zona" style={{ flex: 1 }} />
+        <button disabled={cargando} onClick={pedir} className={'font-body btn ' + (vigente ? 'btn-ghost' : 'btn-primary')} style={{ flexShrink: 0 }}>{cargando ? '✨…' : guardado ? '↺ Actualizar' : '✨ Dímelo'}</button>
+      </div>
+      <AvisoError msg={err} />
+    </Card>
+  );
+}
+
+/* ---------- 10) Fotos de tus platos (recetas y diario) ---------- */
+
+export function useFotoComida(id) {
+  const { fotos, setFoto, delFoto } = useGym();
+  const src = id && fotos && fotos[id] ? Native.photoSrc(fotos[id]) : null;
+  const poner = async (origen) => {
+    try { const f = await Native.pickPhoto(origen, 900, 0.72); if (f) await setFoto(id, f); } catch (e) { /* cancelada */ }
+  };
+  return { src, poner, quitar: () => delFoto(id) };
+}
+
+export function FotoRecetaCabecera({ recetaId }) {
+  const { src, poner, quitar } = useFotoComida('rec_' + recetaId);
+  const { askConfirm } = useGym();
+  return (
+    <div style={{ marginBottom: 12 }}>
+      {src && <img src={src} alt="Foto del plato" style={{ width: '100%', maxHeight: 240, objectFit: 'cover', borderRadius: 16, display: 'block', marginBottom: 8 }} />}
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button onClick={() => poner('camara')} className="font-body btn btn-ghost" style={{ flex: 1, fontSize: 12.5 }}>📷 {src ? 'Otra foto' : 'Hacer foto de mi plato'}</button>
+        <button onClick={() => poner('galeria')} className="font-body btn btn-ghost" style={{ flex: src ? 1 : 0.6, fontSize: 12.5 }}>🖼️ Galería</button>
+        {src && <button onClick={() => askConfirm({ title: '¿Quitar la foto?', text: 'Se quita la foto de esta receta.', confirmLabel: 'Quitar', onConfirm: quitar })} className="font-body btn btn-danger" style={{ fontSize: 12.5, padding: '8px 10px' }} aria-label="Quitar foto">🗑️</button>}
+      </div>
+    </div>
+  );
+}
+
+export function FotoMini({ id, size }) {
+  const { fotos } = useGym();
+  const [grande, setGrande] = useState(false);
+  const src = id && fotos && fotos[id] ? Native.photoSrc(fotos[id]) : null;
+  if (!src) return null;
+  const t = size || 46;
+  return (
+    <>
+      <img src={src} alt="Foto" onClick={(e) => { e.stopPropagation(); setGrande(true); }} style={{ width: t, height: t, objectFit: 'cover', borderRadius: 10, flexShrink: 0, cursor: 'zoom-in' }} />
+      {grande && <Modal title="📷 Foto" onClose={() => setGrande(false)}><img src={src} alt="Foto en grande" style={{ width: '100%', borderRadius: 14 }} /></Modal>}
+    </>
+  );
+}

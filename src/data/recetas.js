@@ -80,8 +80,8 @@ function R(id, nombre, tipo, obj, ing, pasos) {
   };
 }
 
-// Todas las recetas de serie: las 31 de siempre + las 29 nuevas de la versión 8
-export function mkRecetas() { return mkRecetasOriginales().concat(RECETAS_NUEVAS_V8()); }
+// Todas las recetas de serie: las 31 de siempre + las 29 de la versión 8 + las 26 fáciles de la versión 10
+export function mkRecetas() { return mkRecetasOriginales().concat(RECETAS_NUEVAS_V8(), RECETAS_NUEVAS_V10()); }
 
 export function mkRecetasOriginales() {
   return [
@@ -280,5 +280,93 @@ export function RECETAS_NUEVAS_V8() {
     R('sandwich_pollo', 'Sándwich de pollo, queso fresco y rúcula', 'snack', 'vm',
       [['Pan integral', 80, 'g'], ['Pechuga de pollo', 100, 'g'], ['Queso fresco batido 0%', 40, 'g'], ['Rúcula', 20, 'g'], ['Tomate', 0.5, 'ud']],
       ['Haz el pollo a la plancha y córtalo en láminas.', 'Unta el pan con el queso fresco y monta el sándwich con el pollo, la rúcula y el tomate.']),
+  ];
+}
+
+// ---- Versión 10: 26 recetas fitness MUY fáciles (pocos ingredientes, sin elaboraciones raras) ----
+export function RECETAS_NUEVAS_V10() {
+  return [
+    // Desayunos (5)
+    R('f_tostada_pavo', 'Tostadas integrales con pavo y queso fresco batido', 'desayuno', 'dm',
+      [['Pan integral', 70, 'g'], ['Queso fresco batido 0%', 80, 'g'], ['Pavo en lonchas', 60, 'g'], ['Tomate', 1, 'ud']],
+      ['Tuesta el pan.', 'Unta el queso fresco batido y pon el pavo y el tomate en rodajas.']),
+    R('f_skyr_platano', 'Skyr con plátano, avena y canela', 'desayuno', 'dm',
+      [['Skyr natural', 250, 'g'], ['Plátano', 1, 'ud'], ['Copos de avena', 30, 'g'], ['Canela', 1, 'cdta']],
+      ['Pon el skyr en un bol.', 'Añade el plátano en rodajas, la avena y la canela por encima.']),
+    R('f_revuelto_claras', 'Revuelto de claras y huevo con pavo y tortitas de arroz', 'desayuno', 'dm',
+      [['Claras de huevo', 150, 'g'], ['Huevo', 1, 'ud'], ['Pavo en lonchas', 50, 'g'], ['Tortitas de arroz', 3, 'ud']],
+      ['Trocea el pavo y saltéalo 1 minuto en una sartén antiadherente.', 'Añade las claras y el huevo y remueve hasta que cuaje.', 'Sírvelo con las tortitas de arroz.']),
+    R('f_batido_fresas', 'Batido de fresas, avena y proteína', 'desayuno', 'vm',
+      [['Leche semidesnatada', 300, 'ml'], ['Fresas', 150, 'g'], ['Copos de avena', 40, 'g'], ['Proteína whey', 30, 'g']],
+      ['Bate todo junto 30 segundos en la batidora.']),
+    R('f_tortilla_francesa', 'Tortilla francesa de 2 huevos con pan y tomate', 'desayuno', 'm',
+      [['Huevo', 2, 'ud'], ['Pan de barra', 60, 'g'], ['Tomate', 1, 'ud'], ['Aceite de oliva', 1, 'cdta']],
+      ['Bate los huevos y cuájalos en la sartén con el aceite.', 'Tuesta el pan y frota o ralla el tomate por encima.']),
+    // Comidas (9)
+    R('f_arroz_atun', 'Arroz con atún, huevo duro y tomate', 'comida', 'vm',
+      [['Arroz (peso en crudo)', 80, 'g'], ['Atún al natural', 2, 'ud'], ['Huevo', 1, 'ud'], ['Tomate', 1, 'ud']],
+      ['Cuece el arroz y el huevo (10 minutos el huevo).', 'Escurre el atún y trocea el tomate y el huevo.', 'Mézclalo todo con un poco de sal.']),
+    R('f_pasta_pollo', 'Pasta con pollo y tomate', 'comida', 'vm',
+      [['Pasta (peso en crudo)', 90, 'g'], ['Pechuga de pollo', 150, 'g'], ['Tomate triturado', 150, 'g'], ['Aceite de oliva', 1, 'cdta']],
+      ['Cuece la pasta.', 'Saltea el pollo en dados con el aceite y añade el tomate 5 minutos.', 'Mezcla con la pasta.']),
+    R('f_pollo_patata', 'Pollo a la plancha con patata al microondas y ensalada', 'comida', 'dm',
+      [['Pechuga de pollo', 180, 'g'], ['Patata', 250, 'g'], ['Lechuga y tomate', 150, 'g'], ['Aceite de oliva', 1, 'cda']],
+      ['Pincha la patata y hazla 6-8 minutos al microondas.', 'Haz el pollo a la plancha.', 'Aliña la ensalada con el aceite.']),
+    R('f_garbanzos_atun', 'Ensalada de garbanzos con atún y pimiento', 'comida', 'dm',
+      [['Garbanzos cocidos', 200, 'g'], ['Atún al natural', 1, 'ud'], ['Pimiento', 80, 'g'], ['Aceite de oliva', 1, 'cda'], ['Lima o limón', 1, 'ud']],
+      ['Enjuaga los garbanzos.', 'Mézclalos con el atún y el pimiento picado.', 'Aliña con aceite y limón.']),
+    R('f_pavo_wok', 'Salteado de pavo picado con arroz y verduras', 'comida', 'vm',
+      [['Carne picada de pavo', 150, 'g'], ['Arroz (peso en crudo)', 70, 'g'], ['Verduras para wok', 200, 'g'], ['Salsa de soja', 15, 'g']],
+      ['Cuece el arroz.', 'Saltea el pavo hasta que se dore y añade las verduras 5 minutos.', 'Junta con el arroz y la soja.']),
+    R('f_salmon_arroz', 'Salmón a la plancha con arroz y brócoli', 'comida', 'vm',
+      [['Salmón', 150, 'g'], ['Arroz basmati (peso en crudo)', 60, 'g'], ['Brócoli', 200, 'g']],
+      ['Cuece el arroz y el brócoli (o brócoli al microondas 4 minutos).', 'Haz el salmón a la plancha 3-4 minutos por lado.']),
+    R('f_ternera_patata', 'Ternera a la plancha con patata y pimientos', 'comida', 'v',
+      [['Ternera magra', 180, 'g'], ['Patata', 300, 'g'], ['Pimiento', 100, 'g'], ['Aceite de oliva', 1, 'cdta']],
+      ['Haz la patata al microondas 8 minutos.', 'Saltea el pimiento con el aceite y haz la ternera a la plancha.']),
+    R('f_wrap_atun', 'Wrap integral de atún, queso fresco y lechuga', 'comida', 'd',
+      [['Wrap integral', 1, 'ud'], ['Atún al natural', 1, 'ud'], ['Queso fresco batido 0%', 50, 'g'], ['Lechuga y tomate', 80, 'g']],
+      ['Unta el wrap con el queso fresco.', 'Pon el atún escurrido y la lechuga con tomate y enróllalo.']),
+    R('f_cuscus_pollo', 'Cuscús con pollo, pepino y tomate cherry', 'comida', 'vm',
+      [['Cuscús (peso en crudo)', 70, 'g'], ['Pechuga de pollo', 150, 'g'], ['Pepino', 100, 'g'], ['Tomate cherry', 100, 'g'], ['Aceite de oliva', 1, 'cdta']],
+      ['Cubre el cuscús con agua hirviendo, tapa 5 minutos y suelta con un tenedor.', 'Haz el pollo a la plancha en tiras.', 'Mezcla con el pepino y los tomates.']),
+    // Cenas (6)
+    R('f_tortilla_espinacas', 'Tortilla de espinacas con tostada', 'cena', 'dm',
+      [['Huevo', 2, 'ud'], ['Claras de huevo', 100, 'g'], ['Espinacas', 100, 'g'], ['Pan integral', 40, 'g']],
+      ['Saltea las espinacas 2 minutos.', 'Añade los huevos y las claras batidos y cuaja la tortilla.', 'Acompaña con la tostada.']),
+    R('f_pavo_calabacin', 'Pavo a la plancha con calabacín y champiñones', 'cena', 'd',
+      [['Pechuga de pavo (cruda)', 180, 'g'], ['Calabacín', 200, 'g'], ['Champiñones', 150, 'g'], ['Aceite de oliva', 1, 'cdta']],
+      ['Saltea el calabacín y los champiñones con el aceite.', 'Haz el pavo a la plancha.']),
+    R('f_sandwich_atun', 'Sándwich de atún, huevo y tomate', 'cena', 'm',
+      [['Pan integral', 80, 'g'], ['Atún al natural', 1, 'ud'], ['Huevo', 1, 'ud'], ['Tomate', 1, 'ud']],
+      ['Cuece el huevo 10 minutos y córtalo en rodajas.', 'Monta el sándwich con el atún, el huevo y el tomate.']),
+    R('f_ensalada_pollo_maiz', 'Ensalada templada de pollo, huevo y maíz', 'cena', 'dm',
+      [['Pechuga de pollo', 150, 'g'], ['Huevo', 1, 'ud'], ['Maíz dulce', 60, 'g'], ['Lechuga y tomate', 150, 'g'], ['Aceite de oliva', 1, 'cdta']],
+      ['Haz el pollo a la plancha en tiras y cuece el huevo.', 'Mézclalo con la lechuga, el tomate y el maíz y aliña.']),
+    R('f_bacalao_pimientos', 'Bacalao a la plancha con pimientos y patata', 'cena', 'dm',
+      [['Bacalao', 200, 'g'], ['Pimiento', 120, 'g'], ['Patata', 200, 'g'], ['Aceite de oliva', 1, 'cdta']],
+      ['Haz la patata al microondas 6 minutos.', 'Saltea el pimiento y haz el bacalao a la plancha.']),
+    R('f_quesadilla_pollo', 'Quesadilla de pollo y mozzarella', 'cena', 'vm',
+      [['Tortilla de trigo grande', 1, 'ud'], ['Pechuga de pollo', 120, 'g'], ['Mozzarella light', 40, 'g'], ['Pimiento', 50, 'g']],
+      ['Haz el pollo y el pimiento en tiras a la plancha.', 'Ponlo en media tortilla con la mozzarella, dóblala y dórala 2 minutos por lado.']),
+    // Snacks (6)
+    R('f_yogur_nueces', 'Yogur griego con miel y nueces', 'snack', 'm',
+      [['Yogur griego 0%', 200, 'g'], ['Miel', 1, 'cdta'], ['Nueces', 15, 'g']],
+      ['Pon el yogur con la miel y las nueces troceadas.']),
+    R('f_tortitas_cacahuete', 'Tortitas de arroz con crema de cacahuete y plátano', 'snack', 'v',
+      [['Tortitas de arroz', 3, 'ud'], ['Crema de cacahuete', 15, 'g'], ['Plátano', 1, 'ud']],
+      ['Unta las tortitas con la crema y pon el plátano en rodajas.']),
+    R('f_batido_skyr', 'Batido de skyr y frutos rojos', 'snack', 'd',
+      [['Skyr natural', 200, 'g'], ['Frutos rojos', 100, 'g'], ['Leche semidesnatada', 150, 'ml']],
+      ['Bate todo junto (con los frutos rojos congelados queda tipo smoothie).']),
+    R('f_huevos_manzana', 'Huevos duros con manzana', 'snack', 'dm',
+      [['Huevo', 2, 'ud'], ['Manzana', 1, 'ud']],
+      ['Cuece los huevos 10 minutos (puedes dejar varios hechos en la nevera).']),
+    R('f_tostada_jamon', 'Tostada de jamón serrano y tomate', 'snack', 'm',
+      [['Pan de barra', 50, 'g'], ['Tomate', 1, 'ud'], ['Jamón serrano', 30, 'g'], ['Aceite de oliva', 1, 'cdta']],
+      ['Tuesta el pan, ralla el tomate por encima, un hilo de aceite y el jamón.']),
+    R('f_rollitos_pavo', 'Rollitos de pavo y queso con pepino', 'snack', 'd',
+      [['Pavo en lonchas', 80, 'g'], ['Queso en lonchas', 20, 'g'], ['Pepino', 100, 'g']],
+      ['Enrolla el pavo con el queso y acompaña con el pepino en bastones.']),
   ];
 }

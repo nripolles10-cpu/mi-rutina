@@ -220,6 +220,9 @@ Con tu clave **gratuita** de Google AI Studio (la misma que usas en Mi Vida) la 
 - 🤖 **Repaso semanal** (Progreso): qué va bien, qué mejorar y qué hacer en la próxima sesión.
 - 💡 **Cómo mejorar tus puntos débiles** (al final de Diana): consejos y ejercicios que puedes añadir a un día con un toque.
 - 🤖 **Pregúntale a tu entrenador IA** (Extras).
+- 🏃 **Cardio a mi medida** (Cardio): eliges intensidad, objetivo, minutos, días y material, y te propone sesiones de distintas modalidades y métodos que puedes añadir a tu cardio.
+- 🍽️ **Comida → ✨ IA**: apuntar lo que comes (la foto se queda en el diario), recetas nuevas, planificar la semana con tus recetas, dónde comprar más barato cada cosa de la lista y tu nutricionista IA.
+- 📷 **Foto de tus platos** en cada receta (sale en la lista de recetas y en el diario).
 
 Cómo activarlo (una vez): **⚙️ Ajustes → ✨ Gemini (IA gratis)** → pega tu clave → **Probar la clave**.
 La clave se queda en el móvil: no va en tus copias, ni en lo que exportas, ni en la rutina que compartes.

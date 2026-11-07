@@ -1,5 +1,5 @@
 import { APP_VERSION, CATS, MUSCULOS_POR_DEFECTO, TAB_IDS, catReserva, mapaMusculos, normalizarMusculos } from '../data/catalog.js';
-import { RECETAS_NUEVAS_V8 } from '../data/recetas.js';
+import { RECETAS_NUEVAS_V10, RECETAS_NUEVAS_V8 } from '../data/recetas.js';
 import { CARDIO, DAYS_SEED, SEED_EXERCISES } from '../data/seed.js';
 import { defaultComida, normalizeAgua, normalizeRecetas } from '../utils/comida.js';
 import { clone, stripAcc, uid } from '../utils/format.js';
@@ -306,6 +306,19 @@ export const MIGRATIONS = {
 
 // (la v9 —registro diario, medidas, fotos de progreso y preferencias nuevas— la completa normalizeCurrent)
 MIGRATIONS[9] = (st) => st;
+// v9 → v10: 26 recetas fáciles nuevas (se añaden las que falten, sin tocar las tuyas)
+MIGRATIONS[10] = (st) => {
+  const c = st.comida && typeof st.comida === 'object' ? st.comida : null;
+  if (!c || !Array.isArray(c.recetas)) return st;
+  return { ...st, comida: { ...c, recetas: anadirRecetasV10(c.recetas) } };
+};
+export function anadirRecetasV10(lista) {
+  const arr = Array.isArray(lista) ? lista : [];
+  const ids = {};
+  arr.forEach((r) => { if (r && r.id) ids[r.id] = true; });
+  const faltan = RECETAS_NUEVAS_V10().filter((r) => !ids[r.id]);
+  return faltan.length ? arr.concat(faltan) : arr;
+}
 
 // Añade las recetas nuevas de la versión 8 que falten (por id). No cambia ni duplica ninguna.
 export function anadirRecetasNuevas(lista) {
