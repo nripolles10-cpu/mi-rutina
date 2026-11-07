@@ -210,28 +210,19 @@ todavía"*: es normal y no afecta al APK.
 Ajustes → **Copia de seguridad completa** → copiar el código → en el otro móvil, Ajustes →
 **Importar rutina o restaurar copia** → pegar → **Reemplazar todo lo que trae**.
 
-## Paso 11. IA gratis con Gemini (opcional)
+## Paso 11. Herramientas de la app (sin IA)
 
-Con tu clave **gratuita** de Google AI Studio (la misma que usas en Mi Vida) la app puede:
+La app ya no usa inteligencia artificial: todo sale de tus datos y de tablas fijas. No necesita internet ni clave.
 
-- 🎙️ **Apuntar el entreno hablando** (pestaña Rutina): "press banca 80 por 8, luego 70 por 10…" → revisas las series y se guardan en el historial.
-- 📷 **Comida con foto, voz o texto** (Comida → Diario → botón "📷 IA" de cada comida): lee etiquetas nutricionales o estima tu plato.
-- ✨ **Recetas con IA** (Comida → Recetas): recetas nuevas que cuadran con tus macros o con lo que te falta hoy. Las guardas en tus recetas.
-- 🤖 **Repaso semanal** (Progreso): qué va bien, qué mejorar y qué hacer en la próxima sesión.
-- 💡 **Cómo mejorar tus puntos débiles** (al final de Diana): consejos y ejercicios que puedes añadir a un día con un toque.
-- 🤖 **Pregúntale a tu entrenador IA** (Extras).
-- 🏃 **Cardio a mi medida** (Cardio): eliges intensidad, objetivo, minutos, días y material, y te propone sesiones de distintas modalidades y métodos que puedes añadir a tu cardio.
-- 🍽️ **Comida → ✨ IA**: apuntar lo que comes (la foto se queda en el diario), recetas nuevas, planificar la semana con tus recetas, dónde comprar más barato cada cosa de la lista y tu nutricionista IA.
+- 🧩 **Lo que te queda hoy** (Comida → Diario): calorías, proteína, hidratos y grasas que te faltan, con alimentos sugeridos que encajan sin pasarte. Un toque para añadirlo al diario.
+- 🥫 **¿Qué tengo en casa?** (Comida → Recetas): escribe lo que tienes y te busco recetas, con lo que te falta de cada una.
+- 💧 **Agua** (Comida → segundo botón).
+- 💡 **Cómo mejorar tus puntos débiles** (al final de Diana): consejos por músculo solo para los que marques como punto débil. Si cambias uno a intermedio o fuerte, su consejo desaparece solo.
+- 🏃 **Elegir tipo de cardio** (Cardio): eliges si buscas quemar grasa, resistencia o recuperación, y te doy 5 tipos distintos para añadir a tu cardio.
+- 📋 **Esta semana** (Progreso): entrenos, series, cardio, comida, peso y sueño de la semana, con cifras calculadas.
 - 📷 **Foto de tus platos** en cada receta (sale en la lista de recetas y en el diario).
 
-Cómo activarlo (una vez): **⚙️ Ajustes → ✨ Gemini (IA gratis)** → pega tu clave → **Probar la clave**.
-La clave se queda en el móvil: no va en tus copias, ni en lo que exportas, ni en la rutina que compartes.
-
-Opcional: si creas el Secret **`MIRUTINA_GEMINI_KEY`** (Settings → Secrets and variables → Actions) con tu clave,
-el APK sale con Gemini ya puesto. **No lo hagas si vas a pasar ese APK a otra persona**: llevaría tu clave dentro.
-La versión web nunca lleva la clave.
-
-No pagas nada mientras no actives la facturación en Google; la capa gratuita tiene un límite de usos por minuto y por día.
+Si tenías creado el Secret **`MIRUTINA_GEMINI_KEY`**, ya no hace nada: puedes borrarlo.
 
 ## Problemas frecuentes
 

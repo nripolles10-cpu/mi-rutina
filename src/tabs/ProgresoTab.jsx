@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { LineChartSVG } from '../components/LineChart.jsx';
-import { RepasoSemanalCard } from '../components/IA.jsx';
+import { RepasoSemanalCard } from '../components/Herramientas.jsx';
 import { Bar, Card, Chip, EditLockBar, Label, LabeledNum, MiniBtn, Modal, NumField, SectionTitle, SupRow, useGym, useSwipe } from '../components/ui.jsx';
 import { CATS, CAT_IDS, catInfo } from '../data/catalog.js';
 import { T } from '../data/theme.js';
@@ -332,7 +332,7 @@ function ProgresoPrincipal({ chips, lock }) {
     <div>
       {lock}
       {chips}
-      <SectionTitle emoji="🤖">Repaso semanal con IA</SectionTitle>
+      <SectionTitle emoji="📋">Resumen de la semana</SectionTitle>
       <RepasoSemanalCard />
 
       <SectionTitle emoji="⚖️">Tu peso</SectionTitle>

@@ -12,6 +12,9 @@ import '@fontsource/inter/800.css';
 import { App } from './App.jsx';
 import { Native } from './native/index.js';
 
+// La IA ya no existe en la app: borra la clave de Gemini que pudiera quedar guardada en este navegador
+try { localStorage.removeItem('mirutina_gemini_v1'); } catch (e) { /* sin almacenamiento */ }
+
 function pintarError(e) {
   const el = document.getElementById('root');
   if (el) el.innerHTML = '<div id="boot-fallback">No se pudo abrir Mi Rutina. Cierra la app y vuelve a abrirla.<br><small style="opacity:.6">' + String((e && e.message) || e).replace(/</g, '&lt;') + '</small></div>';

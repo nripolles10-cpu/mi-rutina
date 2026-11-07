@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ComidaIAModal, CompraIACard, FotoMini, FotoRecetaCabecera, NutricionistaCard, PlanSemanaIAModal, RecetasIAModal, useGemini } from '../components/IA.jsx';
+import { FotoMini, FotoRecetaCabecera, RecetasEnCasa, SugerenciasFaltan } from '../components/Herramientas.jsx';
 import { Bar, chipAcento, Card, Chip, Label, LabeledNum, MacroLine, MiniBtn, Modal, NumInput, SectionTitle, Stepper, SupRow, useGym } from '../components/ui.jsx';
 import { DIAS_SEMANA, MOMENTOS, OBJETIVOS, TIPO_RECETA, tipoRecetaLabel } from '../data/catalog.js';
 import { T } from '../data/theme.js';
@@ -96,7 +96,6 @@ export function DiarioSec({ fecha, setFecha }) {
   const tot = entryTotals(lista);
   const [addMomento, setAddMomento] = useState(null);
   const [manual, setManual] = useState(null);
-  const [ia, setIa] = useState(null);
   const hoy = ymd(new Date());
 
   const addEntry = (momento, e) => commit((prev) => ({ ...prev, comida: { ...prev.comida, diario: { ...prev.comida.diario, [fecha]: (prev.comida.diario[fecha] || []).concat([{ id: uid(), momento, ...e }]) } } }));
@@ -143,6 +142,8 @@ export function DiarioSec({ fecha, setFecha }) {
         })}
       </Card>
 
+      <SugerenciasFaltan fecha={fecha} />
+
       {MOMENTOS.map((m) => {
         const items = lista.filter((e) => e.momento === m[0]);
         return (
@@ -152,7 +153,6 @@ export function DiarioSec({ fecha, setFecha }) {
               <div style={{ display: 'flex', gap: 6 }}>
                 <button onClick={() => setAddMomento(m[0])} className="font-body btn btn-ghost" style={{ padding: '6px 10px', fontSize: 12 }}>🍳 Receta</button>
                 <button onClick={() => setManual(m[0])} className="font-body btn btn-ghost" style={{ padding: '6px 10px', fontSize: 12 }}>✍️ A mano</button>
-                <button onClick={() => setIa(m[0])} className="font-body btn btn-ghost" style={{ padding: '6px 10px', fontSize: 12 }} aria-label={'Apuntar con IA en ' + m[1]}>📷 IA</button>
               </div>
             </div>
             {items.map((e) => (
@@ -179,7 +179,6 @@ export function DiarioSec({ fecha, setFecha }) {
       {addMomento && <PickRecetaModal titulo={'Añadir al diario · ' + addMomento} tipoInicial={addMomento}
         onPick={(r, rac) => addEntry(addMomento, { nombre: r.nombre, recetaId: r.id, raciones: rac, por: recTotals(r, 1), ...recTotals(r, rac) })} onClose={() => setAddMomento(null)} />}
       {manual && <AddManualModal momento={manual} onAdd={(e) => addEntry(manual, e)} onClose={() => setManual(null)} />}
-      {ia && <ComidaIAModal fecha={fecha} momento={ia} onClose={() => setIa(null)} />}
     </div>
   );
 }
@@ -333,7 +332,7 @@ export function RecetasSec() {
   const [q, setQ] = useState('');
   const [det, setDet] = useState(null);
   const [edit, setEdit] = useState(null); // null | 'nueva' | receta
-  const [verIa, setVerIa] = useState(false);
+  const [casa, setCasa] = useState(false);
   const lista = state.comida.recetas.filter((r) => (obj === 'todos' || r.objetivos.indexOf(obj) !== -1) && (tipo === 'todos' || r.tipo === tipo) && (!soloFav || favs.indexOf(r.id) !== -1)
     && stripAcc(r.nombre).toLowerCase().indexOf(stripAcc(q).toLowerCase()) !== -1);
   const detR = det ? state.comida.recetas.find((r) => r.id === det) : null;
@@ -352,9 +351,9 @@ export function RecetasSec() {
       </div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
         <button onClick={() => setEdit('nueva')} className="font-body btn btn-ghost" style={{ flex: 1, padding: '12px 8px', borderRadius: 14 }}>➕ Crear mi receta</button>
-        <button onClick={() => setVerIa(true)} className="font-body btn btn-primary" style={{ flex: 1, padding: '12px 8px', borderRadius: 14 }}>✨ Recetas con IA</button>
+        <button onClick={() => setCasa(!casa)} className="font-body btn btn-primary" style={{ flex: 1, padding: '12px 8px', borderRadius: 14 }}>🥫 ¿Qué tengo en casa?</button>
       </div>
-      {verIa && <RecetasIAModal onClose={() => setVerIa(false)} onVer={(id) => { setVerIa(false); setDet(id); }} />}
+      {casa && <RecetasEnCasa onVer={(id) => setDet(id)} />}
       <div className="font-body" style={{ color: T.dim, fontSize: 11.5, marginBottom: 8, lineHeight: 1.5 }}>{lista.length} recetas · toca una para ver los ingredientes con sus cantidades exactas y los pasos para cocinarla.</div>
       {lista.map((r) => (
         <div key={r.id} onClick={() => setDet(r.id)} className="card" style={{ marginBottom: 8, padding: 12, cursor: 'pointer', display: 'flex', gap: 10, alignItems: 'center' }}>
@@ -384,8 +383,6 @@ export function PlanSec() {
   const { state, commit, showToast } = useGym();
   const { plan: obj } = effNutri(state);
   const [pick, setPick] = useState(null); // {dia, momento}
-  const [planIa, setPlanIa] = useState(false);
-  const gem = useGemini();
   const rec = (id) => state.comida.recetas.find((r) => r.id === id);
   const diaPlan = (i) => ({ desayuno: [], comida: [], cena: [], snack: [], ...(state.comida.plan[i] || {}) });
   const totDia = (i) => { const d = diaPlan(i); let t = { kcal: 0, p: 0, c: 0, g: 0 }; MOMENTOS.forEach((m) => d[m[0]].forEach((it) => { const r = rec(it.recetaId); if (r) { const x = recTotals(r, it.raciones); t = { kcal: t.kcal + x.kcal, p: t.p + x.p, c: t.c + x.c, g: t.g + x.g }; } })); return t; };
@@ -402,8 +399,6 @@ export function PlanSec() {
   return (
     <div>
       <div className="font-body" style={{ color: T.muted, fontSize: 12, lineHeight: 1.5, marginBottom: 12 }}>Planifica una semana tipo. Con ella se genera la lista de la compra.</div>
-      {gem.activo && <button onClick={() => setPlanIa(true)} className="font-body btn btn-primary" style={{ width: '100%', marginBottom: 12 }}>✨ Planificar mi semana con IA</button>}
-      {planIa && <PlanSemanaIAModal onClose={() => setPlanIa(false)} />}
       {DIAS_SEMANA.map((nombre, i) => {
         const d = diaPlan(i); const t = totDia(i);
         const hay = MOMENTOS.some((m) => d[m[0]].length);
@@ -444,7 +439,6 @@ export function CompraSec() {
   const { state, commit, showToast } = useGym();
   const items = useMemo(() => listaCompra(state), [state.comida.plan, state.comida.recetas]);
   const marcados = state.comida.compra || {};
-  const dondeIa = (state.ia && state.ia.compra && state.ia.compra.productos) || {};
   const toggle = (key) => commit((prev) => ({ ...prev, comida: { ...prev.comida, compra: { ...prev.comida.compra, [key]: !prev.comida.compra[key] } } }), { noUndo: true });
   const texto = () => textoListaCompra(items.filter((x) => !marcados[x.key]));
   const pendientes = items.filter((x) => !marcados[x.key]).length;
@@ -461,14 +455,12 @@ export function CompraSec() {
   if (!items.length) return <Card><div className="font-body" style={{ color: T.muted, fontSize: 13, textAlign: 'center', lineHeight: 1.5 }}>Todavía no hay nada planificado. Añade recetas en el planificador y aquí aparecerá la lista de la compra.</div></Card>;
   return (
     <div>
-      <CompraIACard items={items} />
       <div className="font-body" style={{ color: T.muted, fontSize: 12, marginBottom: 10 }}>{pendientes} por comprar de {items.length}</div>
       <Card style={{ marginBottom: 12 }}>
         {items.map((x) => (
           <div key={x.key} onClick={() => toggle(x.key)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderTop: '1px solid rgba(140,170,255,0.1)', cursor: 'pointer' }}>
             <span style={{ width: 22, height: 22, borderRadius: 7, border: '2px solid ' + (marcados[x.key] ? '#A3E635' : 'rgba(140,170,255,0.5)'), background: marcados[x.key] ? '#A3E635' : 'transparent', color: '#04101C', fontWeight: 900, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{marcados[x.key] ? '✓' : ''}</span>
             <span className="font-body" style={{ flex: 1, minWidth: 0, color: marcados[x.key] ? T.dim : T.text, fontSize: 13.5, textDecoration: marcados[x.key] ? 'line-through' : 'none' }}>{x.nombre}
-              {dondeIa[x.key] && <span style={{ display: 'block', color: T.cyan, fontSize: 11, textDecoration: 'none', marginTop: 1 }}>🏪 {dondeIa[x.key].super}{dondeIa[x.key].precio ? ' · ' + dondeIa[x.key].precio : ''}{dondeIa[x.key].consejo ? ' · ' + dondeIa[x.key].consejo : ''}</span>}
             </span>
             <span className="font-body" style={{ color: T.muted, fontSize: 12.5, fontWeight: 700 }}>{x.q ? fmt(x.q, 1) + ' ' + (x.u || '') : x.u}</span>
           </div>
@@ -554,7 +546,7 @@ export function AguaSec() {
 export function ComidaTab() {
   const [sec, setSec] = useState('diario');
   const [fecha, setFecha] = useState(ymd(new Date()));
-  const secs = [['diario', '📓 Diario'], ['ia', '✨ IA'], ['recetas', '🍳 Recetas'], ['plan', '📅 Plan'], ['compra', '🛒 Compra'], ['agua', '💧 Agua']];
+  const secs = [['diario', '📓 Diario'], ['agua', '💧 Agua'], ['recetas', '🍳 Recetas'], ['plan', '📅 Plan'], ['compra', '🛒 Compra']];
   return (
     <div>
       <SectionTitle emoji="🍽️">Comida</SectionTitle>
@@ -562,7 +554,6 @@ export function ComidaTab() {
         {secs.map((s) => <Chip key={s[0]} active={sec === s[0]} onClick={() => setSec(s[0])}>{s[1]}</Chip>)}
       </div>
       {sec === 'diario' && <DiarioSec fecha={fecha} setFecha={setFecha} />}
-      {sec === 'ia' && <ComidaIASec fecha={fecha} irA={setSec} />}
       {sec === 'recetas' && <RecetasSec />}
       {sec === 'plan' && <PlanSec />}
       {sec === 'compra' && <CompraSec />}
@@ -571,26 +562,3 @@ export function ComidaTab() {
   );
 }
 
-/* ---------- ✨ IA: todo lo de Gemini para la comida en un sitio ---------- */
-export function ComidaIASec({ fecha, irA }) {
-  const [modal, setModal] = useState(null);
-  const boton = (id, emoji, titulo, texto, accion) => (
-    <div key={id} onClick={accion || (() => setModal(id))} className="card" role="button" aria-label={titulo} style={{ padding: 12, marginBottom: 8, cursor: 'pointer', display: 'flex', gap: 12, alignItems: 'center' }}>
-      <span style={{ fontSize: 26 }}>{emoji}</span>
-      <div><div className="font-body" style={{ color: T.text, fontWeight: 800, fontSize: 13.5 }}>{titulo}</div><div className="font-body" style={{ color: T.muted, fontSize: 11.5, lineHeight: 1.4, marginTop: 2 }}>{texto}</div></div>
-    </div>
-  );
-  return (
-    <div>
-      {boton('foto', '📷', 'Apuntar lo que como', 'Foto de la etiqueta o del plato, audio o texto. La foto se queda en tu diario.')}
-      {boton('recetas', '🍳', 'Recetas nuevas para mis macros', 'Fáciles y fitness, para lo que te apetezca o lo que te falta hoy.')}
-      {boton('plan', '📅', 'Planificar mi semana', 'Reparte tus recetas para que cada día cuadre con tus macros.')}
-      {boton('compra', '🏪', 'Dónde comprar más barato', 'Aldi, Mercadona, Alcampo o Carrefour: en cuál comprar cada cosa.', () => irA('compra'))}
-      {modal === 'foto' && <ComidaIAModal fecha={fecha} momento={null} onClose={() => setModal(null)} />}
-      {modal === 'recetas' && <RecetasIAModal onClose={() => setModal(null)} onVer={() => { setModal(null); irA('recetas'); }} />}
-      {modal === 'plan' && <PlanSemanaIAModal onClose={() => setModal(null)} />}
-      
-      <NutricionistaCard />
-    </div>
-  );
-}

@@ -1,6 +1,5 @@
 import { describe, test, expect } from 'vitest';
 import * as C from '../src/utils/cardio.js';
-import * as G from '../src/utils/gemini.js';
 import { ymd } from '../src/utils/format.js';
 
 describe('cardio: días y cumplimiento', () => {
@@ -48,29 +47,5 @@ describe('cardio: días y cumplimiento', () => {
     const hechos = Array.from({ length: 150 }, (_, i) => ymd(new Date(2026, 0, 1 + i)));
     const nuevo = C.alternarHoy({ hechos }, new Date(2026, 6, 1));
     expect(nuevo.length).toBe(120);
-  });
-});
-
-describe('supermercados y compra', () => {
-  test('solo recomienda Aldi, Mercadona, Alcampo y Carrefour', () => {
-    expect(G.SUPERS.slice().sort()).toEqual(['Alcampo', 'Aldi', 'Carrefour', 'Mercadona']);
-  });
-});
-
-describe('nutricionista', () => {
-  test('modos disponibles y respuesta normalizada', () => {
-    expect(G.NUTRI_MODOS.map((m) => m[0])).toEqual(['casa', 'sustituir', 'macros', 'entreno', 'fuera', 'libre']);
-    const r = G.normalizarNutri({ respuesta: 'Haz un revuelto.', faltaria: ['pan', '', 'queso', 'x'], recetas: [
-      { nombre: 'Revuelto de pollo', tipo: 'cena', objetivos: ['volumen'], ingredientes: [{ n: 'Pechuga de pollo', q: 100, u: 'g' }, { n: 'Huevo', q: 2, u: 'ud' }], pasos: ['Cocina'], p: 1, c: 1, g: 1 },
-    ] });
-    expect(r.respuesta).toBe('Haz un revuelto.');
-    expect(r.faltaria).toEqual(['pan', 'queso', 'x']);
-    expect(r.recetas[0].calculados).toBe(true);
-    expect(r.recetas[0].p).toBe(Math.round(100 * 0.225 + 2 * 7.5));
-  });
-  test('sin respuesta válida no devuelve nada', () => {
-    const r = G.normalizarNutri({});
-    expect(r.respuesta).toBe('');
-    expect(r.recetas).toEqual([]);
   });
 });

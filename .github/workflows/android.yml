@@ -50,8 +50,6 @@ jobs:
       - name: Construir la web
         run: npm run build
         env:
-          # Opcional: si creas el Secret MIRUTINA_GEMINI_KEY, la app sale con Gemini ya activado
-          VITE_GEMINI_CLAVE: ${{ secrets.MIRUTINA_GEMINI_KEY }}
 
       - name: Copiar la web al proyecto Android
         run: npx cap sync android

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, EditLockBar, Label, SectionTitle, TextField, useGym } from '../components/ui.jsx';
-import { CardioIAModal } from '../components/IA.jsx';
+import { CardioPresetsModal } from '../components/Herramientas.jsx';
 import { T } from '../data/theme.js';
 import { Native } from '../native/index.js';
 import { alternarHoy, DIAS_CORTOS, DIAS_LARGOS, diasDe, hechoHoy, semanaDe, tocaHoy, toggleDia } from '../utils/cardio.js';
@@ -60,13 +60,13 @@ function Cumplir({ c, onChange, showToast }) {
 export function CardioTab() {
   const { state, updateCardio, addCardio, removeCardio, askConfirm, showToast } = useGym();
   const editMode = state.meta.editMode;
-  const [ia, setIa] = useState(false);
+  const [tipos, setTipos] = useState(false);
   return (
     <div>
       <EditLockBar />
       <SectionTitle emoji="🏃">Cardio</SectionTitle>
-      <button onClick={() => setIa(true)} className="font-body btn btn-primary" style={{ width: '100%', marginBottom: 12, padding: 12 }}>✨ Cardio a mi medida (IA)</button>
-      {ia && <CardioIAModal onClose={() => setIa(false)} />}
+      <button onClick={() => setTipos(true)} className="font-body btn btn-primary" style={{ width: '100%', marginBottom: 12, padding: 12 }}>🏃 Elegir tipo de cardio</button>
+      {tipos && <CardioPresetsModal onClose={() => setTipos(false)} />}
       {state.cardio.length === 0 && (
         <Card style={{ marginBottom: 10 }}><p className="font-body" style={{ color: T.muted, fontSize: 13, textAlign: 'center', margin: 0 }}>No tienes cardio apuntado.{editMode ? '' : ' Desbloquea la edición para añadirlo.'}</p></Card>
       )}
