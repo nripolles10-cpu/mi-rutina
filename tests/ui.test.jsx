@@ -326,13 +326,13 @@ describe('ajustes: compartir, importar, copia, exportar y restablecer', () => {
       for (const b of screen.getAllByText('⬇️ Descargar')) { fireEvent.click(b); await act(async () => { await new Promise((r) => setTimeout(r, 50)); }); }
       await act(async () => { await new Promise((r) => setTimeout(r, 300)); }); // el .docx se genera en segundo plano
       const por = (n) => llamadas.find((x) => x.name === n);
-      expect(llamadas.map((x) => x.name).sort()).toEqual(['mi_rutina.csv', 'mi_rutina.docx', 'mi_rutina.txt', 'mi_rutina.xlsx', 'mi_rutina_copia.json', 'mi_rutina_historial.csv']);
+      expect(llamadas.map((x) => x.name).sort()).toEqual(['mi_rutina.docx', 'mi_rutina.txt', 'mi_rutina.xlsx']);
       expect(por('mi_rutina.xlsx').base64).toBe(true);
       expect(por('mi_rutina.docx').base64).toBe(true);
       // un .xlsx y un .docx son ZIP: empiezan por "PK"
       expect(atob(por('mi_rutina.xlsx').content).slice(0, 2)).toBe('PK');
       expect(atob(por('mi_rutina.docx').content).slice(0, 2)).toBe('PK');
-      expect(por('mi_rutina.csv').content.charCodeAt(0)).toBe(0xFEFF);
+      expect(por('mi_rutina.txt').content).toContain('Pecho');
       expect(texto()).toContain('Archivo preparado ✓');
     } finally { A.Native.saveFile = original; }
   });

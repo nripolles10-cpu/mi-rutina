@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Chip, EditLockBar, Label, MiniBtn, NumField, Stepper, TextField, chipStyle, useGym } from '../components/ui.jsx';
+import { Card, Chip, DescansoPicker, EditLockBar, Label, MiniBtn, NumField, Stepper, TextField, chipStyle, useGym } from '../components/ui.jsx';
 import { CATS, CAT_IDS, SET_TYPES, catInfo } from '../data/catalog.js';
 import { T } from '../data/theme.js';
 import { Native } from '../native/index.js';
@@ -595,7 +595,7 @@ export function RutinaTab() {
         <Card style={{ marginBottom: 12, padding: 12 }}>
           <div className="font-body" style={{ color: T.text, fontSize: 13, fontWeight: 700, marginBottom: 2 }}>⏱️ Descanso entre series</div>
           <div className="font-body" style={{ color: T.muted, fontSize: 11.5, marginBottom: 8 }}>Este tiempo se usa en todos tus entrenos en vivo. Cámbialo aquí y se guarda.</div>
-          <Stepper value={(state.preferencias && state.preferencias.descanso) || 90} onChange={(v) => setPreferencia({ descanso: v })} min={30} max={300} step={15} suffix="s" />
+          <DescansoPicker value={(state.preferencias && state.preferencias.descanso) || 90} onChange={(v) => setPreferencia({ descanso: v })} />
         </Card>
       )}
       {!editMode && day.ids.length > 0 && (

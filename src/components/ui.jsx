@@ -1,3 +1,4 @@
+import { OPCIONES_DESCANSO, textoDescanso } from '../utils/descanso.js';
 import React, { useState, useEffect, useContext, createContext, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { useBackHandler } from '../native/back.js';
@@ -268,3 +269,15 @@ export function CheckRow({ on, onClick, children }) {
     </div>
   );
 }
+
+// Selector de descanso en minutos y segundos (30 s, 1 minuto, 1 minuto y medio…)
+export function DescansoPicker({ value, onChange }) {
+  const v = Number(value) || 90;
+  const opciones = OPCIONES_DESCANSO.some((o) => o.valor === v) ? OPCIONES_DESCANSO : OPCIONES_DESCANSO.concat([{ valor: v, texto: textoDescanso(v) }]).sort((a, b) => a.valor - b.valor);
+  return (
+    <select className="inp" value={v} onChange={(e) => onChange(Number(e.target.value))} aria-label="Descanso entre series">
+      {opciones.map((o) => <option key={o.valor} value={o.valor}>{o.texto}</option>)}
+    </select>
+  );
+}
+

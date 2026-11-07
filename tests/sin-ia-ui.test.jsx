@@ -39,6 +39,44 @@ async function montar(retoque) {
 }
 async function tab(nombre) { await click(screen.getAllByText(nombre, { selector: 'span' }).slice(-1)[0]); }
 
+describe('plan del día y diario', () => {
+  test('el plan del día de la semana aparece en el diario y se puede apuntar', async () => {
+    const hoy = new Date();
+    const idx = (hoy.getDay() + 6) % 7;
+    await montar((st) => {
+      const receta = st.comida.recetas[0];
+      st.comida.plan = { [idx]: { desayuno: [{ id: 'p1', recetaId: receta.id, raciones: 1 }], comida: [], cena: [], snack: [] } };
+      st.comida.diario = {};
+      st.nombreReceta = receta.nombre;
+    });
+    await tab('Comida');
+    expect(texto()).toMatch(/Tu plan para/);
+    const nombre = guardado().comida.recetas[0].nombre;
+    expect(texto()).toContain(nombre);
+    await click(screen.getByRole('button', { name: /Apuntar todo el plan de hoy/ }));
+    await act(async () => { await new Promise((r) => setTimeout(r, 300)); });
+    expect(guardado().comida.diario[ymd(hoy)].some((e) => e.recetaId === guardado().comida.recetas[0].id)).toBe(true);
+    expect(texto()).toContain('✓ Apuntado');
+  });
+});
+
+describe('diana: solo recomendaciones, sin añadir', () => {
+  test('no hay botón de añadir en los consejos', async () => {
+    await montar();
+    await tab('Diana');
+    expect(document.querySelector('[data-testid="consejo-pecho"]')).not.toBeNull();
+    expect(document.querySelector('[data-testid="consejo-pecho"]').textContent).not.toMatch(/➕ Añadir/);
+  });
+});
+
+describe('descanso en minutos', () => {
+  test('la rutina muestra el descanso en minutos y segundos', async () => {
+    await montar((st) => { st.preferencias = { ...(st.preferencias || {}), descanso: 210 }; });
+    await tab('Rutina');
+    expect(texto()).toContain('3 minutos y medio');
+  });
+});
+
 describe('herramientas sin IA', () => {
   test('ninguna pantalla muestra IA, Gemini ni micrófono', async () => {
     await montar();

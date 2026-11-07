@@ -113,18 +113,8 @@ export function RecetasEnCasa({ onVer }) {
 /* ---------- 3) Consejos de Diana: solo para los puntos débiles, se actualizan solos ---------- */
 
 export function ConsejosDianaCard() {
-  const { state, addExercise, showToast } = useGym();
-  const [anadidos, setAnadidos] = useState({});
-  const cats = catsDe(state);
-  const lista = consejosDebiles(state, cats);
-  const nombreDia = (id) => { const x = (state.days || []).find((y) => y.id === id); return x ? x.label : ''; };
-  const anadir = (musc, e, k) => {
-    const dia = diaParaMusculo(state, musc);
-    if (!dia) { showToast('Crea primero un día en tu rutina', 'warn'); return; }
-    addExercise(dia, e.nombre, musc);
-    setAnadidos((x) => ({ ...x, [k]: true }));
-    showToast('➕ ' + e.nombre + ' añadido a ' + nombreDia(dia));
-  };
+  const { state } = useGym();
+  const lista = consejosDebiles(state, catsDe(state));
   return (
     <Card style={{ marginBottom: 14 }}>
       {!lista.length && <div className="font-body" style={txtPeq}>Marca arriba algún músculo como <b style={{ color: '#F43F5E' }}>Punto débil</b> y aquí verás qué hacer para mejorarlo. Si lo cambias a intermedio o fuerte, su consejo desaparece solo.</div>}
@@ -133,20 +123,12 @@ export function ConsejosDianaCard() {
           <div className="font-body" style={{ color: T.text, fontWeight: 800, fontSize: 13.5 }}>{c.emoji} {c.nombre} <span style={{ color: '#F43F5E', fontSize: 11, marginLeft: 4 }}>punto débil</span></div>
           <div className="font-body" style={{ ...txtPeq, marginTop: 4 }}>{c.porQue}</div>
           {c.acciones.map((a, j) => <div key={j} className="font-body" style={{ ...txtPeq, color: T.text, marginTop: 3 }}>✓ {a}</div>)}
-          {c.ejercicios.map((e, j) => {
-            const kk = c.id + '-' + j;
-            return (
-              <div key={j} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 8 }}>
-                <div className="font-body" style={{ color: T.text, fontSize: 12.5, minWidth: 0 }}>🏋️ <b>{e.nombre}</b> · {e.pauta}</div>
-                {anadidos[kk]
-                  ? <span className="font-body" style={{ color: '#A3E635', fontSize: 12, flexShrink: 0 }}>✓ Añadido</span>
-                  : <button onClick={() => anadir(c.id, e, kk)} className="font-body btn btn-ghost" style={{ padding: '5px 9px', fontSize: 11.5, flexShrink: 0 }}>➕ Añadir</button>}
-              </div>
-            );
-          })}
+          {c.ejercicios.length > 0 && (
+            <div className="font-body" style={{ ...txtPeq, color: T.text, marginTop: 8 }}>🏋️ Ejercicios que podrías probar: {c.ejercicios.map((e) => e.nombre + ' (' + e.pauta + ')').join(' · ')}</div>
+          )}
         </div>
       ))}
-      {lista.length > 0 && <div className="font-body" style={{ color: T.dim, fontSize: 11, marginTop: 10 }}>"Añadir" pone el ejercicio en tu rutina; luego ajusta sus series.</div>}
+      {lista.length > 0 && <div className="font-body" style={{ color: T.dim, fontSize: 11, marginTop: 10 }}>Son recomendaciones: tú decides si las aplicas en tu rutina.</div>}
     </Card>
   );
 }

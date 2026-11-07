@@ -96,6 +96,19 @@ export function DiarioSec({ fecha, setFecha }) {
   const tot = entryTotals(lista);
   const [addMomento, setAddMomento] = useState(null);
   const [manual, setManual] = useState(null);
+  // Lo que tienes planificado para este día de la semana (Lunes = 0)
+  const diaSemanaIdx = (fromYmd(fecha).getDay() + 6) % 7;
+  const planDia = state.comida.plan[diaSemanaIdx] || {};
+  const recetaDe = (id) => state.comida.recetas.find((r) => r.id === id);
+  const yaApuntado = (momento, recetaId) => lista.some((e) => e.momento === momento && e.recetaId === recetaId);
+  const apuntarPlan = (momento, it) => {
+    const r = recetaDe(it.recetaId);
+    if (!r) return;
+    addEntry(momento, { nombre: r.nombre, recetaId: r.id, raciones: it.raciones, por: recTotals(r, 1), ...recTotals(r, it.raciones) });
+  };
+  const planPendiente = MOMENTOS.flatMap((m) => (planDia[m[0]] || []).filter((it) => recetaDe(it.recetaId) && !yaApuntado(m[0], it.recetaId)).map((it) => ({ momento: m[0], it })));
+  const hayPlan = MOMENTOS.some((m) => (planDia[m[0]] || []).some((it) => recetaDe(it.recetaId)));
+  const apuntarTodoPlan = () => { planPendiente.forEach(({ momento, it }) => apuntarPlan(momento, it)); };
   const hoy = ymd(new Date());
 
   const addEntry = (momento, e) => commit((prev) => ({ ...prev, comida: { ...prev.comida, diario: { ...prev.comida.diario, [fecha]: (prev.comida.diario[fecha] || []).concat([{ id: uid(), momento, ...e }]) } } }));
@@ -125,6 +138,24 @@ export function DiarioSec({ fecha, setFecha }) {
         <MiniBtn disabled={fecha >= hoy} onClick={() => setFecha(ymd(addDays(fromYmd(fecha), 1)))}>›</MiniBtn>
       </div>
 
+      {hayPlan && (
+        <Card style={{ marginBottom: 14 }}>
+          <div className="font-body" style={{ color: T.text, fontWeight: 800, fontSize: 13.5, marginBottom: 6 }}>📅 Tu plan para {DIAS_SEMANA[diaSemanaIdx].toLowerCase()}</div>
+          {MOMENTOS.map((m) => (planDia[m[0]] || []).filter((it) => recetaDe(it.recetaId)).map((it) => (
+            <div key={m[0] + it.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '6px 0', borderTop: '1px solid rgba(140,170,255,0.12)' }}>
+              <div style={{ minWidth: 0 }}>
+                <div className="font-body" style={{ color: T.dim, fontSize: 11 }}>{m[1]}</div>
+                <div className="font-body" style={{ color: T.text, fontSize: 13, fontWeight: 600 }}>{recetaDe(it.recetaId).nombre}{it.raciones !== 1 ? ' × ' + fmt(it.raciones, 2) : ''}</div>
+              </div>
+              {yaApuntado(m[0], it.recetaId)
+                ? <span className="font-body" style={{ color: '#A3E635', fontSize: 12, flexShrink: 0 }}>✓ Apuntado</span>
+                : <button onClick={() => apuntarPlan(m[0], it)} className="font-body btn btn-ghost" style={{ padding: '5px 9px', fontSize: 11.5, flexShrink: 0 }}>➕ Apuntar</button>}
+            </div>
+          )))}
+          {planPendiente.length > 0 && <button onClick={apuntarTodoPlan} className="font-body btn btn-primary" style={{ width: '100%', marginTop: 8 }}>➕ Apuntar todo el plan de hoy</button>}
+        </Card>
+      )}
+
       <Card style={{ marginBottom: 14 }}>
         {plan.falta ? (
           <div className="font-body" style={{ color: '#FDE68A', fontSize: 12.5, lineHeight: 1.5 }}>Rellena la calculadora nutricional (pestaña Extras) para ver cuánto te falta de tus calorías y macros. Ahora mismo llevas {Math.round(tot.kcal)} kcal.</div>
@@ -141,8 +172,6 @@ export function DiarioSec({ fecha, setFecha }) {
           );
         })}
       </Card>
-
-      <SugerenciasFaltan fecha={fecha} />
 
       {MOMENTOS.map((m) => {
         const items = lista.filter((e) => e.momento === m[0]);
@@ -173,6 +202,7 @@ export function DiarioSec({ fecha, setFecha }) {
           </Card>
         );
       })}
+      <SugerenciasFaltan fecha={fecha} />
       {lista.length > 0 && (
         <button onClick={() => askConfirm({ title: '¿Vaciar el día?', text: 'Se quitarán todas las comidas de este día.', confirmLabel: 'Vaciar', onConfirm: () => commit((prev) => { const d = { ...prev.comida.diario }; delete d[fecha]; return { ...prev, comida: { ...prev.comida, diario: d } }; }) })} className="font-body btn btn-danger" style={{ width: '100%', fontSize: 12.5 }}>🗑️ Vaciar este día</button>
       )}

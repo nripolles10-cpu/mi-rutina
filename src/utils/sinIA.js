@@ -141,13 +141,6 @@ export function consejosDebiles(state, cats) {
   });
 }
 
-// Día de tu rutina donde añadir el ejercicio: uno que ya trabaje ese músculo, o el primero
-export function diaParaMusculo(state, musculo) {
-  const dias = state.days || [];
-  const con = dias.find((d) => d.ids.some((id) => state.exercises[id] && state.exercises[id].cat === musculo));
-  return (con || dias[0] || {}).id || null;
-}
-
 /* ---------- 4) Cardio: 5 tipos por objetivo ---------- */
 
 export const CARDIO_OBJETIVOS_SIN_IA = [['grasa', '🔥 Quemar grasa'], ['resistencia', '🫁 Resistencia'], ['recuperacion', '🌿 Recuperación']];

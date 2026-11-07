@@ -2,6 +2,7 @@ import { describe, test, expect } from 'vitest';
 import { buildInitialState } from '../src/state/migrate.js';
 import { NUTRI_DB, mkRecetas } from '../src/data/recetas.js';
 import * as S from '../src/utils/sinIA.js';
+import { textoDescanso, OPCIONES_DESCANSO } from '../src/utils/descanso.js';
 import { ymd } from '../src/utils/format.js';
 
 describe('recetas con lo que tienes en casa', () => {
@@ -77,11 +78,6 @@ describe('consejos de Diana: solo para los puntos débiles', () => {
     const pecho = lista.find((c) => c.id === 'pecho');
     expect(pecho.ejercicios.length).toBe(2);
   });
-  test('el ejercicio se añade a un día que ya trabaje ese músculo', () => {
-    const s = { ...st, days: [{ id: 'd1', label: 'A', ids: [] }, { id: 'd2', label: 'B', ids: ['ej1'] }], exercises: { ej1: { cat: 'pecho' } } };
-    expect(S.diaParaMusculo(s, 'pecho')).toBe('d2');
-    expect(S.diaParaMusculo(s, 'core')).toBe('d1');
-  });
 });
 
 describe('cardio: 5 tipos por objetivo', () => {
@@ -125,5 +121,22 @@ describe('resumen de la semana (cifras calculadas)', () => {
     expect(r.comida.kcalMedia).toBe(700);
     expect(r.comida.protMedia).toBe(45);
     expect(ymd(new Date(2026, 10, 4))).toBe('2026-11-04');
+  });
+});
+
+describe('descanso en minutos y segundos', () => {
+  test('se lee como lo dices tú', () => {
+    expect(textoDescanso(30)).toBe('30 segundos');
+    expect(textoDescanso(60)).toBe('1 minuto');
+    expect(textoDescanso(90)).toBe('1 minuto y medio');
+    expect(textoDescanso(120)).toBe('2 minutos');
+    expect(textoDescanso(150)).toBe('2 minutos y medio');
+    expect(textoDescanso(180)).toBe('3 minutos');
+    expect(textoDescanso(210)).toBe('3 minutos y medio');
+    expect(textoDescanso(165)).toBe('2 min y 45 s');
+  });
+  test('el selector va de 30 segundos a 5 minutos', () => {
+    expect(OPCIONES_DESCANSO[0].texto).toBe('30 segundos');
+    expect(OPCIONES_DESCANSO[OPCIONES_DESCANSO.length - 1].valor).toBe(300);
   });
 });

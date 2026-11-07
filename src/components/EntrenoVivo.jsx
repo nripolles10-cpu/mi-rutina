@@ -5,6 +5,7 @@ import { T } from '../data/theme.js';
 import { Native } from '../native/index.js';
 import { fmt, fmtMS, formatDecimal, parseDecimal } from '../utils/format.js';
 import { ensureStruct, setsVolume } from '../utils/training.js';
+import { textoDescanso } from '../utils/descanso.js';
 import { bloquesDelDia } from '../tabs/RutinaTab.jsx';
 import { SugerenciaProgresion } from './HistorialEjercicio.jsx';
 
@@ -146,7 +147,7 @@ export function EntrenoVivoModal({ dayId, onClose }) {
 
       {timer && (
         <div className="card" data-testid="vivo-descanso" style={{ marginBottom: 12, textAlign: 'center', padding: 12, borderColor: 'rgba(var(--ac-rgb),0.5)' }}>
-          <div className="font-body" style={{ color: T.muted, fontSize: 12 }}>Descanso</div>
+          <div className="font-body" style={{ color: T.muted, fontSize: 12 }}>Descanso · {textoDescanso(descanso)}</div>
           <div className="font-display" style={{ fontSize: 44, fontWeight: 700, color: '#FFFFFF', lineHeight: 1.1 }}>{fmtMS(resta)}</div>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 6 }}>
             <button onClick={() => addTimer(15)} className="font-body btn btn-ghost" style={{ padding: '7px 12px', fontSize: 12 }}>+15 s</button>
