@@ -49,7 +49,6 @@ jobs:
 
       - name: Construir la web
         run: npm run build
-        env:
 
       - name: Copiar la web al proyecto Android
         run: npx cap sync android
