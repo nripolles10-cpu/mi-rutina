@@ -81,7 +81,7 @@ export function rachaDias(sesiones, hoy) {
 }
 
 // Celdas del calendario de un mes (empieza en lunes). mes = 'AAAA-MM'.
-export function calendarioMes(mes, sesiones) {
+export function calendarioMes(mes, sesiones, cardioFechas = {}) {
   const p = mes.split('-').map(Number);
   const primero = new Date(p[0], p[1] - 1, 1);
   const inicio = mondayOf(primero);
@@ -93,7 +93,7 @@ export function calendarioMes(mes, sesiones) {
     const d = addDays(inicio, i);
     const k = ymd(d);
     const s = porFecha[k] || null;
-    celdas.push({ fecha: k, dia: d.getDate(), delMes: d.getMonth() === primero.getMonth(), sesion: s, intensidad: s ? Math.max(0.25, s.volumen / max) : 0 });
+    celdas.push({ fecha: k, dia: d.getDate(), delMes: d.getMonth() === primero.getMonth(), sesion: s, intensidad: s ? Math.max(0.25, s.volumen / max) : 0, cardio: !!cardioFechas[k] });
   }
   // se quitan las semanas del final que ya son del mes siguiente
   while (celdas.length > 28 && celdas.slice(-7).every((c) => !c.delMes)) celdas.splice(-7, 7);

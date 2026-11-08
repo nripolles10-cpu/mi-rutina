@@ -5,6 +5,7 @@ import { T } from '../data/theme.js';
 import { Native } from '../native/index.js';
 import { ZONAS_DEFECTO, UNIDADES_MEDIDA, validarNombreZona } from '../utils/medidasZonas.js';
 import { addDays, fmt, fmtDateLong, fmtDateShort, fromYmd, monthLabel, ymd } from '../utils/format.js';
+import { fechasHechasCardio } from '../utils/cardio.js';
 import { calendarioMes, logros, porSemana, rachaDias, rachaSemanas, resumenSemana, semanaDe, sesionesDe } from '../utils/entreno.js';
 import { EditRecordModal, RANGOS } from './ProgresoTab.jsx';
 
@@ -40,11 +41,12 @@ function RachaCard({ sesiones }) {
   );
 }
 
-export function CalendarioCard({ sesiones }) {
+export function CalendarioCard({ sesiones, cardioFechas = {} }) {
   const hoy = ymd(new Date());
   const [mes, setMes] = useState(hoy.slice(0, 7));
   const [sel, setSel] = useState(null);
-  const celdas = useMemo(() => calendarioMes(mes, sesiones), [mes, sesiones]);
+  const celdas = useMemo(() => calendarioMes(mes, sesiones, cardioFechas), [mes, sesiones, cardioFechas]);
+  const cardioDelMes = celdas.filter((c) => c.delMes && c.cardio).length;
   const cambiaMes = (d) => { const f = fromYmd(mes + '-01'); f.setMonth(f.getMonth() + d); setMes(ymd(f).slice(0, 7)); setSel(null); };
   const sesSel = sel ? sesiones.find((s) => s.fecha === sel) : null;
   const delMes = sesiones.filter((s) => s.fecha.slice(0, 7) === mes);
@@ -59,15 +61,18 @@ export function CalendarioCard({ sesiones }) {
         {DIAS_CORTOS.map((d) => <div key={d} className="font-body" style={{ textAlign: 'center', color: T.dim, fontSize: 10.5, fontWeight: 800 }}>{d}</div>)}
         {celdas.map((c) => (
           <button key={c.fecha} data-testid={'cal-' + c.fecha} onClick={() => setSel(c.sesion ? c.fecha : null)} className="font-body" style={{
-            aspectRatio: '1 / 1', borderRadius: 9, cursor: c.sesion ? 'pointer' : 'default', fontSize: 12, fontWeight: 700, padding: 0,
+            position: 'relative', aspectRatio: '1 / 1', borderRadius: 9, cursor: c.sesion ? 'pointer' : 'default', fontSize: 12, fontWeight: 700, padding: 0,
             color: c.delMes ? '#FFFFFF' : 'rgba(255,255,255,0.25)',
             background: c.sesion ? 'rgba(var(--ac-rgb),' + (0.2 + c.intensidad * 0.6).toFixed(2) + ')' : 'rgba(255,255,255,0.03)',
             border: c.fecha === hoy ? '1.5px solid #FFFFFF' : sel === c.fecha ? '1.5px solid ' + T.cyan : '1px solid rgba(140,170,255,0.12)',
-          }}>{c.dia}</button>
+          }}>
+            {c.dia}
+            {c.cardio && <span aria-label="Cardio hecho" title="Cardio hecho" style={{ position: 'absolute', right: 3, bottom: 3, width: 6, height: 6, borderRadius: '50%', background: '#A3E635' }} />}
+          </button>
         ))}
       </div>
       <div className="font-body" style={{ color: T.dim, fontSize: 11, marginTop: 8, textAlign: 'center' }}>
-        {delMes.length} día{delMes.length === 1 ? '' : 's'} entrenados · {fmt(delMes.reduce((a, s) => a + s.volumen, 0), 0)} kg en el mes. Cuanto más intenso el color, más volumen. Toca un día para verlo.
+        {delMes.length} día{delMes.length === 1 ? '' : 's'} entrenados · {fmt(delMes.reduce((a, s) => a + s.volumen, 0), 0)} kg en el mes · {cardioDelMes} día{cardioDelMes === 1 ? '' : 's'} de cardio (punto verde). Cuanto más intenso el color, más volumen. Toca un día para verlo.
       </div>
       {sesSel && (
         <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid rgba(140,170,255,0.14)' }}>
@@ -138,12 +143,13 @@ export function ResumenSemanalCard() {
 export function CalendarioSec() {
   const { state } = useGym();
   const sesiones = useMemo(() => sesionesDe(state), [state.exercises]);
+  const cardioFechas = useMemo(() => fechasHechasCardio(state.cardio), [state.cardio]);
   return (
     <div>
       <SectionTitle emoji="🔥">Racha</SectionTitle>
       <RachaCard sesiones={sesiones} />
       <SectionTitle emoji="📅">Calendario de entrenamientos</SectionTitle>
-      <CalendarioCard sesiones={sesiones} />
+      <CalendarioCard sesiones={sesiones} cardioFechas={cardioFechas} />
       <SectionTitle emoji="🗓️">Resumen de la semana</SectionTitle>
       <ResumenSemanalCard />
       <SectionTitle emoji="📦">Volumen por semana</SectionTitle>

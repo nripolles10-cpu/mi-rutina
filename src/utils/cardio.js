@@ -19,7 +19,22 @@ export function toggleDia(c, dia) {
 }
 
 // ¿Toca hoy? (está en sus días)
-export function tocaHoy(c, hoy) { return diasDe(c).indexOf(diaDeLaSemana(hoy || new Date())) !== -1; }
+// Modo del cardio: 'dias' = días concretos de la semana · 'veces' = cuántos días a la semana (sin día fijo)
+export function vecesDe(c) { const n = Number(c && c.veces); return Number.isInteger(n) && n >= 1 && n <= 7 ? n : 0; }
+export function modoDe(c) { return c && c.modo === 'veces' && vecesDe(c) > 0 ? 'veces' : 'dias'; }
+export function previstosDe(c) { return modoDe(c) === 'veces' ? vecesDe(c) : diasDe(c).length; }
+
+export function tocaHoy(c, hoy) {
+  if (modoDe(c) === 'veces') return vecesDe(c) > 0;
+  return diasDe(c).indexOf(diaDeLaSemana(hoy || new Date())) !== -1;
+}
+
+// Fechas (AAAA-MM-DD) en que has hecho cualquier cardio. Sirve para marcarlas en el calendario.
+export function fechasHechasCardio(cardio) {
+  const fechas = {};
+  (Array.isArray(cardio) ? cardio : []).forEach((c) => hechosDe(c).forEach((f) => { fechas[f] = true; }));
+  return fechas;
+}
 
 export function hechoHoy(c, hoy) { return hechosDe(c).indexOf(ymd(hoy || new Date())) !== -1; }
 
@@ -37,6 +52,6 @@ export function semanaDe(c, hoy) {
   const fechas = [0, 1, 2, 3, 4, 5, 6].map((i) => ymd(addDays(lunes, i)));
   const hechos = hechosDe(c);
   const hechas = fechas.filter((f) => hechos.indexOf(f) !== -1).length;
-  const previstos = diasDe(c).length;
+  const previstos = previstosDe(c);
   return { hechas, previstos, cumplida: previstos > 0 && hechas >= previstos };
 }

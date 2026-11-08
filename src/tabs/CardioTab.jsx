@@ -3,7 +3,42 @@ import { Card, EditLockBar, Label, SectionTitle, TextField, useGym } from '../co
 import { CardioPresetsModal } from '../components/Herramientas.jsx';
 import { T } from '../data/theme.js';
 import { Native } from '../native/index.js';
-import { alternarHoy, DIAS_CORTOS, DIAS_LARGOS, diasDe, hechoHoy, semanaDe, tocaHoy, toggleDia } from '../utils/cardio.js';
+import { alternarHoy, DIAS_CORTOS, DIAS_LARGOS, diasDe, hechoHoy, modoDe, semanaDe, tocaHoy, toggleDia, vecesDe } from '../utils/cardio.js';
+
+const botonModo = (on) => ({
+  flex: 1, height: 36, borderRadius: 12, cursor: 'pointer', fontWeight: 800, fontSize: 12.5,
+  border: '1.5px solid ' + (on ? T.cyan : 'rgba(140,170,255,0.25)'), background: on ? 'rgba(var(--ac-rgb),0.22)' : 'rgba(10,15,30,0.45)', color: on ? T.text : T.muted,
+});
+
+// Elegir cómo se lleva el cardio: días concretos de la semana o cuántos días a la semana
+function ModoCardio({ c, onChange }) {
+  const modo = modoDe(c);
+  const veces = vecesDe(c);
+  return (
+    <div>
+      <Label>¿Cómo lo quieres llevar?</Label>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+        <button type="button" className="font-body" aria-pressed={modo === 'dias'} onClick={() => onChange({ modo: 'dias' })} style={botonModo(modo === 'dias')}>📅 Días concretos</button>
+        <button type="button" className="font-body" aria-pressed={modo === 'veces'} onClick={() => onChange({ modo: 'veces', veces: veces || 3 })} style={botonModo(modo === 'veces')}>🔢 Cuántos días a la semana</button>
+      </div>
+      {modo === 'dias' ? (
+        <DiasCardio c={c} onChange={(dias) => onChange({ dias })} />
+      ) : (
+        <div>
+          <Label>¿Cuántos días a la semana?</Label>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+            {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+              <button key={n} type="button" onClick={() => onChange({ modo: 'veces', veces: n })} aria-pressed={n === veces} aria-label={n + (n === 1 ? ' día' : ' días') + ' a la semana'} className="font-body"
+                style={{ flex: 1, height: 38, borderRadius: 12, cursor: 'pointer', fontWeight: 800, fontSize: 13,
+                  border: '1.5px solid ' + (n === veces ? T.cyan : 'rgba(140,170,255,0.25)'), background: n === veces ? 'rgba(var(--ac-rgb),0.22)' : 'rgba(10,15,30,0.45)', color: n === veces ? T.text : T.muted }}>{n}</button>
+            ))}
+          </div>
+          <div className="font-body" style={{ color: T.dim, fontSize: 11 }}>{veces ? veces + (veces === 1 ? ' día' : ' días') + ' a la semana, el día que te venga bien.' : 'Elige cuántos días a la semana.'}</div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function DiasCardio({ c, onChange }) {
   const dias = diasDe(c);
@@ -46,12 +81,11 @@ function Cumplir({ c, onChange, showToast }) {
       <div style={{ height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.08)', overflow: 'hidden', marginBottom: 10 }}>
         <div style={{ width: pct + '%', height: '100%', background: sem.cumplida ? '#A3E635' : T.cyan, transition: 'width .3s' }} />
       </div>
-      {toca ? (
-        <button onClick={marcar} className={'font-body btn ' + (hecho ? 'btn-ghost' : 'btn-primary')} style={{ width: '100%' }} aria-pressed={hecho}>
-          {hecho ? '✓ Cumplido hoy · deshacer' : '✅ He hecho el cardio de hoy'}
-        </button>
-      ) : (
-        <div className="font-body" style={{ color: T.dim, fontSize: 11.5, textAlign: 'center' }}>Hoy no te toca. {diasDe(c).length ? 'Te toca: ' + diasDe(c).map((d) => DIAS_LARGOS[d - 1]).join(', ') + '.' : ''}</div>
+      <button onClick={marcar} className={'font-body btn ' + (hecho ? 'btn-ghost' : 'btn-primary')} style={{ width: '100%' }} aria-pressed={hecho}>
+        {hecho ? '✓ Cumplido hoy · deshacer' : '✅ He hecho el cardio de hoy'}
+      </button>
+      {!toca && !hecho && (
+        <div className="font-body" style={{ color: T.dim, fontSize: 11.5, textAlign: 'center', marginTop: 6 }}>Hoy no te tocaba. Si lo has hecho igualmente, márcalo.</div>
       )}
     </div>
   );
@@ -85,7 +119,7 @@ export function CardioTab() {
           <Label style={{ marginTop: 10 }}>Detalle</Label>
           <TextField multiline value={c.detalle} onChange={(v) => updateCardio(c.id, { detalle: v }, 'cardio:' + c.id + ':det')} placeholder="ej. 20 min · inclinación 12 · velocidad 4,5" rows={2} />
           <div style={{ marginTop: 12 }}>
-            <DiasCardio c={c} onChange={(dias) => updateCardio(c.id, { dias }, 'cardio:' + c.id + ':dias')} />
+            <ModoCardio c={c} onChange={(p) => updateCardio(c.id, p, 'cardio:' + c.id + ':modo')} />
           </div>
           <Cumplir c={c} showToast={showToast} onChange={(p) => updateCardio(c.id, p)} />
           {editMode && (
