@@ -3,129 +3,177 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Propuesta de orden · Mi Rutina</title>
+<title>Maqueta · Mi Rutina por dentro</title>
 <style>
-  :root { --bg:#0b1020; --card:#131a30; --line:rgba(140,170,255,.18); --text:#eef2ff; --muted:#9aa6c8; --cyan:#2dd4bf; --lime:#a3e635; --amber:#f5b54a; --pink:#f472b6; --blue:#60a5fa; }
+  :root { --bg:#070b17; --card:#121a2f; --card2:#0b1224; --line:rgba(140,170,255,.18); --text:#eef2ff; --muted:#9aa6c8; --cyan:#2dd4bf; --lime:#a3e635; --amber:#f5b54a; --pink:#f472b6; }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
-  .wrap { max-width:460px; margin:0 auto; padding:16px; }
-  h1 { font-size:20px; margin:6px 0 4px; }
-  .sub { color:var(--muted); font-size:13px; margin:0 0 16px; }
-  .bloque { background:linear-gradient(180deg,#131a30,#0f1629); border:1px solid var(--line); border-radius:22px; padding:16px; margin-bottom:18px; }
-  .etiq { display:inline-block; font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--cyan); margin-bottom:8px; }
-  .tab { border:1px solid var(--line); border-radius:16px; padding:12px 14px; margin-bottom:10px; background:var(--card); }
-  .tab h2 { font-size:16px; margin:0 0 2px; }
-  .tab .peq { color:var(--muted); font-size:12.5px; margin-bottom:8px; }
-  ul { margin:0; padding-left:18px; }
-  li { margin:3px 0; font-size:13.5px; }
-  .mov { display:inline-block; font-size:11.5px; font-weight:800; padding:3px 8px; border-radius:999px; margin-left:4px; }
-  .m-nuevo { background:rgba(45,212,191,.16); color:var(--cyan); }
-  .m-mueve { background:rgba(245,181,74,.16); color:var(--amber); }
-  .m-quita { background:rgba(244,114,182,.16); color:var(--pink); }
-  .m-igual { background:rgba(163,230,53,.14); color:var(--lime); }
-  /* teléfono */
-  .movil { max-width:300px; margin:0 auto; background:#060913; border:8px solid #1d2442; border-radius:34px; padding:14px 12px 10px; }
-  .pant { background:var(--card); border-radius:18px; padding:14px 12px; min-height:200px; }
-  .pant .titulo { font-weight:800; font-size:14px; margin-bottom:6px; }
-  .pant .bloque-mini { background:#0a0f1e; border:1px solid var(--line); border-radius:12px; padding:9px 10px; margin-bottom:8px; font-size:12.5px; }
-  .pant .bloque-mini b { display:block; font-size:12.5px; }
-  .pant .peq { color:var(--muted); font-size:11.5px; }
-  .nav { display:grid; grid-template-columns:repeat(5,1fr); gap:4px; margin-top:12px; }
-  .nav div { text-align:center; font-size:10.5px; color:var(--muted); padding:6px 2px; border-radius:10px; }
-  .nav div span { display:block; font-size:17px; margin-bottom:2px; }
-  .nav .on { background:rgba(45,212,191,.16); color:var(--text); }
-  .lista-cambios li { margin-bottom:8px; }
-  .nota { color:var(--muted); font-size:12.5px; margin-top:10px; }
+  body { margin:0; background:var(--bg); color:var(--text); font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; min-height:100vh; display:flex; justify-content:center; padding:16px 8px; }
+  .movil { width:360px; max-width:100%; background:#02040a; border:8px solid #1b2340; border-radius:36px; overflow:hidden; display:flex; flex-direction:column; height:720px; }
+  .barra { padding:14px 18px 6px; font-size:12px; color:var(--muted); display:flex; justify-content:space-between; }
+  .cabecera { padding:4px 16px 10px; font-weight:900; font-size:18px; }
+  .contenido { flex:1; overflow-y:auto; padding:0 14px 12px; }
+  .nav { display:grid; grid-template-columns:repeat(5,1fr); background:#0a0f1e; border-top:1px solid var(--line); }
+  .nav button { background:none; border:0; color:var(--muted); padding:10px 2px 12px; font-size:10.5px; font-weight:700; cursor:pointer; }
+  .nav button span { display:block; font-size:18px; margin-bottom:2px; }
+  .nav button.on { color:var(--text); }
+  .nav button.on::after { content:""; display:block; width:18px; height:3px; border-radius:3px; background:var(--cyan); margin:4px auto 0; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:13px; margin-bottom:10px; }
+  .card h3 { margin:0 0 3px; font-size:15px; }
+  .peq { color:var(--muted); font-size:12px; }
+  .seg { display:flex; gap:4px; background:var(--card2); border:1px solid var(--line); border-radius:14px; padding:4px; margin-bottom:12px; }
+  .seg button { flex:1; border:0; background:transparent; color:var(--muted); padding:9px 4px; border-radius:11px; font-weight:800; font-size:12.5px; cursor:pointer; }
+  .seg button.on { background:var(--cyan); color:#06202b; }
+  .boton { width:100%; border:0; border-radius:14px; background:var(--cyan); color:#06202b; font-weight:900; padding:13px; font-size:14px; margin-top:6px; }
+  .boton.sec { background:transparent; color:var(--cyan); border:1.5px solid var(--cyan); }
+  .grande { font-size:34px; font-weight:900; margin:4px 0 2px; }
+  .fila { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .tick { border:1.5px solid var(--lime); color:var(--lime); background:transparent; border-radius:999px; padding:6px 12px; font-weight:800; font-size:12px; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0 12px; }
+  .chip { border:1.5px solid var(--line); background:var(--card2); color:var(--muted); border-radius:999px; padding:6px 11px; font-weight:800; font-size:12px; cursor:pointer; }
+  .chip.on { border-color:var(--cyan); color:var(--text); background:rgba(45,212,191,.14); }
+  .video { height:150px; border-radius:14px; background:linear-gradient(135deg,#1c2a4d,#0b1224); display:flex; align-items:center; justify-content:center; font-size:38px; border:1px solid var(--line); margin-bottom:8px; }
+  .barras { display:flex; align-items:flex-end; gap:6px; height:90px; margin-top:8px; }
+  .barras div { flex:1; background:var(--cyan); border-radius:6px 6px 2px 2px; opacity:.85; }
+  .pastilla { display:inline-block; font-size:11px; font-weight:800; padding:3px 8px; border-radius:999px; background:rgba(163,230,53,.14); color:var(--lime); }
+  .aviso { color:var(--muted); font-size:11.5px; margin-top:8px; }
+  .oculto { display:none; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>Propuesta de orden: Mi Rutina</h1>
-  <p class="sub">Cinco pestañas en vez de seis. Cada cosa está donde la buscarías. Es solo una vista para que la revises.</p>
+<div class="movil">
+  <div class="barra"><span>10:57</span><span>Mi Rutina</span></div>
 
-  <section class="bloque">
-    <span class="etiq">Así se vería en el móvil</span>
-    <div class="movil">
-      <div class="pant">
-        <div class="titulo">🏋️ Entreno</div>
-        <div class="bloque-mini"><b>Rutina de hoy</b><span class="peq">Lo de siempre, sin cambios</span></div>
-        <div class="bloque-mini"><b>🏃 Cardio</b><span class="peq">Plegado: cada cardio con su descripción y si lo has cumplido esta semana</span></div>
-        <div class="bloque-mini"><b>🧘 Movilidad</b><span class="peq">El vídeo de movilidad, antes de entrenar</span></div>
-        <div class="bloque-mini"><b>▶ Empezar entreno en vivo</b><span class="peq">Con sus tiempos de descanso</span></div>
+  <!-- ENTRENO -->
+  <div class="contenido" data-pantalla="entreno">
+    <div class="cabecera">🏋️ Entreno</div>
+    <div class="seg" role="tablist">
+      <button class="on" data-sub="rutina">Rutina</button>
+      <button data-sub="cardio">Cardio</button>
+      <button data-sub="movilidad">Movilidad</button>
+    </div>
+
+    <div data-sub-panel="rutina">
+      <div class="card"><h3>Día A · Pecho y tríceps</h3><div class="peq">5 ejercicios · 16 series</div></div>
+      <div class="card"><h3>Día B · Espalda y bíceps</h3><div class="peq">5 ejercicios · 17 series</div></div>
+      <div class="card"><h3>Día C · Piernas</h3><div class="peq">4 ejercicios · 15 series</div></div>
+      <button class="boton">▶ Empezar entreno en vivo</button>
+      <div class="aviso">Tiempos de descanso: entre series, entre lados y en calentamiento.</div>
+    </div>
+
+    <div data-sub-panel="cardio" class="oculto">
+      <div class="card">
+        <div class="fila"><h3>🏃 Cinta</h3><span class="peq">✏️ Editar</span></div>
+        <div class="peq" style="margin:4px 0 10px">20 min · inclinación 12 · velocidad 4,5</div>
+        <div class="fila"><span class="peq">Esta semana</span><b>1 de 3</b></div>
+        <button class="boton sec" style="margin-top:8px">✅ He hecho el cardio de hoy</button>
       </div>
-      <div class="nav">
-        <div class="on"><span>🏋️</span>Entreno</div>
-        <div><span>📊</span>Progreso</div>
-        <div><span>🍽️</span>Comida</div>
-        <div><span>🎯</span>Diana</div>
-        <div><span>🧰</span>Herramientas</div>
+      <div class="card">
+        <div class="fila"><h3>🏃 Intervalos</h3><span class="peq">✏️ Editar</span></div>
+        <div class="peq" style="margin:4px 0 10px">8 × 30 s rápido · 60 s suave</div>
+        <div class="fila"><span class="pastilla">Esta semana cumplida ✓</span><b>2 de 2</b></div>
       </div>
     </div>
-  </section>
 
-  <section class="bloque">
-    <span class="etiq">Las cinco pestañas</span>
-
-    <div class="tab">
-      <h2>🏋️ Entreno <span class="mov m-igual">igual</span></h2>
-      <div class="peq">Antes era Rutina, más Cardio y Movilidad.</div>
-      <ul>
-        <li>Rutina de cada día, tal cual está.</li>
-        <li>🏃 Cardio <span class="mov m-mueve">viene de su propia pestaña</span></li>
-        <li>🧘 Movilidad, con el vídeo <span class="mov m-mueve">viene de Extras</span></li>
-        <li>Empezar entreno en vivo y los tiempos de descanso.</li>
-      </ul>
+    <div data-sub-panel="movilidad" class="oculto">
+      <div class="card">
+        <h3>🧘 Rutina de movilidad</h3>
+        <div class="peq" style="margin-bottom:10px">Antes de entrenar, 10 min</div>
+        <div class="video">▶</div>
+        <div class="peq">Vídeo guardado en tu app</div>
+      </div>
     </div>
+  </div>
 
-    <div class="tab">
-      <h2>📊 Progreso <span class="mov m-igual">ordenado</span></h2>
-      <div class="peq">Al entrar ves solo lo importante. Lo demás está en botones.</div>
-      <ul>
-        <li><b>Arriba:</b> racha, resumen de la semana y peso.</li>
-        <li><b>📅 Calendario</b>: los entrenos y los días de cardio.</li>
-        <li><b>📈 Análisis</b>: series por semana, volumen, progreso por ejercicio y objetivos. <span class="mov m-mueve">antes estaban mezclados</span></li>
-        <li><b>📏 Cuerpo</b>: medidas y "Tu día". <span class="mov m-quita">fotos de progreso quitadas</span></li>
-        <li><b>🏅 Logros</b>.</li>
-      </ul>
+  <!-- PROGRESO -->
+  <div class="contenido oculto" data-pantalla="progreso">
+    <div class="cabecera">📊 Progreso</div>
+    <div class="card">
+      <div class="peq">⚖️ Peso corporal</div>
+      <div class="grande">78,4 kg</div>
+      <div class="peq">Hace 1 semana: 79,1 kg · −0,7 kg</div>
+      <svg viewBox="0 0 300 60" width="100%" height="60" style="margin-top:8px"><polyline fill="none" stroke="#2dd4bf" stroke-width="3" points="0,18 45,22 90,20 135,30 180,28 225,38 270,40 300,44"/></svg>
+      <button class="boton" style="margin-top:8px">+ Apuntar peso de hoy</button>
     </div>
-
-    <div class="tab">
-      <h2>🍽️ Comida <span class="mov m-igual">igual</span> <span class="mov m-nuevo">+2</span></h2>
-      <div class="peq">Ya está bien. Se le suman dos cosas que son de alimentación.</div>
-      <ul>
-        <li>Diario, agua, recetas, plan y compra, como ahora.</li>
-        <li>🥗 Calculadora nutricional <span class="mov m-mueve">viene de Extras</span></li>
-        <li>💊 Suplementación <span class="mov m-mueve">viene de Extras</span></li>
-      </ul>
+    <div class="card">
+      <div class="fila"><span class="peq">🔥 Racha</span><b>0 semanas</b></div>
+      <div class="fila" style="margin-top:6px"><span class="peq">📆 Esta semana</span><b>1 de 3 días</b></div>
     </div>
-
-    <div class="tab">
-      <h2>🎯 Diana <span class="mov m-igual">igual</span></h2>
-      <div class="peq">Ya está bien.</div>
+    <div class="card">
+      <h3>📋 Resumen de la semana</h3>
+      <div class="peq">3 días entrenados · 2 de cardio · 1.970 kg de volumen</div>
     </div>
-
-    <div class="tab">
-      <h2>🧰 Herramientas <span class="mov m-mueve">antes Extras</span></h2>
-      <div class="peq">Lo que consultas de vez en cuando.</div>
-      <ul>
-        <li>🧮 Calculadoras: 1RM y discos.</li>
-        <li>📖 Glosario de técnicas.</li>
-      </ul>
+    <div class="chips" data-prog-chips>
+      <span class="chip on" data-p="calendario">📅 Calendario</span>
+      <span class="chip" data-p="analisis">📈 Análisis</span>
+      <span class="chip" data-p="cuerpo">📏 Cuerpo</span>
+      <span class="chip" data-p="logros">🏅 Logros</span>
     </div>
-  </section>
+    <div data-prog-panel="calendario" class="card">
+      <h3>📅 Noviembre</h3>
+      <div class="peq">Los días con entreno van en color, y los de cardio con un punto verde.</div>
+      <div class="barras" style="height:50px"><div style="opacity:.3"></div><div></div><div style="opacity:.5"></div><div></div><div></div><div style="opacity:.7"></div><div></div></div>
+    </div>
+    <div data-prog-panel="analisis" class="card oculto">
+      <h3>📈 Series efectivas por semana</h3>
+      <div class="barras"><div style="height:40%"></div><div style="height:60%"></div><div style="height:50%"></div><div style="height:80%"></div><div style="height:70%"></div></div>
+      <div class="peq" style="margin-top:8px">También: volumen por semana, progreso por ejercicio y cuánto te falta para tus objetivos.</div>
+    </div>
+    <div data-prog-panel="cuerpo" class="card oculto">
+      <h3>📏 Medidas corporales</h3>
+      <div class="peq">Cintura, pecho, brazo y muslo. Y "Tu día": sueño, energía y pasos.</div>
+    </div>
+    <div data-prog-panel="logros" class="card oculto">
+      <h3>🏅 Logros (4/12)</h3>
+      <div class="peq">Primer entreno, 10 entrenos, primera semana completa…</div>
+    </div>
+  </div>
 
-  <section class="bloque">
-    <span class="etiq">Resumen de cambios</span>
-    <ul class="lista-cambios">
-      <li><span class="mov m-quita">Quitar</span> fotos de progreso (Progreso → Cuerpo).</li>
-      <li><span class="mov m-mueve">Mover</span> Cardio a Entreno.</li>
-      <li><span class="mov m-mueve">Mover</span> Movilidad a Entreno.</li>
-      <li><span class="mov m-mueve">Mover</span> Calculadora nutricional y Suplementación a Comida.</li>
-      <li><span class="mov m-mueve">Renombrar</span> Extras a Herramientas, con solo calculadoras y glosario.</li>
-      <li><span class="mov m-nuevo">Separar</span> Progreso en vista principal y Análisis.</li>
-    </ul>
-    <div class="nota">Qué no cambia: la rutina, Diana y la lógica de Comida.</div>
-  </section>
+  <!-- COMIDA -->
+  <div class="contenido oculto" data-pantalla="comida">
+    <div class="cabecera">🍽️ Comida</div>
+    <div class="card"><h3>📅 Tu plan para hoy</h3><div class="peq">Pollo con arroz · Yogur con fruta</div><button class="boton sec" style="margin-top:8px">Apuntar todo</button></div>
+    <div class="chips"><span class="chip on">Diario</span><span class="chip">Agua</span><span class="chip">Recetas</span><span class="chip">Plan</span><span class="chip">Compra</span><span class="chip">🥗 Calculadora</span><span class="chip">💊 Suplementos</span></div>
+    <div class="card"><h3>Lo que has comido hoy</h3><div class="peq">Desayuno · Comida · Cena · Snacks</div></div>
+    <div class="card"><h3>💧 Agua</h3><div class="peq">3 de 6 vasos</div></div>
+  </div>
+
+  <!-- DIANA -->
+  <div class="contenido oculto" data-pantalla="diana">
+    <div class="cabecera">🎯 Diana</div>
+    <div class="card"><h3>Puntos débiles</h3><div class="peq">Gemelo: intermedio · Hombro: débil</div></div>
+    <div class="card"><h3>Consejos para tu hombro</h3><div class="peq">Trabaja la lateral con poco peso y más repeticiones…</div></div>
+  </div>
+
+  <!-- HERRAMIENTAS -->
+  <div class="contenido oculto" data-pantalla="herramientas">
+    <div class="cabecera">🧰 Herramientas</div>
+    <div class="card"><h3>🧮 1RM estimado</h3><div class="peq">Calcula tu máximo a partir de una serie</div></div>
+    <div class="card"><h3>🏋️ Discos</h3><div class="peq">Qué discos poner en cada lado</div></div>
+    <div class="card"><h3>📖 Glosario de técnicas</h3><div class="peq">Qué es un top set, back-off, drop set…</div></div>
+  </div>
+
+  <nav class="nav" data-nav>
+    <button class="on" data-ir="entreno"><span>🏋️</span>Entreno</button>
+    <button data-ir="progreso"><span>📊</span>Progreso</button>
+    <button data-ir="comida"><span>🍽️</span>Comida</button>
+    <button data-ir="diana"><span>🎯</span>Diana</button>
+    <button data-ir="herramientas"><span>🧰</span>Herramientas</button>
+  </nav>
 </div>
+<script>
+  const $ = (q, r = document) => r.querySelector(q), $$ = (q, r = document) => [...r.querySelectorAll(q)];
+  $$('[data-ir]').forEach((b) => b.onclick = () => {
+    $$('[data-ir]').forEach((x) => x.classList.toggle('on', x === b));
+    $$('[data-pantalla]').forEach((p) => p.classList.toggle('oculto', p.dataset.pantalla !== b.dataset.ir));
+  });
+  $$('[data-sub]').forEach((b) => b.onclick = () => {
+    $$('[data-sub]').forEach((x) => x.classList.toggle('on', x === b));
+    $$('[data-sub-panel]').forEach((p) => p.classList.toggle('oculto', p.dataset.subPanel !== b.dataset.sub));
+  });
+  $$('[data-p]').forEach((c) => c.onclick = () => {
+    $$('[data-p]').forEach((x) => x.classList.toggle('on', x === c));
+    $$('[data-prog-panel]').forEach((p) => p.classList.toggle('oculto', p.dataset.progPanel !== c.dataset.p));
+  });
+</script>
 </body>
 </html>
