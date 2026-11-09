@@ -5,6 +5,7 @@ import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent, act, within, cleanup } from '@testing-library/react';
 import { loadApp } from './loadApp.js';
+import { bloquear, comida, desbloquear, entrarDia, irA } from './nav.js';
 
 let A, errores, oe;
 beforeEach(() => {
@@ -30,9 +31,9 @@ function sinBasura() { expect(texto()).not.toMatch(/undefined|NaN|Infinity|\[obj
 // Primera vez sin datos: la app pide tu nombre (Bienvenida). Los tests van con un nombre ya puesto.
 async function montar(retoque) {
   if (!localStorage.getItem(A.STORAGE_KEY)) { const s = A.buildInitialState(); s.formulario.nombre = 'Prueba'; if (retoque) retoque(s); localStorage.setItem(A.STORAGE_KEY, JSON.stringify(s)); }
-  const r = render(<A.App />); await tick(); return r;
+  const r = render(<A.App />); await tick(); await entrarDia(); return r;
 }
-async function tab(nombre) { await click(screen.getAllByText(nombre, { selector: 'span' }).slice(-1)[0]); sinBasura(); } // la barra inferior es lo último
+async function tab(nombre) { await irA(nombre); sinBasura(); } // la barra inferior es lo último
 const guardado = () => JSON.parse(localStorage.getItem(A.STORAGE_KEY));
 async function flush() { act(() => { document.dispatchEvent(new Event('visibilitychange')); window.dispatchEvent(new Event('pagehide')); }); }
 
@@ -43,7 +44,7 @@ describe('arranque y pestañas', () => {
     for (const t of ['Cardio', 'Progreso', 'Diana', 'Comida', 'Extras', 'Rutina']) await tab(t);
     // secciones de Comida
     await tab('Comida');
-    for (const s of ['🍳 Recetas', '📅 Plan', '🛒 Compra', '💧 Agua', '📓 Diario']) { await click(screen.getByText(s)); sinBasura(); }
+    for (const s of ['Recetas', 'Semana', 'Mi objetivo', 'Hoy']) { await comida(s); sinBasura(); }
     // Diana: vista de detrás
     await tab('Diana');
     await click(screen.getByText('Detrás'));
@@ -67,7 +68,7 @@ describe('arranque y pestañas', () => {
 describe('rutina', () => {
   test('modo edición: crear ejercicio, series de cada tipo, coma decimal, guardar registro y récord', async () => {
     await montar();
-    await click(screen.getByText(/Bloqueado — toca para editar/));
+    await desbloquear();
     await click(screen.getByText('➕ Añadir ejercicio a este día'));
     await type(screen.getByPlaceholderText('ej. Press militar'), 'Press de prueba');
     await click(screen.getAllByText('Pecho').find((el) => el.tagName === 'BUTTON'));
@@ -111,7 +112,7 @@ describe('rutina', () => {
     await montar();
     expect(screen.queryByTitle('Deshacer')).toBeNull();
     expect(screen.queryByTitle('Rehacer')).toBeNull();
-    await click(screen.getByText(/Bloqueado — toca para editar/));
+    await desbloquear();
     await click(screen.getByText('🗑️ Eliminar este día'));
     expect(texto()).toMatch(/No se puede deshacer/);
     await click(btn('Cancelar'));
@@ -139,7 +140,7 @@ describe('rutina', () => {
 
   test('quitar ejercicio con confirmación, mover, crear y borrar día', async () => {
     await montar();
-    await click(screen.getByText(/Bloqueado — toca para editar/));
+    await desbloquear();
     // mover el segundo ejercicio arriba
     const subir = screen.getAllByTitle('Subir');
     expect(subir[0].disabled).toBe(true);
@@ -184,22 +185,34 @@ describe('comida', () => {
   test('agua en litros: botella, medio litro y corrección con decimales', async () => {
     await montar();
     await tab('Comida');
-    await click(screen.getByText('💧 Agua'));
-    await click(screen.getByText('🍼 +1 L (botella)'));
+    const total = () => screen.getByTestId('agua-total').textContent;
+    expect(total()).toContain('0 de 3 L');
+    // tocar la tarjeta suma una botella de 1 L, sin abrir el candado
+    await click(screen.getByTestId('agua'));
+    expect(total()).toContain('1 de 3 L');
+    expect(screen.queryByTestId('agua-quitar')).toBeNull(); // los ajustes solo con el candado abierto
+    await desbloquear();
+    // los botones de ajuste no suman otra botella al tocarlos (no se cuentan como toque en la tarjeta)
     await click(screen.getByText('➕ 0,5 L'));
-    expect(texto()).toContain('1,5 / 3 L');
+    expect(total()).toContain('1,5 de 3 L');
     await type(screen.getByDisplayValue('1,5'), '2,5');
-    expect(texto()).toContain('2,5 / 3 L');
+    expect(total()).toContain('2,5 de 3 L');
     await click(screen.getByText('➖ 0,5 L'));
-    expect(texto()).toContain('2 / 3 L');
+    expect(total()).toContain('2 de 3 L');
+    await click(screen.getByTestId('agua-quitar'));
+    expect(total()).toContain('1 de 3 L');
+    // objetivo: botellas al día
+    await click(screen.getByTestId('agua').querySelectorAll('button')[1]); // + del objetivo
+    expect(total()).toContain('1 de 3,5 L');
     await flush();
-    expect(guardado().comida.agua.dias[A.ymd(new Date())]).toBe(2);
+    expect(guardado().comida.agua.dias[A.ymd(new Date())]).toBe(1);
+    expect(guardado().comida.agua.objetivo).toBe(3.5);
   });
 
   test('receta: ingredientes con cantidades, pasos, raciones y añadir al diario', async () => {
     await montar();
     await tab('Comida');
-    await click(screen.getByText('🍳 Recetas'));
+    await comida('Recetas');
     await click(screen.getByText('Avena proteica con plátano y canela'));
     expect(screen.getByText('Copos de avena')).toBeTruthy();
     expect(texto()).toContain('60 g');
@@ -217,11 +230,10 @@ describe('comida', () => {
   test('planificador → lista de la compra', async () => {
     await montar();
     await tab('Comida');
-    await click(screen.getByText('📅 Plan'));
+    await comida('Semana'); // plan de la semana y, debajo, la lista de la compra
     await click(screen.getAllByTitle('Añadir')[0]); // lunes, desayuno
     await click(screen.getByText('Avena proteica con plátano y canela'));
     await click(btn('Añadir'));
-    await click(screen.getByText('🛒 Compra'));
     expect(screen.getByText('Copos de avena')).toBeTruthy();
     expect(texto()).toContain('60 g');
     await click(screen.getByText('Copos de avena'));
@@ -231,7 +243,7 @@ describe('comida', () => {
   test('editor de recetas: calcular macros con los ingredientes', async () => {
     await montar();
     await tab('Comida');
-    await click(screen.getByText('🍳 Recetas'));
+    await comida('Recetas');
     await click(screen.getByText('➕ Crear mi receta'));
     await type(screen.getByText('Nombre').nextSibling, 'Pollo solo');
     await type(screen.getByPlaceholderText('Ingrediente'), 'Pechuga de pollo');
@@ -277,11 +289,16 @@ describe('extras', () => {
 
   test('calculadora nutricional con datos y sin datos', async () => {
     await montar((s) => { s.peso.historial = [{ id: 'p0', date: '2026-10-01T10:00:00.000Z', kg: 84 }]; });
-    await tab('Extras');
+    await tab('Comida');
+    expect(texto()).toMatch(/Rellena Mi objetivo/); // los macros de arriba piden la calculadora
+    await click(screen.getByTestId('macros-ajustar')); // ⚙️ Ajustar lleva a Mi objetivo
     expect(texto()).toMatch(/necesito tu peso, edad y altura/);
     await type(screen.getByText('Edad').parentElement.querySelector('input'), '30');
     await type(screen.getByText('Altura').parentElement.querySelector('input'), '180');
     expect(texto()).toMatch(/Calorías objetivo al día/);
+    // y los macros de arriba ya muestran el objetivo
+    expect(screen.getByTestId('macros-dia').textContent).toMatch(/te quedan/);
+    expect(screen.getByTestId('macros-dia').textContent).toMatch(/Objetivo: /);
     sinBasura();
   });
 });
@@ -364,15 +381,13 @@ describe('guardado y datos', () => {
   test('lo guardado sobrevive a cerrar y abrir la app', async () => {
     const r = await montar();
     await tab('Comida');
-    await click(screen.getByText('💧 Agua'));
-    await click(screen.getByText('🍼 +1 L (botella)'));
+    await click(screen.getByTestId('agua'));
     await flush();
     r.unmount();
     A = loadApp();
     await montar();
     await tab('Comida');
-    await click(screen.getByText('💧 Agua'));
-    expect(texto()).toContain('1 / 3 L');
+    expect(screen.getByTestId('agua-total').textContent).toContain('1 de 3 L');
   });
 
   test('datos dañados: aviso, copia de rescate visible en Ajustes y la app sigue funcionando', async () => {
@@ -458,7 +473,7 @@ describe('fase 2: botón atrás, importar CSV, fotos y ajustes', () => {
     A.Native.pickPhoto = async () => 'data:image/jpeg;base64,/9j/AAAA';
     try {
       await montar();
-      await click(screen.getByText(/Bloqueado — toca para editar/));
+      await desbloquear();
       await click(screen.getByText('Gemelo de pie'));
       await click(screen.getByText('🖼️ Galería'));
       expect(JSON.parse(localStorage.getItem(A.FOTOS_KEY)).gemelo).toBe('data:image/jpeg;base64,/9j/AAAA');

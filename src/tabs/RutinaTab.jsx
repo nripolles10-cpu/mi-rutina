@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Chip, DescansoPicker, EditLockBar, Label, MiniBtn, NumField, Stepper, TextField, chipStyle, useGym } from '../components/ui.jsx';
+import { Card, Chip, Label, MiniBtn, NumField, TextField, chipStyle, useGym } from '../components/ui.jsx';
 import { DESCANSO_CALENTAMIENTO_DEFECTO, DESCANSO_LADOS_DEFECTO, DESCANSO_SERIES_DEFECTO, RAPIDOS, textoDescanso } from '../utils/descanso.js';
 import { CATS, CAT_IDS, SET_TYPES, catInfo } from '../data/catalog.js';
 import { T } from '../data/theme.js';
 import { Native } from '../native/index.js';
-import { fmt, fmtDateShort, parseNum } from '../utils/format.js';
-import { computeScore, ensureStruct, latestSerie1 } from '../utils/training.js';
+import { fmt, fmtDateShort, parseNum, ymd } from '../utils/format.js';
+import { DIAS_CORTOS, DIAS_LARGOS } from '../utils/cardio.js';
+import { computeScore, effectiveCount, ensureStruct, latestSerie1 } from '../utils/training.js';
 import { EntrenoVivoModal } from '../components/EntrenoVivo.jsx';
 import { HistorialEjercicioModal, SugerenciaProgresion } from '../components/HistorialEjercicio.jsx';
 import { semanaDescarga } from '../utils/entreno.js';
 
 /* =========================================================================
    SECCIÓN 7 · PESTAÑAS
-   Rutina · Cardio · Progreso · Diana física · Comida · Extras · Ajustes
+   Entreno (Rutina · Cardio · Movilidad) · Progreso · Comida · Diana · Recursos · Ajustes
    ========================================================================= */
 
 /* =========================================================================
@@ -561,8 +562,157 @@ export function AvisoDescarga() {
   );
 }
 
-export function RutinaTab() {
-  const { state, setActiveDay, updateDay, moveDay, removeDay, askConfirm, duplicarDia, setPreferencia } = useGym();
+/* ---------- Lista de días (lo primero que se ve en Entreno → Rutina) ---------- */
+
+const mayus = (t) => (t ? t.charAt(0).toUpperCase() + t.slice(1) : t);
+// Día de la semana de hoy: 1 = lunes … 7 = domingo
+export const semanaDeHoy = (fecha) => (((fecha || new Date()).getDay() + 6) % 7) + 1;
+// Ejercicios que se hacen ese día (de cada pareja de alternos, el que toca esta semana)
+export function idsActivosDelDia(day, exercises) {
+  return bloquesDelDia(day, exercises).map((b) => (b.par ? b.par.activo : b.id)).filter((id) => exercises[id]);
+}
+export function guardadoHoy(ex, hoyK) {
+  return (ex.history || []).some((h) => h && !h.seed && h.date && ymd(new Date(h.date)) === hoyK);
+}
+
+export function DiasLista({ onAbrir }) {
+  const { state, commit, setActiveDay } = useGym();
+  const days = state.days || [];
+  const editMode = state.meta.editMode;
+  const hoyK = ymd(new Date());
+  const hoySem = semanaDeHoy();
+  const hechoId = (state.entrenosHechos || {})[hoyK];
+  const hayAsignados = days.some((d) => d.semana);
+  const deHoy = days.find((d) => d.semana === hoySem);
+  // Un día de la semana, un entreno: si otro día lo tenía, se le quita
+  const asignar = (dayId, k) => commit((prev) => ({ ...prev, days: prev.days.map((d) => (d.id === dayId ? { ...d, semana: d.semana === k ? null : k } : d.semana === k ? { ...d, semana: null } : d)) }));
+
+  if (!days.length) {
+    return (
+      <div>
+        <Card><p className="font-body" style={{ color: T.muted, fontSize: 13, textAlign: 'center', margin: 0, lineHeight: 1.5 }}>No tienes ningún día de rutina. {editMode ? 'Crea el primero aquí abajo.' : 'Abre el candado 🔒 de arriba para crear uno.'}</p></Card>
+        {editMode && <AddDayForm />}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {!hayAsignados && (
+        <div className="font-body" data-testid="aviso-asignar" style={{ marginBottom: 12, padding: '10px 12px', borderRadius: 14, background: 'rgba(var(--ac-rgb),0.08)', border: '1px solid rgba(var(--ac-rgb),0.35)', color: T.text, fontSize: 12.5, lineHeight: 1.5 }}>
+          📅 Asigna a cada entreno su día de la semana: abre el candado 🔒 de arriba y elige L, M, X… en cada día. Así te marcará cuál toca hoy.
+        </div>
+      )}
+      {hayAsignados && !deHoy && (
+        <Card style={{ marginBottom: 10, textAlign: 'center', padding: 14 }}>
+          <div className="font-body" data-testid="hoy-descansas" style={{ color: T.text, fontWeight: 800, fontSize: 14.5 }}>😴 Hoy ({DIAS_LARGOS[hoySem - 1]}) descansas</div>
+          <div className="font-body" style={{ color: T.muted, fontSize: 12, marginTop: 2 }}>No tienes ningún entreno asignado a este día.</div>
+        </Card>
+      )}
+      {days.map((d, i) => {
+        const ids = idsActivosDelDia(d, state.exercises);
+        const series = ids.reduce((a, id) => a + (state.exercises[id].currentSets || []).reduce((b, x) => b + effectiveCount(x), 0), 0);
+        const musculos = Array.from(new Set(ids.map((id) => catInfo(CATS, state.exercises[id].cat).label))).slice(0, 4).join(' · ');
+        const esHoy = d.semana === hoySem;
+        const hecho = hechoId === d.id;
+        return (
+          <div key={d.id} data-testid={'dia-' + d.id} data-activo={d.id === state.meta.activeDay ? 'true' : undefined} role="button" tabIndex={0} className="card"
+            onClick={(e) => { if (e.target.closest('[data-asignar]')) return; setActiveDay(d.id); onAbrir(); }}
+            onKeyDown={(e) => { if (e.key === 'Enter') { setActiveDay(d.id); onAbrir(); } }}
+            style={{ marginBottom: 10, padding: 14, cursor: 'pointer', borderColor: esHoy ? 'rgba(var(--ac-rgb),0.85)' : undefined, boxShadow: esHoy ? '0 0 0 1px rgba(var(--ac-rgb),0.35) inset' : undefined }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="font-body" style={{ color: d.semana ? T.cyan : T.dim, fontSize: 12, fontWeight: 800 }}>{d.semana ? mayus(DIAS_LARGOS[d.semana - 1]) : 'Sin día asignado'}</div>
+                <div className="font-body" style={{ color: '#FFFFFF', fontWeight: 800, fontSize: 15, marginTop: 1 }}>
+                  Día {i + 1} · {d.label}
+                  {esHoy && <span data-testid="marca-hoy" style={{ marginLeft: 6, fontSize: 10.5, fontWeight: 900, padding: '2px 8px', borderRadius: 999, background: T.cyan, color: '#06202B', verticalAlign: 'middle' }}>HOY</span>}
+                  {hecho && <span data-testid="marca-hecho" style={{ marginLeft: 6, fontSize: 10.5, fontWeight: 900, padding: '2px 8px', borderRadius: 999, background: '#A3E635', color: '#0B1500', verticalAlign: 'middle' }}>✓ HECHO</span>}
+                </div>
+                <div className="font-body" style={{ color: T.muted, fontSize: 12, marginTop: 3 }}>{ids.length} {ids.length === 1 ? 'ejercicio' : 'ejercicios'} · {fmt(series, 1)} series efectivas</div>
+                {musculos && <div className="font-body" style={{ color: T.muted, fontSize: 12 }}>{musculos}</div>}
+              </div>
+              <span style={{ color: T.muted, fontSize: 20 }}>›</span>
+            </div>
+            {editMode && (
+              <div data-asignar style={{ display: 'flex', gap: 4, marginTop: 10 }}>
+                {DIAS_CORTOS.map((l, k) => {
+                  const on = d.semana === k + 1;
+                  return (
+                    <button key={l} type="button" onClick={() => asignar(d.id, k + 1)} aria-pressed={on} aria-label={'Asignar ' + DIAS_LARGOS[k]} className="font-body"
+                      style={{ flex: 1, minWidth: 0, height: 32, borderRadius: 9, cursor: 'pointer', fontWeight: 800, fontSize: 12,
+                        border: '1.5px solid ' + (on ? '#FBBF24' : 'rgba(140,170,255,0.25)'), background: on ? '#FBBF24' : 'rgba(10,15,30,0.45)', color: on ? '#1A1200' : T.muted }}>{l}</button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+      {editMode && <AddDayForm />}
+    </div>
+  );
+}
+
+/* ---------- Descansos en una línea (se despliega al tocarla) ---------- */
+function DescansosLinea() {
+  const { state, setPreferencia } = useGym();
+  const [abierto, setAbierto] = useState(false);
+  const p = state.preferencias || {};
+  const series = p.descanso || DESCANSO_SERIES_DEFECTO;
+  const lados = p.descansoLados || DESCANSO_LADOS_DEFECTO;
+  const cal = p.descansoCalentamiento || DESCANSO_CALENTAMIENTO_DEFECTO;
+  return (
+    <Card style={{ marginBottom: 12, padding: abierto ? 12 : '10px 12px' }}>
+      <button type="button" onClick={() => setAbierto(!abierto)} aria-expanded={abierto} data-testid="descansos-linea" className="font-body"
+        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, background: 'transparent', border: 0, padding: 0, cursor: 'pointer', textAlign: 'left', color: T.text }}>
+        <span style={{ fontSize: 12.5, lineHeight: 1.45 }}>⏱️ Descansos: <b>{textoDescanso(series)}</b> · lados <b>{textoDescanso(lados)}</b> · calentamiento <b>{textoDescanso(cal)}</b></span>
+        <span style={{ color: T.cyan, fontSize: 12, fontWeight: 800, flexShrink: 0 }}>{abierto ? 'Cerrar ▲' : 'Cambiar ›'}</span>
+      </button>
+      {abierto && (
+        <div style={{ marginTop: 10 }}>
+          <div className="font-body" style={{ color: T.muted, fontSize: 11.5, marginBottom: 6 }}>Se usan en el entreno en vivo. Toca uno y se guarda.</div>
+          <Label>Entre series</Label>
+          <RapidosDescanso valor={series} opciones={RAPIDOS.series} onChange={(v) => setPreferencia({ descanso: v })} />
+          <Label style={{ marginTop: 10 }}>Entre lados (ejercicios unilaterales)</Label>
+          <RapidosDescanso valor={lados} opciones={RAPIDOS.lados} onChange={(v) => setPreferencia({ descansoLados: v })} />
+          <Label style={{ marginTop: 10 }}>En series de calentamiento</Label>
+          <RapidosDescanso valor={cal} opciones={RAPIDOS.calentamiento} onChange={(v) => setPreferencia({ descansoCalentamiento: v })} />
+        </div>
+      )}
+    </Card>
+  );
+}
+
+/* ---------- Terminar el entreno del día ---------- */
+function TerminarEntreno({ day }) {
+  const { state, askConfirm, terminarEntreno } = useGym();
+  const hoyK = ymd(new Date());
+  const ids = idsActivosDelDia(day, state.exercises);
+  const pendientes = ids.filter((id) => !guardadoHoy(state.exercises[id], hoyK)).length;
+  const hecho = (state.entrenosHechos || {})[hoyK] === day.id;
+  if (!ids.length) return null;
+  if (hecho && pendientes === 0) {
+    return <div data-testid="entreno-terminado" className="font-body" style={{ marginTop: 14, padding: 13, borderRadius: 14, textAlign: 'center', border: '1.5px solid #A3E635', color: '#A3E635', fontWeight: 900, fontSize: 14 }}>✓ Entreno de hoy terminado</div>;
+  }
+  const pedir = () => askConfirm({
+    title: '¿Terminar el entreno?',
+    text: pendientes
+      ? 'Se guardará el registro de hoy de ' + pendientes + (pendientes === 1 ? ' ejercicio que aún no has guardado' : ' ejercicios que aún no has guardado') + ', con los pesos y repeticiones que tienen ahora. Cuenta para tu racha y sale en el calendario.'
+      : 'Todos los ejercicios ya tienen su registro de hoy. Se marcará el día como hecho.',
+    confirmLabel: 'Terminar',
+    danger: false,
+    onConfirm: () => terminarEntreno(day.id, ids),
+  });
+  return (
+    <div style={{ marginTop: 14 }}>
+      <button onClick={pedir} data-testid="terminar-entreno" className="font-body btn" style={{ width: '100%', padding: 14, fontSize: 15, fontWeight: 900, background: '#A3E635', color: '#0B1500', border: 0 }}>✅ Terminar entreno</button>
+      <div className="font-body" style={{ color: T.dim, fontSize: 11.5, textAlign: 'center', marginTop: 6 }}>Cuenta para tu racha y sale en el calendario.</div>
+    </div>
+  );
+}
+
+export function RutinaTab({ onVolver }) {
+  const { state, setActiveDay, updateDay, moveDay, removeDay, askConfirm, duplicarDia } = useGym();
   const [vivo, setVivo] = useState(null);
   const days = state.days || [];
   const editMode = state.meta.editMode;
@@ -577,8 +727,7 @@ export function RutinaTab() {
   if (!day) {
     return (
       <div className="rutina-scope">
-        <EditLockBar showFill />
-        <Card><p className="font-body" style={{ color: T.muted, fontSize: 13, textAlign: 'center', margin: 0, lineHeight: 1.5 }}>No tienes ningún día de rutina. {editMode ? 'Crea el primero aquí abajo.' : 'Desbloquea la edición para crear uno.'}</p></Card>
+        <Card><p className="font-body" style={{ color: T.muted, fontSize: 13, textAlign: 'center', margin: 0, lineHeight: 1.5 }}>No tienes ningún día de rutina. {editMode ? 'Crea el primero aquí abajo.' : 'Abre el candado 🔒 de arriba para crear uno.'}</p></Card>
         {editMode && <AddDayForm />}
       </div>
     );
@@ -586,7 +735,9 @@ export function RutinaTab() {
 
   return (
     <div className="rutina-scope">
-      <EditLockBar showFill />
+      {onVolver && (
+        <button onClick={onVolver} data-testid="volver-dias" className="font-body" style={{ background: 'transparent', border: 0, color: T.cyan, fontWeight: 800, fontSize: 13, padding: '2px 0 8px', cursor: 'pointer' }}>‹ Todos los días</button>
+      )}
 
       <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, userSelect: 'none', gap: 8 }}>
@@ -598,6 +749,11 @@ export function RutinaTab() {
             <div className="font-display" style={{ fontSize: 26, fontWeight: 700, letterSpacing: '0.04em', textAlign: 'center', flex: 1, color: '#FFFFFF' }}>{day.label}</div>
           )}
           <button onClick={() => goTo(1)} className="font-body arrow-btn">›</button>
+        </div>
+
+        <div className="font-body" data-testid="dia-subtitulo" style={{ textAlign: 'center', color: day.semana ? T.cyan : T.dim, fontSize: 12.5, fontWeight: 800 }}>
+          Día {dayIndex + 1} · {day.semana ? mayus(DIAS_LARGOS[day.semana - 1]) : 'Sin día asignado'}
+          {day.semana === semanaDeHoy() && <span style={{ marginLeft: 6, fontSize: 10.5, fontWeight: 900, padding: '2px 8px', borderRadius: 999, background: T.cyan, color: '#06202B' }}>HOY</span>}
         </div>
 
         {editMode && (
@@ -619,18 +775,7 @@ export function RutinaTab() {
 
       <AvisoDescarga />
       {vivo && <EntrenoVivoModal dayId={vivo} onClose={() => setVivo(null)} />}
-      {!editMode && day.ids.length > 0 && (
-        <Card style={{ marginBottom: 12, padding: 12 }}>
-          <div className="font-body" style={{ color: T.text, fontSize: 13, fontWeight: 700, marginBottom: 2 }}>⏱️ Tiempos de descanso</div>
-          <div className="font-body" style={{ color: T.muted, fontSize: 11.5, marginBottom: 6 }}>Se usan en el entreno en vivo. Toca uno y se guarda.</div>
-          <Label>Entre series</Label>
-          <RapidosDescanso valor={(state.preferencias && state.preferencias.descanso) || DESCANSO_SERIES_DEFECTO} opciones={RAPIDOS.series} onChange={(v) => setPreferencia({ descanso: v })} />
-          <Label style={{ marginTop: 10 }}>Entre lados (ejercicios unilaterales)</Label>
-          <RapidosDescanso valor={(state.preferencias && state.preferencias.descansoLados) || DESCANSO_LADOS_DEFECTO} opciones={RAPIDOS.lados} onChange={(v) => setPreferencia({ descansoLados: v })} />
-          <Label style={{ marginTop: 10 }}>En series de calentamiento</Label>
-          <RapidosDescanso valor={(state.preferencias && state.preferencias.descansoCalentamiento) || DESCANSO_CALENTAMIENTO_DEFECTO} opciones={RAPIDOS.calentamiento} onChange={(v) => setPreferencia({ descansoCalentamiento: v })} />
-        </Card>
-      )}
+      {!editMode && day.ids.length > 0 && <DescansosLinea />}
       {!editMode && day.ids.length > 0 && (
         <button onClick={() => setVivo(day.id)} className="font-body btn btn-primary" style={{ width: '100%', marginBottom: 8, padding: 13, fontSize: 14 }}>▶ Empezar entreno en vivo</button>
       )}
@@ -659,6 +804,7 @@ export function RutinaTab() {
             ? <AlternoCard key={b.id} day={day} par={b.par} />
             : <ExerciseCard key={b.id} id={b.id} dayId={day.id} />
         ))}
+        {!editMode && <TerminarEntreno day={day} />}
         {editMode && <AddExerciseForm dayId={day.id} />}
         {editMode && <AddDayForm />}
         {editMode && (

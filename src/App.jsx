@@ -9,15 +9,14 @@ import { BG_IMAGE, T, aplicarTema } from './data/theme.js';
 import defaultData from './data/defaultData.json';
 import { Native, NOTIF_ID_DESCANSO } from './native/index.js';
 import { handleBack, useBackHandler } from './native/back.js';
-import { migrateState, normalizeExercise, takePendingPhotos } from './state/migrate.js';
+import { migrateState, normalizarEntrenosHechos, normalizeExercise, takePendingPhotos } from './state/migrate.js';
 import { BACKUP_KEY, readInitialState } from './state/storage.js';
 import { AjustesScreen } from './tabs/Ajustes.jsx';
-import { CardioTab } from './tabs/CardioTab.jsx';
 import { ComidaTab } from './tabs/ComidaTab.jsx';
 import { DianaFisicaTab } from './tabs/DianaTab.jsx';
 import { ExtrasTab } from './tabs/ExtrasTab.jsx';
 import { ProgresoTab } from './tabs/ProgresoTab.jsx';
-import { RutinaTab } from './tabs/RutinaTab.jsx';
+import { EntrenoTab } from './tabs/EntrenoTab.jsx';
 import { stateFromDefaults } from './utils/defaults.js';
 import { clone, fmt, fmtMS, uid, ymd } from './utils/format.js';
 import { idZonaNueva } from './utils/medidasZonas.js';
@@ -110,6 +109,14 @@ export function App() {
     const quitarEstado = Native.onAppStateChange((activa) => { if (!activa) flush(); });
     return () => { document.removeEventListener('visibilitychange', onVis); window.removeEventListener('pagehide', flush); quitarEstado(); };
   }, [flush]);
+
+  // Si la app se cierra con un guardado pendiente, se guarda al instante (y no queda un temporizador suelto)
+  useEffect(() => () => {
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current); saveTimer.current = null;
+      if (stateRef.current) writeOut(stateRef.current);
+    }
+  }, [writeOut]);
 
   const persistNow = useCallback((next) => {
     if (saveTimer.current) { clearTimeout(saveTimer.current); saveTimer.current = null; }
@@ -232,6 +239,8 @@ export function App() {
 
   const setActiveDay = useCallback((dayId) => { commit((prev) => ({ ...prev, meta: { ...prev.meta, activeDay: dayId } })); }, [commit]);
   const setActiveTab = useCallback((tab) => { commit((prev) => ({ ...prev, meta: { ...prev.meta, activeTab: tab } })); }, [commit]);
+  // Entreno → Rutina: dentro de un día o en la lista. Dura la sesión (al abrir la app se empieza en la lista).
+  const [dentroDia, setDentroDia] = useState(false);
   const toggleEditMode = useCallback(() => { commit((prev) => ({ ...prev, meta: { ...prev.meta, editMode: !prev.meta.editMode } })); }, [commit]);
   const setPreferencia = useCallback((patch) => {
     commit((prev) => ({ ...prev, preferencias: { ...(prev.preferencias || {}), ...patch } }));
@@ -283,6 +292,31 @@ export function App() {
     else if (isDown) showToast('Anotado — ha bajado un poco en ' + ex.name, 'warn');
     else showToast('Progreso guardado ✓');
   }, [persistNow, showToast]);
+
+  // Terminar el entreno de un día: guarda el registro de hoy de los ejercicios que aún no lo tienen
+  // (así cuenta en el calendario y en la racha) y marca el día como hecho. Devuelve cuántos ha guardado.
+  const terminarEntreno = useCallback((dayId, ids) => {
+    const prev = stateRef.current;
+    const hoyK = ymd(new Date());
+    const exercises = { ...prev.exercises };
+    let guardados = 0;
+    (ids || []).forEach((id) => {
+      const ex = exercises[id];
+      if (!ex) return;
+      const yaHoy = (ex.history || []).some((h) => h && !h.seed && h.date && ymd(new Date(h.date)) === hoyK);
+      if (yaHoy) return;
+      exercises[id] = { ...ex, history: (ex.history || []).concat([{ date: new Date().toISOString(), sets: clone(ex.currentSets) }]) };
+      guardados += 1;
+    });
+    const next = { ...prev, exercises, entrenosHechos: normalizarEntrenosHechos({ ...(prev.entrenosHechos || {}), [hoyK]: dayId }) };
+    setState(next); persistNow(next);
+    showToast('🏁 ¡Entreno terminado!' + (guardados ? ' Guardados ' + guardados + (guardados === 1 ? ' ejercicio' : ' ejercicios') : ''), 'pr');
+    return guardados;
+  }, [persistNow, showToast]);
+  // Marca hoy como entrenado (lo usa el modo en vivo al acabar todos los ejercicios)
+  const marcarEntrenoHecho = useCallback((dayId) => {
+    commit((prev) => ({ ...prev, entrenosHechos: normalizarEntrenosHechos({ ...(prev.entrenosHechos || {}), [ymd(new Date())]: dayId }) }));
+  }, [commit]);
 
   const logPeso = useCallback((kg) => {
     const prevState = stateRef.current;
@@ -553,20 +587,21 @@ export function App() {
     updateExercise, updateCardio, addCardio, removeCardio,
     setActiveDay, setActiveTab, toggleEditMode, updateDay, addDay, removeDay, moveDay,
     addExercise, removeFromDay, moveExercise, addSerie, removeSerieAt,
-    saveEntry, logPeso, guardarFormulario, resetAll, importObj, restoreBackup, restaurarCopiaJson, hasBackup,
+    saveEntry, terminarEntreno, marcarEntrenoHecho, logPeso, guardarFormulario, resetAll, importObj, restoreBackup, restaurarCopiaJson, hasBackup,
     suggestObjetivo, rellenarObjetivosFaltantes, setPreferencia, setObjetivoPeso, commitDeshacible, persistencia, pedirPersistencia,
     duplicarDia, duplicarEjercicio, setRegistroDia, addMedida, editMedida, delMedida, addZonaMedida, renombrarZonaMedida, quitarZonaMedida, editRegistroEjercicio, borrarRegistroEjercicio, addFotoProgreso, delFotoProgreso, editFotoProgreso, programarRecordatorios,
     timer, nowMs, startTimer, addTimer, stopTimer, hoy: ymd(new Date()),
+    dentroDia, setDentroDia,
   };
 
   const TABS = [
-    { id: 'rutina', label: 'Rutina', emoji: '🏋️' },
-    { id: 'cardio', label: 'Cardio', emoji: '🏃' },
+    { id: 'rutina', label: 'Entreno', emoji: '🏋️' },
     { id: 'progreso', label: 'Progreso', emoji: '📊' },
-    { id: 'fisico', label: 'Diana', emoji: '🎯' },
     { id: 'comida', label: 'Comida', emoji: '🍽️' },
-    { id: 'extras', label: 'Extras', emoji: '✨' },
+    { id: 'fisico', label: 'Diana', emoji: '🎯' },
+    { id: 'extras', label: 'Recursos', emoji: '🧰' },
   ];
+  const editando = !!state.meta.editMode;
   const tab = state.meta.activeTab;
 
   return (
@@ -593,6 +628,8 @@ export function App() {
             <div style={{ position: 'relative', zIndex: 1, padding: 'calc(14px + var(--safe-top)) 14px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, gap: 8 }}>
               <div className="font-display" style={{ fontSize: 'clamp(19px, 6.4vw, 26px)', fontWeight: 700, letterSpacing: '0.07em', color: '#FFFFFF', textShadow: '0 0 14px rgba(var(--ac-rgb),0.55)', whiteSpace: 'nowrap', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>MI RUTINA 💪</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                <button onClick={toggleEditMode} title={editando ? 'Bloquear edición' : 'Desbloquear edición'} aria-label={editando ? 'Bloquear edición' : 'Desbloquear edición'} aria-pressed={editando} className="font-body hbtn"
+                  style={editando ? { borderColor: '#FBBF24', background: 'rgba(251,191,36,0.18)', boxShadow: '0 0 14px rgba(251,191,36,0.35)' } : undefined}>{editando ? '🔓' : '🔒'}</button>
                 <button onClick={() => setTimerOpen(true)} title="Descanso entre series" className="font-body hbtn" style={timer ? { width: 'auto', padding: '0 8px', fontSize: 12, borderColor: T.cyan, color: '#FFFFFF' } : undefined}>⏱️{timer ? ' ' + fmtMS(timer.end - nowMs) : ''}</button>
                 <button onClick={() => setScreen('settings')} title="Ajustes" className="font-body hbtn">⚙️</button>
               </div>
@@ -600,8 +637,7 @@ export function App() {
 
             <div className="gt-scroll" style={{ position: 'relative', zIndex: 1, padding: '4px 16px calc(84px + var(--kb-pad, 0px))', overflowY: 'auto', flex: 1, minHeight: 0 }}>
               <AvisoCopiaWeb />
-              {tab === 'rutina' && <RutinaTab />}
-              {tab === 'cardio' && <CardioTab />}
+              {tab === 'rutina' && <EntrenoTab />}
               {tab === 'progreso' && <ProgresoTab />}
               {tab === 'fisico' && <DianaFisicaTab />}
               {tab === 'comida' && <ComidaTab />}

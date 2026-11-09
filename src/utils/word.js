@@ -2,7 +2,7 @@
    WORD (.docx) con la librería "docx" (funciona sin internet).
    Se carga solo cuando se pide el documento, para que la app arranque rápido.
    ========================================================================= */
-import { catInfo, catsDe } from '../data/catalog.js';
+import { DIAS_SEMANA, catInfo, catsDe } from '../data/catalog.js';
 import { describeSet } from './training.js';
 
 // Devuelve el .docx en base64
@@ -18,7 +18,7 @@ export async function buildDocxBase64(state) {
     new Paragraph({ children: [new TextRun({ text: 'Generada el ' + new Date().toLocaleDateString('es-ES'), italics: true })] }),
   ];
   (state.days || []).forEach((d) => {
-    children.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun(d.label)] }));
+    children.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun(d.label + (d.semana ? ' · ' + DIAS_SEMANA[d.semana - 1] : ''))] }));
     if (d.equipo) children.push(new Paragraph({ children: [new TextRun({ text: 'Llevar: ', bold: true }), new TextRun(d.equipo)] }));
     if (d.nota) children.push(new Paragraph({ children: [new TextRun({ text: d.nota, italics: true })] }));
     const filas = [new TableRow({ tableHeader: true, children: ['Ejercicio', 'Músculo', 'Series', 'Objetivo', 'Comentarios'].map((t) => celda(t, true)) })];

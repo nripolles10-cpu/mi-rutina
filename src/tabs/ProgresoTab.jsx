@@ -7,7 +7,8 @@ import { T } from '../data/theme.js';
 import { fmt, fmtDateLong, fmtDateShort, formatDecimal, groupByMonth, mean, monthLabel, ymd } from '../utils/format.js';
 import { bmiCategory, calcBMI } from '../utils/health.js';
 import { OBJETIVO_PESO_MAX, OBJETIVO_PESO_MIN, validarObjetivoPeso } from '../utils/peso.js';
-import { CalendarioSec, CuerpoSec, LogrosSec, SECCIONES_PROGRESO } from './ProgresoExtra.jsx';
+import { CalendarioSec, CuerpoSec, LogrosSec, RachaCard, ResumenSemanalCard, SECCIONES_PROGRESO, VolumenSemanasCard } from './ProgresoExtra.jsx';
+import { sesionesDe } from '../utils/entreno.js';
 import { activeExerciseIds, muscleProgress, weeklySets } from '../utils/training.js';
 
 /* ---------- Peso corporal ---------- */
@@ -302,21 +303,31 @@ export function ObjetivosMusculoCard() {
 
 export function ProgresoTab() {
   const { state, commit } = useGym();
-  const sec = state.meta.progresoSec || 'progreso';
+  const sec = SECCIONES_PROGRESO.some((x) => x[0] === state.meta.progresoSec) ? state.meta.progresoSec : 'calendario';
   const elegir = (k) => commit((prev) => ({ ...prev, meta: { ...prev.meta, progresoSec: k } }));
-  const chips = (
-    <div className="gt-scroll" style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 6, marginBottom: 12 }}>
-      {SECCIONES_PROGRESO.map((x) => <Chip key={x[0]} active={sec === x[0]} onClick={() => elegir(x[0])}>{x[1]}</Chip>)}
+  const sesiones = useMemo(() => sesionesDe(state), [state.exercises]);
+  return (
+    <div>
+      <EditLockBar />
+      {/* Lo principal, nada más entrar: el peso corporal (la tarjeta ya lleva su título) */}
+      <PesoCard />
+      <SectionTitle emoji="🔥">Racha</SectionTitle>
+      <RachaCard sesiones={sesiones} />
+      <SectionTitle emoji="🗓️">Resumen de la semana</SectionTitle>
+      <ResumenSemanalCard />
+      <div className="gt-scroll" data-testid="progreso-secciones" style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 6, margin: '6px 0 12px' }}>
+        {SECCIONES_PROGRESO.map((x) => <Chip key={x[0]} active={sec === x[0]} onClick={() => elegir(x[0])}>{x[1]}</Chip>)}
+      </div>
+      {sec === 'calendario' && <CalendarioSec />}
+      {sec === 'analisis' && <AnalisisSec sesiones={sesiones} />}
+      {sec === 'cuerpo' && <CuerpoSec />}
+      {sec === 'logros' && <LogrosSec />}
     </div>
   );
-  const lock = <EditLockBar />;
-  if (sec === 'calendario') return <div>{lock}{chips}<CalendarioSec /></div>;
-  if (sec === 'cuerpo') return <div>{lock}{chips}<CuerpoSec /></div>;
-  if (sec === 'logros') return <div>{lock}{chips}<LogrosSec /></div>;
-  return <ProgresoPrincipal chips={chips} lock={lock} />;
 }
 
-function ProgresoPrincipal({ chips, lock }) {
+// Análisis: repaso de la semana, series, volumen, objetivos por músculo y progreso por ejercicio
+function AnalisisSec({ sesiones }) {
   const { state } = useGym();
   const allIds = useMemo(() => activeExerciseIds(state), [state.days, state.exercises]);
   const [selected, setSelected] = useState(allIds[0]);
@@ -330,16 +341,14 @@ function ProgresoPrincipal({ chips, lock }) {
 
   return (
     <div>
-      {lock}
-      {chips}
-      <SectionTitle emoji="📋">Resumen de la semana</SectionTitle>
+      <SectionTitle emoji="📋">Repaso de la semana</SectionTitle>
       <RepasoSemanalCard />
-
-      <SectionTitle emoji="⚖️">Tu peso</SectionTitle>
-      <PesoCard />
 
       <SectionTitle emoji="📊">Series efectivas por semana</SectionTitle>
       <SeriesSemanalesCard />
+
+      <SectionTitle emoji="📦">Volumen por semana</SectionTitle>
+      <VolumenSemanasCard sesiones={sesiones} />
 
       <SectionTitle emoji="🎯">Cuánto me falta para mis objetivos</SectionTitle>
       <ObjetivosMusculoCard />

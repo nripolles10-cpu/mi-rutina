@@ -5,6 +5,7 @@ import { render, screen, fireEvent, act, cleanup } from '@testing-library/react'
 import { loadApp } from './loadApp.js';
 import { effNutri } from '../src/utils/health.js';
 import { ymd } from '../src/utils/format.js';
+import { bloquear, comida, desbloquear, entrarDia, irA } from './nav.js';
 
 let A, errores, oe;
 beforeEach(() => {
@@ -34,10 +35,10 @@ async function montar(retoque) {
   s.comida.diario = { [ymd(new Date())]: [{ id: 'e1', momento: 'desayuno', nombre: 'Café con leche', kcal: 120, p: 6, c: 9, g: 5 }] };
   if (retoque) retoque(s);
   localStorage.setItem(A.STORAGE_KEY, JSON.stringify(s));
-  const r = render(<A.App />); await tick();
+  const r = render(<A.App />); await tick(); await entrarDia();
   return r;
 }
-async function tab(nombre) { await click(screen.getAllByText(nombre, { selector: 'span' }).slice(-1)[0]); }
+async function tab(nombre) { await irA(nombre); }
 
 describe('plan del día y diario', () => {
   test('el plan del día de la semana aparece en el diario y se puede apuntar', async () => {
@@ -50,13 +51,17 @@ describe('plan del día y diario', () => {
       st.nombreReceta = receta.nombre;
     });
     await tab('Comida');
-    expect(texto()).toMatch(/Tu plan para/);
     const nombre = guardado().comida.recetas[0].nombre;
-    expect(texto()).toContain(nombre);
-    await click(screen.getByRole('button', { name: /Apuntar todo el plan de hoy/ }));
+    // lo planificado sale dentro de su comida (desayuno) con el botón "Comido"
+    const pendiente = screen.getByTestId('plan-pendiente');
+    expect(pendiente.textContent).toContain(nombre);
+    expect(pendiente.textContent).toMatch(/Del plan · \d+ kcal/);
+    await click(Array.from(pendiente.querySelectorAll('button')).find((b) => b.textContent === 'Comido'));
     await act(async () => { await new Promise((r) => setTimeout(r, 300)); });
     expect(guardado().comida.diario[ymd(hoy)].some((e) => e.recetaId === guardado().comida.recetas[0].id)).toBe(true);
-    expect(texto()).toContain('✓ Apuntado');
+    expect(screen.queryByTestId('plan-pendiente')).toBeNull(); // ya no está pendiente
+    expect(texto()).toContain(nombre); // ahora está en el diario
+    expect(screen.getByTestId('macros-dia').textContent).toMatch(/Hoy llevas/);
   });
 });
 
@@ -86,17 +91,22 @@ describe('herramientas sin IA', () => {
     }
   });
 
-  test('Comida: el agua va justo después del diario', async () => {
+  test('Comida: Hoy, Semana, Recetas y Mi objetivo; el agua dentro de Hoy, debajo de las comidas', async () => {
     await montar();
     await tab('Comida');
-    const botones = Array.from(document.querySelectorAll('.gt-scroll button')).map((b) => b.textContent.trim()).filter((x) => /^[📓💧🍳📅🛒]/u.test(x));
-    expect(botones.slice(0, 5)).toEqual(['📓 Diario', '💧 Agua', '🍳 Recetas', '📅 Plan', '🛒 Compra']);
+    const apartados = Array.from(screen.getByTestId('comida-secciones').querySelectorAll('button')).map((b) => b.textContent);
+    expect(apartados).toEqual(['Hoy', 'Semana', 'Recetas', 'Mi objetivo']);
+    const agua = screen.getByTestId('agua');
+    const ultimaComida = screen.getAllByText('🍳 Receta').slice(-1)[0];
+    expect(ultimaComida.compareDocumentPosition(agua) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // los macros van arriba del todo, antes de los apartados
+    expect(screen.getByTestId('macros-dia').compareDocumentPosition(screen.getByTestId('comida-secciones')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   test('Comida: "¿Qué tengo en casa?" encuentra recetas con lo que escribes', async () => {
     await montar();
     await tab('Comida');
-    await click(screen.getByRole('button', { name: /🍳 Recetas/ }));
+    await comida('Recetas');
     await click(screen.getByRole('button', { name: /¿Qué tengo en casa\?/ }));
     fireEvent.change(screen.getByPlaceholderText(/Ej\.: pollo/), { target: { value: 'pollo, arroz' } });
     await tick();
@@ -133,6 +143,8 @@ describe('herramientas sin IA', () => {
     await montar();
     await tab('Progreso');
     expect(texto()).toContain('Resumen de la semana');
+    await click(screen.getByText('📈 Análisis'));
+    expect(texto()).toContain('Repaso de la semana');
     expect(texto()).toMatch(/Entrenos: \d+ de \d+ previstos/);
   });
 });

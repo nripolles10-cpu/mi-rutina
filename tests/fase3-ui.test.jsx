@@ -3,6 +3,7 @@ import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
 import { loadApp } from './loadApp.js';
+import { bloquear, comida, desbloquear, entrarDia, irA } from './nav.js';
 
 let A, errores, oe;
 beforeEach(() => {
@@ -26,8 +27,8 @@ async function type(el, value) { fireEvent.change(el, { target: { value } }); aw
 const btn = (name) => screen.getByRole('button', { name });
 const texto = () => document.body.textContent;
 function sinBasura() { expect(texto()).not.toMatch(/undefined|NaN|Infinity|\[object Object\]/); }
-async function montar() { const r = render(<A.App />); await tick(); return r; }
-async function tab(nombre) { await click(screen.getAllByText(nombre, { selector: 'span' }).slice(-1)[0]); sinBasura(); }
+async function montar() { const r = render(<A.App />); await tick(); await entrarDia(); return r; }
+async function tab(nombre) { await irA(nombre); sinBasura(); }
 const guardado = () => JSON.parse(localStorage.getItem(A.STORAGE_KEY));
 async function flush() { act(() => { document.dispatchEvent(new Event('visibilitychange')); window.dispatchEvent(new Event('pagehide')); }); }
 
@@ -78,7 +79,7 @@ describe('historial, sugerencias y duplicar', () => {
 
   test('duplicar día y ejercicio en modo edición (con Deshacer)', async () => {
     await montar();
-    await click(screen.getByText(/Bloqueado/));
+    await desbloquear();
     await click(btn('⧉ Duplicar este día'));
     expect(screen.getByDisplayValue('Pierna A (copia)')).toBeTruthy();
     await flush();

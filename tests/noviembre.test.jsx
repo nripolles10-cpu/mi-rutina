@@ -4,6 +4,7 @@ import React from 'react';
 import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
 import { loadApp } from './loadApp.js';
 import { textoIngredientes, textoListaCompra } from '../src/tabs/ComidaTab.jsx';
+import { bloquear, comida, desbloquear, entrarDia, irA } from './nav.js';
 
 let A, errores, oe, copiado;
 beforeEach(() => {
@@ -24,8 +25,8 @@ afterEach(() => {
 const tick = () => act(async () => {});
 async function click(el) { fireEvent.click(el); await tick(); }
 const btn = (name) => screen.getByRole('button', { name });
-async function montar() { const r = render(<A.App />); await tick(); return r; }
-async function tab(nombre) { await click(screen.getAllByText(nombre, { selector: 'span' }).slice(-1)[0]); }
+async function montar() { const r = render(<A.App />); await tick(); await entrarDia(); return r; }
+async function tab(nombre) { await irA(nombre); }
 
 describe('textos para copiar', () => {
   test('lista de la compra: una línea por ingrediente, con cantidad', () => {
@@ -45,7 +46,7 @@ describe('copiar desde la app', () => {
     localStorage.setItem(A.STORAGE_KEY, JSON.stringify(st));
     await montar();
     await tab('Comida');
-    await click(screen.getByText('🛒 Compra'));
+    await comida('Semana'); // el plan y, debajo, la lista de la compra
     await click(screen.getByText('Aceite de oliva'));
     await click(btn('📋 Copiar lista'));
     expect(copiado).toMatch(/^🛒 Lista de la compra\n/);
@@ -58,7 +59,7 @@ describe('copiar desde la app', () => {
   test('ingredientes de una receta', async () => {
     await montar();
     await tab('Comida');
-    await click(screen.getByText('🍳 Recetas'));
+    await comida('Recetas');
     await click(screen.getByText('Avena proteica con plátano y canela'));
     await click(btn('📋 Copiar ingredientes (1 ración)'));
     expect(copiado).toContain('• Copos de avena — 60 g');

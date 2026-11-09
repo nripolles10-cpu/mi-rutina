@@ -1,8 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { LineChartSVG } from '../components/LineChart.jsx';
-import { Card, Chip, Label, MiniBtn, Modal, NumInput, SectionTitle, SupRow, useGym } from '../components/ui.jsx';
+import { Card, Chip, Label, MiniBtn, NumInput, SectionTitle, SupRow, useGym } from '../components/ui.jsx';
 import { T } from '../data/theme.js';
-import { Native } from '../native/index.js';
 import { ZONAS_DEFECTO, UNIDADES_MEDIDA, validarNombreZona } from '../utils/medidasZonas.js';
 import { addDays, fmt, fmtDateLong, fmtDateShort, fromYmd, monthLabel, ymd } from '../utils/format.js';
 import { fechasHechasCardio } from '../utils/cardio.js';
@@ -13,12 +12,13 @@ import { EditRecordModal, RANGOS } from './ProgresoTab.jsx';
    PROGRESO (Fase 3): calendario de entrenamientos, cuerpo (pasos, sueño, energía, medidas, fotos) y logros
    ========================================================================= */
 
-export const SECCIONES_PROGRESO = [['progreso', '📊 Progreso'], ['calendario', '📅 Calendario'], ['cuerpo', '📏 Cuerpo'], ['logros', '🏅 Logros']];
+// Apartados de Progreso, por debajo del peso, la racha y el resumen (Logros el último)
+export const SECCIONES_PROGRESO = [['calendario', '📅 Calendario'], ['analisis', '📈 Análisis'], ['cuerpo', '📏 Cuerpo'], ['logros', '🏅 Logros']];
 const DIAS_CORTOS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 
 /* ---------- Calendario, rachas, volumen y resumen semanal ---------- */
 
-function RachaCard({ sesiones }) {
+export function RachaCard({ sesiones }) {
   const { state } = useGym();
   const obj = (state.preferencias && state.preferencias.objetivoDiasSemana) || 3;
   const r = rachaSemanas(sesiones, obj, new Date());
@@ -87,7 +87,7 @@ export function CalendarioCard({ sesiones, cardioFechas = {} }) {
   );
 }
 
-function VolumenSemanasCard({ sesiones }) {
+export function VolumenSemanasCard({ sesiones }) {
   const semanas = porSemana(sesiones);
   const lunesHoy = semanaDe(new Date());
   const filas = [];
@@ -146,16 +146,10 @@ export function CalendarioSec() {
   const cardioFechas = useMemo(() => fechasHechasCardio(state.cardio), [state.cardio]);
   return (
     <div>
-      <SectionTitle emoji="🔥">Racha</SectionTitle>
-      <RachaCard sesiones={sesiones} />
       <SectionTitle emoji="📅">Calendario de entrenamientos</SectionTitle>
       <CalendarioCard sesiones={sesiones} cardioFechas={cardioFechas} />
-      <SectionTitle emoji="🗓️">Resumen de la semana</SectionTitle>
-      <ResumenSemanalCard />
-      <SectionTitle emoji="📦">Volumen por semana</SectionTitle>
-      <VolumenSemanasCard sesiones={sesiones} />
       <div className="font-body" style={{ color: T.dim, fontSize: 11, textAlign: 'center', marginBottom: 18, lineHeight: 1.5 }}>
-        Un día cuenta como entrenado cuando guardas el registro de algún ejercicio (botón "Guardar registro de hoy" o el modo en vivo).
+        Un día cuenta como entrenado cuando guardas el registro de algún ejercicio ("Guardar registro de hoy", "Terminar entreno" o el modo en vivo).
       </div>
     </div>
   );

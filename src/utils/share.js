@@ -71,7 +71,7 @@ export function buildShareObject(state, opts, fotos) {
   if (opts.nutricion) o.nutricion = { nutricion: state.nutricion, formulario: state.formulario, plan: state.comida.plan };
   if (opts.todo) {
     o.extra = { cardio: state.cardio, diana: state.diana, extras: state.extras, diario: state.comida.diario, agua: state.comida.agua, compra: state.comida.compra,
-      registro: state.registro, medidas: state.medidas, fotosProgreso: state.fotosProgreso, preferencias: state.preferencias };
+      registro: state.registro, medidas: state.medidas, fotosProgreso: state.fotosProgreso, preferencias: state.preferencias, entrenosHechos: state.entrenosHechos };
   }
   if (opts.fotos && fotos) o.fotos = fotos;
   return o;
@@ -141,6 +141,7 @@ export function applyImport(prev, obj, mode) {
       if (x.registro) next.registro = x.registro;
       if (x.medidas) next.medidas = x.medidas;
       if (x.fotosProgreso) next.fotosProgreso = x.fotosProgreso;
+      if (x.entrenosHechos) next.entrenosHechos = x.entrenosHechos;
       // Preferencias: se traen las de la copia, pero los recordatorios se vuelven a programar en este móvil
       if (x.preferencias) next.preferencias = { ...x.preferencias, recordatorios: { ...(x.preferencias.recordatorios || {}), ids: (prev.preferencias && prev.preferencias.recordatorios && prev.preferencias.recordatorios.ids) || [] } };
     }

@@ -47,7 +47,7 @@ function Grande({ etiqueta, valor, unidad, pasos, onChange, testid }) {
 }
 
 export function EntrenoVivoModal({ dayId, onClose }) {
-  const { state, updateExercise, saveEntry, startTimer, addTimer, stopTimer, timer, nowMs, showToast } = useGym();
+  const { state, updateExercise, saveEntry, terminarEntreno, marcarEntrenoHecho, startTimer, addTimer, stopTimer, timer, nowMs, showToast } = useGym();
   const day = (state.days || []).find((d) => d.id === dayId);
   // Ejercicios del día en orden (de cada pareja de alternos, el que toca esta semana)
   const lista = useMemo(() => (day ? bloquesDelDia(day, state.exercises).map((b) => (b.par ? b.par.activo : b.id)).filter((id) => state.exercises[id]) : []), [day, state.exercises]);
@@ -60,6 +60,11 @@ export function EntrenoVivoModal({ dayId, onClose }) {
   const [ladoHecho, setLadoHecho] = useState({}); // { 'exId:serie': true } cuando ya está hecho el primer lado
   const [descansoAct, setDescansoAct] = useState(descanso); // lo que dura el descanso que está corriendo
   const arrancar = (seg) => { setDescansoAct(seg); startTimer(seg); };
+
+  const [confirmarFin, setConfirmarFin] = useState(false); // "Terminar entreno" pide un segundo toque
+  // Cuando están guardados todos los ejercicios, el día cuenta como hecho
+  const todoGuardado = lista.length > 0 && lista.every((id) => guardados[id]);
+  useEffect(() => { if (todoGuardado) marcarEntrenoHecho(dayId); }, [todoGuardado]);
 
   // Pantalla encendida mientras dura el entreno (al salir se vuelve a tu preferencia)
   useEffect(() => {
@@ -223,6 +228,14 @@ export function EntrenoVivoModal({ dayId, onClose }) {
         </div>
         <SugerenciaProgresion id={exId} compacta />
       </div>
+      <button data-testid="vivo-terminar" className="font-body btn" onClick={() => {
+        if (!confirmarFin) { setConfirmarFin(true); return; }
+        terminarEntreno(dayId, lista);
+        if (timer) stopTimer();
+        setGuardados(Object.fromEntries(lista.map((id) => [id, true])));
+      }} style={{ width: '100%', marginTop: 12, padding: 13, fontWeight: 900, fontSize: 14, border: '1.5px solid #A3E635', background: confirmarFin ? '#A3E635' : 'transparent', color: confirmarFin ? '#0B1500' : '#A3E635' }}>
+        {confirmarFin ? 'Toca otra vez para terminar · se guarda lo que falte' : '🏁 Terminar entreno'}
+      </button>
       <div className="font-body" style={{ color: T.dim, fontSize: 11, textAlign: 'center', marginTop: 10, lineHeight: 1.5 }}>
         La pantalla se mantiene encendida mientras estás aquí. El descanso avisa aunque bloquees el móvil (en la app de Android).
       </div>

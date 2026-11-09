@@ -218,11 +218,24 @@ La app ya no usa inteligencia artificial: todo sale de tus datos y de tablas fij
 - 🥫 **¿Qué tengo en casa?** (Comida → Recetas): escribe lo que tienes y te busco recetas, con lo que te falta de cada una.
 - 💧 **Agua** (Comida → segundo botón).
 - 💡 **Cómo mejorar tus puntos débiles** (al final de Diana): consejos por músculo solo para los que marques como punto débil. Si cambias uno a intermedio o fuerte, su consejo desaparece solo.
-- 🏃 **Elegir tipo de cardio** (Cardio): eliges si buscas quemar grasa, resistencia o recuperación, y te doy 5 tipos distintos para añadir a tu cardio.
+- 🏃 **Elegir tipo de cardio** (Entreno → Cardio): eliges si buscas quemar grasa, resistencia o recuperación, y te doy 5 tipos distintos para añadir a tu cardio.
 - 📋 **Esta semana** (Progreso): entrenos, series, cardio, comida, peso y sueño de la semana, con cifras calculadas.
 - 📷 **Foto de tus platos** en cada receta (sale en la lista de recetas y en el diario).
 
 Si tenías creado el Secret **`MIRUTINA_GEMINI_KEY`**, ya no hace nada: puedes borrarlo.
+
+## Paso 12. Cómo está ordenada la app
+
+Cinco pestañas abajo: **Entreno · Progreso · Comida · Diana · Recursos**.
+
+- **🔒 Candado (arriba, junto a ⏱️ y ⚙️):** bloqueado, la app solo deja apuntar (pesos, repeticiones, ticks, agua). Ábrelo (🔓) para cambiar la estructura: añadir, borrar, renombrar, asignar días… Se vuelve a cerrar tocándolo otra vez.
+- **🏋️ Entreno:** tres apartados arriba, **Rutina · Cardio · Movilidad**.
+  - *Rutina:* primero ves tus días (Día 1, Día 2…). Con el candado abierto, elige en cada uno su día de la semana (L, M, X…); el que toca hoy lleva **HOY**. Un día de la semana solo puede tener un entreno.
+  - Dentro de un día: las flechas ‹ › cambian de día, "‹ Todos los días" vuelve a la lista, la línea **⏱️ Descansos** se despliega para cambiar los tiempos y al final está **✅ Terminar entreno** (guarda el registro de hoy de lo que falte, cuenta para la racha y marca el día como **✓ HECHO**). En el entreno en vivo también está, abajo, con dos toques.
+- **📊 Progreso:** lo primero es tu peso; debajo la racha y el resumen de la semana, y los apartados Calendario, Análisis, Cuerpo y Logros.
+- **🍽️ Comida:** arriba, siempre, lo que llevas y lo que te queda de calorías y macros (**⚙️ Ajustar** lleva a *Mi objetivo*). Apartados: **Hoy** (lo planificado sale en cada comida con el botón *Comido*; el agua suma 1 L con un toque), **Semana** (plan y lista de la compra), **Recetas** y **Mi objetivo** (la calculadora: definición, mantener o volumen).
+- **🎯 Diana:** igual que antes.
+- **🧰 Recursos:** tus suplementos (se despliegan al tocarlos), 1RM, discos y el glosario.
 
 ## Problemas frecuentes
 

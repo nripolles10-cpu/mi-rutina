@@ -1,4 +1,4 @@
-import { catIdsDe, catInfo, catsDe } from '../data/catalog.js';
+import { DIAS_SEMANA, catIdsDe, catInfo, catsDe } from '../data/catalog.js';
 import { escHtml, fmt, ymd } from '../utils/format.js';
 import { effNutri } from '../utils/health.js';
 import { describeSet } from '../utils/training.js';
@@ -72,7 +72,7 @@ export function buildTxt(state) {
   L.push('Generada el ' + new Date().toLocaleDateString('es-ES'));
   L.push('');
   (state.days || []).forEach((d, i) => {
-    L.push(raya); L.push('DÍA ' + (i + 1) + ': ' + d.label.toUpperCase()); L.push(raya);
+    L.push(raya); L.push('DÍA ' + (i + 1) + ': ' + d.label.toUpperCase() + (d.semana ? ' · ' + DIAS_SEMANA[d.semana - 1].toUpperCase() : '')); L.push(raya);
     if (d.equipo) L.push('Llevar: ' + d.equipo);
     if (d.nota) L.push('Nota del día: ' + d.nota);
     L.push('');

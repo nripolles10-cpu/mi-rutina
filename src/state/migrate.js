@@ -35,10 +35,22 @@ export function normalizeExercise(ex, cats) {
   return out;
 }
 
+// semana: día de la semana asignado al entreno (1 = lunes … 7 = domingo) o null si no tiene
 export function normalizeDay(d) {
   const ids = Array.isArray(d.ids) ? d.ids.filter((x, i, a) => typeof x === 'string' && a.indexOf(x) === i) : [];
-  return { ...d, id: d.id || 'day_' + uid(), label: d.label || 'Día', equipo: d.equipo || '', nota: d.nota || '', ids: ids };
+  const sem = Number(d.semana);
+  return { ...d, id: d.id || 'day_' + uid(), label: d.label || 'Día', equipo: d.equipo || '', nota: d.nota || '', ids: ids, semana: Number.isInteger(sem) && sem >= 1 && sem <= 7 ? sem : null };
 }
+
+// Entrenos terminados: { 'AAAA-MM-DD': idDelDía }. Se quedan los últimos 400 días.
+export function normalizarEntrenosHechos(x) {
+  if (!x || typeof x !== 'object' || Array.isArray(x)) return {};
+  const out = {};
+  Object.keys(x).filter((k) => /^\d{4}-\d{2}-\d{2}$/.test(k) && typeof x[k] === 'string' && x[k]).sort().slice(-400).forEach((k) => { out[k] = x[k]; });
+  return out;
+}
+
+export const SECCIONES_PROGRESO_IDS = ['calendario', 'analisis', 'cuerpo', 'logros'];
 
 export const TEMAS = ['cian', 'violeta', 'verde', 'fuego'];
 export const TAMANOS_LETRA = ['pequena', 'normal', 'grande', 'muygrande'];
@@ -137,7 +149,8 @@ export function buildInitialState() {
     registro: {},
     medidas: { historial: [], zonas: normalizarZonas(null, []) },
     fotosProgreso: [],
-    meta: { activeTab: 'rutina', activeDay: 'piernaA', editMode: false, progresoSec: 'progreso' },
+    entrenosHechos: {},
+    meta: { activeTab: 'rutina', activeDay: 'piernaA', editMode: false, progresoSec: 'calendario', entrenoSec: 'rutina', comidaSec: 'hoy' },
   };
 }
 
@@ -204,9 +217,17 @@ export function normalizeCurrent(loaded, seed, appVersion) {
   next.fotosProgreso = (Array.isArray(loaded.fotosProgreso) ? loaded.fotosProgreso : [])
     .filter((f) => f && typeof f === 'object' && typeof f.id === 'string' && !isNaN(new Date(f.date).getTime()))
     .map((f) => ({ id: f.id, date: f.date, nota: typeof f.nota === 'string' ? f.nota : '' }));
+  next.entrenosHechos = normalizarEntrenosHechos(loaded.entrenosHechos);
+  // Un día de la semana solo puede tener un entreno: si hay repetidos, se queda el primero
+  const usados = {};
+  next.days.forEach((d) => { if (d.semana) { if (usados[d.semana]) d.semana = null; else usados[d.semana] = true; } });
   next.meta = { ...seed.meta, ...(loaded.meta || {}) };
-  if (TAB_IDS.indexOf(next.meta.activeTab) === -1) next.meta.activeTab = 'rutina';
-  if (['progreso', 'calendario', 'cuerpo', 'logros'].indexOf(next.meta.progresoSec) === -1) next.meta.progresoSec = 'progreso';
+  if (TAB_IDS.indexOf(next.meta.activeTab) === -1) next.meta.activeTab = 'rutina'; // 'cardio' (antiguo) → Entreno
+  // Quien tenía abierta la antigua pestaña Cardio (y aún no tiene apartado de Entreno guardado) vuelve a Cardio
+  const veniaDeCardio = !!(loaded.meta && loaded.meta.activeTab === 'cardio' && !loaded.meta.entrenoSec);
+  if (veniaDeCardio || ['rutina', 'cardio', 'movilidad'].indexOf(next.meta.entrenoSec) === -1) next.meta.entrenoSec = veniaDeCardio ? 'cardio' : 'rutina';
+  if (['hoy', 'semana', 'recetas', 'objetivo'].indexOf(next.meta.comidaSec) === -1) next.meta.comidaSec = 'hoy';
+  if (SECCIONES_PROGRESO_IDS.indexOf(next.meta.progresoSec) === -1) next.meta.progresoSec = next.meta.progresoSec === 'progreso' ? 'analisis' : 'calendario';
   if (!days.some((d) => d.id === next.meta.activeDay)) next.meta.activeDay = days.length ? days[0].id : null;
   delete next.profile; delete next.pasos;
   return next;

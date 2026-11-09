@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, EditLockBar, Label, SectionTitle, TextField, useGym } from '../components/ui.jsx';
+import { Card, Label, TextField, useGym } from '../components/ui.jsx';
 import { CardioPresetsModal } from '../components/Herramientas.jsx';
 import { T } from '../data/theme.js';
 import { Native } from '../native/index.js';
@@ -140,12 +140,10 @@ export function CardioTab() {
   const [tipos, setTipos] = useState(false);
   return (
     <div>
-      <EditLockBar />
-      <SectionTitle emoji="🏃">Cardio</SectionTitle>
       <button onClick={() => setTipos(true)} className="font-body btn btn-primary" style={{ width: '100%', marginBottom: 12, padding: 12 }}>🏃 Elegir tipo de cardio</button>
       {tipos && <CardioPresetsModal onClose={() => setTipos(false)} />}
       {state.cardio.length === 0 && (
-        <Card style={{ marginBottom: 10 }}><p className="font-body" style={{ color: T.muted, fontSize: 13, textAlign: 'center', margin: 0 }}>No tienes cardio apuntado.{editMode ? '' : ' Desbloquea la edición para añadirlo.'}</p></Card>
+        <Card style={{ marginBottom: 10 }}><p className="font-body" style={{ color: T.muted, fontSize: 13, textAlign: 'center', margin: 0 }}>No tienes cardio apuntado.{editMode ? '' : ' Elige un tipo aquí arriba o abre el candado 🔒 para añadirlo a mano.'}</p></Card>
       )}
       {state.cardio.map((c) => (
         <CardioItem key={c.id} c={c} editMode={editMode} updateCardio={updateCardio} askConfirm={askConfirm} removeCardio={removeCardio} showToast={showToast} />

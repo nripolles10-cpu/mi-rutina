@@ -3,6 +3,7 @@ import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent, act, cleanup, within } from '@testing-library/react';
 import { loadApp } from './loadApp.js';
+import { bloquear, comida, desbloquear, entrarDia, irA } from './nav.js';
 
 let A, errores, oe;
 beforeEach(() => {
@@ -25,8 +26,8 @@ async function type(el, value) { fireEvent.change(el, { target: { value } }); aw
 const btn = (name) => screen.getByRole('button', { name });
 const texto = () => document.body.textContent;
 function sinBasura() { expect(texto()).not.toMatch(/undefined|NaN|Infinity|\[object Object\]/); }
-async function montar() { const r = render(<A.App />); await tick(); return r; }
-async function tab(nombre) { await click(screen.getAllByText(nombre, { selector: 'span' }).slice(-1)[0]); sinBasura(); }
+async function montar() { const r = render(<A.App />); await tick(); await entrarDia(); return r; }
+async function tab(nombre) { await irA(nombre); sinBasura(); }
 const guardado = () => JSON.parse(localStorage.getItem(A.STORAGE_KEY));
 async function flush() { act(() => { document.dispatchEvent(new Event('visibilitychange')); window.dispatchEvent(new Event('pagehide')); }); }
 
@@ -89,7 +90,8 @@ describe('2) calorías y sexo sincronizado', () => {
   test('cambiar a Mujer en la calculadora baja las calorías y cambia también Ajustes (y al revés)', async () => {
     guardarEstado();
     await montar();
-    await tab('Extras');
+    await tab('Comida');
+    await comida('Mi objetivo');
     expect(texto()).toContain('2098 kcal');
     await click(screen.getAllByText('Mujer').slice(-1)[0]);
     expect(texto()).toContain('1849 kcal');
@@ -100,6 +102,7 @@ describe('2) calorías y sexo sincronizado', () => {
     await click(screen.getAllByText('Hombre')[0]);
     await click(btn('Guardar cambios')); // guarda y vuelve a la app
     if (screen.queryByText('✕ Cerrar')) await click(screen.getByText('✕ Cerrar'));
+    expect(screen.getByRole('tab', { name: 'Mi objetivo', selected: true })).toBeTruthy(); // vuelve al mismo apartado
     expect(texto()).toContain('2098 kcal');
     sinBasura();
   });
@@ -107,13 +110,15 @@ describe('2) calorías y sexo sincronizado', () => {
   test('con % de grasa se explica el cálculo por masa magra; con un ritmo peligroso, aviso de mínimo', async () => {
     guardarEstado((st) => { st.formulario.grasaPct = 20; st.formulario.sexo = 'F'; });
     await montar();
-    await tab('Extras');
+    await tab('Comida');
+    await comida('Mi objetivo');
     expect(screen.getByTestId('nota-masa-magra').textContent).toMatch(/masa magra.*60 kg.*1533 kcal/);
     cleanup();
     localStorage.clear();
     guardarEstado((st) => { st.formulario = { ...st.formulario, sexo: 'F', edad: 30, alturaCm: 160, actividad: 'sedentario' }; st.peso.historial = [{ id: 'a', date: '2026-10-20T10:00:00.000Z', kg: 55 }]; st.nutricion.ritmo = 'rapido'; });
     await montar();
-    await tab('Extras');
+    await tab('Comida');
+    await comida('Mi objetivo');
     expect(texto()).toMatch(/por debajo del mínimo seguro/);
     expect(texto()).toContain('1239 kcal');
     sinBasura();
@@ -147,7 +152,7 @@ describe('3) músculos personalizables', () => {
     expect(document.querySelector('[data-region="pecho"] linearGradient')).toBeTruthy();
     // aparece en el selector de músculos al editar un ejercicio
     await tab('Rutina');
-    await click(screen.getByText(/Bloqueado/));
+    await desbloquear();
     await click(screen.getByText('➕ Añadir ejercicio a este día'));
     await type(screen.getByPlaceholderText('ej. Press militar'), 'Press inclinado con mancuernas');
     await click(btn('Pecho superior'));
@@ -199,7 +204,7 @@ describe('4) recetas nuevas', () => {
     localStorage.setItem(A.STORAGE_KEY, JSON.stringify(st));
     await montar();
     await tab('Comida');
-    await click(screen.getByText('🍳 Recetas'));
+    await comida('Recetas');
     await click(screen.getByText('Bacalao con garbanzos y espinacas'));
     expect(screen.getByText('Bacalao')).toBeTruthy();
     expect(screen.getByText('Preparación')).toBeTruthy();

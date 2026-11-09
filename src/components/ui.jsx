@@ -110,8 +110,8 @@ export function SectionTitle({ emoji, children, style }) {
   );
 }
 
-export function Card({ children, style }) {
-  return <div className="card" style={style}>{children}</div>;
+export function Card({ children, style, testid }) {
+  return <div className="card" style={style} data-testid={testid}>{children}</div>;
 }
 
 export function Label({ children, style }) {
@@ -119,20 +119,20 @@ export function Label({ children, style }) {
 }
 
 // Botón de editar / bloquear (el modo edición es global: sirve para todas las pestañas)
+// El candado está en la cabecera (🔒/🔓). Bloqueado no ocupa nada; en modo edición se ve un aviso fino
+// que también sirve para bloquear, y en la rutina el botón de rellenar objetivos.
 export function EditLockBar({ showFill }) {
   const { state, toggleEditMode, rellenarObjetivosFaltantes } = useGym();
-  const on = state.meta.editMode;
+  if (!state.meta.editMode) return null;
   return (
-    <div style={{ marginBottom: 14 }}>
-      <button onClick={toggleEditMode} className="font-body" style={{
-        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-        background: on ? 'linear-gradient(135deg, #FBBF24, #FB923C)' : 'rgba(var(--ac-rgb),0.10)', color: on ? '#1A1002' : 'var(--ac-claro)',
-        border: `1.5px ${on ? 'solid #FBBF24' : 'dashed rgba(var(--ac-rgb),0.6)'}`, borderRadius: 14, padding: '11px', fontWeight: 800, fontSize: 13, cursor: 'pointer',
-        boxShadow: on ? '0 0 22px rgba(251,191,36,0.35)' : 'none',
+    <div style={{ marginBottom: 12 }}>
+      <button onClick={toggleEditMode} data-testid="aviso-edicion" className="font-body" style={{
+        width: '100%', background: 'rgba(251,191,36,0.12)', color: '#FCD34D', border: '1.5px dashed rgba(251,191,36,0.7)',
+        borderRadius: 12, padding: '8px 10px', fontWeight: 800, fontSize: 12.5, cursor: 'pointer',
       }}>
-        {on ? '🔓 Modo edición activo — toca para bloquear' : '🔒 Bloqueado — toca para editar'}
+        🔓 Modo edición · toca aquí o en 🔓 para bloquear
       </button>
-      {on && showFill && (
+      {showFill && (
         <button onClick={rellenarObjetivosFaltantes} className="font-body btn btn-ghost" style={{ width: '100%', marginTop: 8, padding: '9px', fontSize: 12.5 }}>
           🧮 Rellenar objetivos que faltan (+12,5%)
         </button>
@@ -281,3 +281,20 @@ export function DescansoPicker({ value, onChange }) {
   );
 }
 
+
+/* Selector de apartados dentro de una pestaña (Entreno: Rutina · Cardio · Movilidad; Comida: Hoy · Semana…) */
+export function Segmentos({ opciones, valor, onChange, testid }) {
+  return (
+    <div role="tablist" data-testid={testid} style={{ display: 'flex', gap: 4, background: 'rgba(10,15,30,0.6)', border: '1px solid rgba(140,170,255,0.2)', borderRadius: 14, padding: 4, marginBottom: 14 }}>
+      {opciones.map(([k, label]) => {
+        const on = k === valor;
+        return (
+          <button key={k} type="button" role="tab" aria-selected={on} onClick={() => onChange(k)} className="font-body" style={{
+            flex: 1, minWidth: 0, border: 0, borderRadius: 11, padding: '9px 4px', fontWeight: 800, fontSize: 12.5, cursor: 'pointer',
+            background: on ? 'rgba(var(--ac-rgb),0.9)' : 'transparent', color: on ? '#06101F' : T.muted, transition: 'background .15s',
+          }}>{label}</button>
+        );
+      })}
+    </div>
+  );
+}

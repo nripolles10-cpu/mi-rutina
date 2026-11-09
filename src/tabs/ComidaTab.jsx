@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { FotoMini, FotoRecetaCabecera, RecetasEnCasa, SugerenciasFaltan } from '../components/Herramientas.jsx';
-import { Bar, chipAcento, Card, Chip, Label, LabeledNum, MacroLine, MiniBtn, Modal, NumInput, SectionTitle, Stepper, SupRow, useGym } from '../components/ui.jsx';
+import { Bar, chipAcento, Card, Chip, EditLockBar, Label, LabeledNum, MacroLine, MiniBtn, Modal, NumInput, SectionTitle, Segmentos, Stepper, SupRow, useGym } from '../components/ui.jsx';
+import { NutricionCard } from './ExtrasTab.jsx';
 import { DIAS_SEMANA, MOMENTOS, OBJETIVOS, TIPO_RECETA, tipoRecetaLabel } from '../data/catalog.js';
 import { T } from '../data/theme.js';
 import { Native } from '../native/index.js';
@@ -91,9 +92,7 @@ export function AddManualModal({ momento, onAdd, onClose }) {
 
 export function DiarioSec({ fecha, setFecha }) {
   const { state, commit, askConfirm } = useGym();
-  const { plan } = effNutri(state);
   const lista = state.comida.diario[fecha] || [];
-  const tot = entryTotals(lista);
   const [addMomento, setAddMomento] = useState(null);
   const [manual, setManual] = useState(null);
   // Lo que tienes planificado para este día de la semana (Lunes = 0)
@@ -107,7 +106,6 @@ export function DiarioSec({ fecha, setFecha }) {
     addEntry(momento, { nombre: r.nombre, recetaId: r.id, raciones: it.raciones, por: recTotals(r, 1), ...recTotals(r, it.raciones) });
   };
   const planPendiente = MOMENTOS.flatMap((m) => (planDia[m[0]] || []).filter((it) => recetaDe(it.recetaId) && !yaApuntado(m[0], it.recetaId)).map((it) => ({ momento: m[0], it })));
-  const hayPlan = MOMENTOS.some((m) => (planDia[m[0]] || []).some((it) => recetaDe(it.recetaId)));
   const apuntarTodoPlan = () => { planPendiente.forEach(({ momento, it }) => apuntarPlan(momento, it)); };
   const hoy = ymd(new Date());
 
@@ -126,9 +124,6 @@ export function DiarioSec({ fecha, setFecha }) {
     }
   };
 
-  const filas = plan.falta ? [] : [
-    ['Calorías', tot.kcal, plan.kcal, 'kcal', '#F5F7FF'], ['Proteína', tot.p, plan.protG, 'g', '#22D3EE'], ['Hidratos', tot.c, plan.carbG, 'g', '#A3E635'], ['Grasas', tot.g, plan.fatG, 'g', '#F472B6'],
-  ];
 
   return (
     <div>
@@ -138,52 +133,34 @@ export function DiarioSec({ fecha, setFecha }) {
         <MiniBtn disabled={fecha >= hoy} onClick={() => setFecha(ymd(addDays(fromYmd(fecha), 1)))}>›</MiniBtn>
       </div>
 
-      {hayPlan && (
-        <Card style={{ marginBottom: 14 }}>
-          <div className="font-body" style={{ color: T.text, fontWeight: 800, fontSize: 13.5, marginBottom: 6 }}>📅 Tu plan para {DIAS_SEMANA[diaSemanaIdx].toLowerCase()}</div>
-          {MOMENTOS.map((m) => (planDia[m[0]] || []).filter((it) => recetaDe(it.recetaId)).map((it) => (
-            <div key={m[0] + it.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '6px 0', borderTop: '1px solid rgba(140,170,255,0.12)' }}>
-              <div style={{ minWidth: 0 }}>
-                <div className="font-body" style={{ color: T.dim, fontSize: 11 }}>{m[1]}</div>
-                <div className="font-body" style={{ color: T.text, fontSize: 13, fontWeight: 600 }}>{recetaDe(it.recetaId).nombre}{it.raciones !== 1 ? ' × ' + fmt(it.raciones, 2) : ''}</div>
-              </div>
-              {yaApuntado(m[0], it.recetaId)
-                ? <span className="font-body" style={{ color: '#A3E635', fontSize: 12, flexShrink: 0 }}>✓ Apuntado</span>
-                : <button onClick={() => apuntarPlan(m[0], it)} className="font-body btn btn-ghost" style={{ padding: '5px 9px', fontSize: 11.5, flexShrink: 0 }}>➕ Apuntar</button>}
-            </div>
-          )))}
-          {planPendiente.length > 0 && <button onClick={apuntarTodoPlan} className="font-body btn btn-primary" style={{ width: '100%', marginTop: 8 }}>➕ Apuntar todo el plan de hoy</button>}
-        </Card>
+      {planPendiente.length > 1 && (
+        <button onClick={apuntarTodoPlan} data-testid="plan-todo" className="font-body btn btn-ghost" style={{ width: '100%', marginBottom: 10, fontSize: 12.5 }}>✓ Marcar todo el plan de {fecha === hoy ? 'hoy' : 'este día'} como comido ({planPendiente.length})</button>
       )}
-
-      <Card style={{ marginBottom: 14 }}>
-        {plan.falta ? (
-          <div className="font-body" style={{ color: '#FDE68A', fontSize: 12.5, lineHeight: 1.5 }}>Rellena la calculadora nutricional (pestaña Extras) para ver cuánto te falta de tus calorías y macros. Ahora mismo llevas {Math.round(tot.kcal)} kcal.</div>
-        ) : filas.map((f) => {
-          const resta = f[2] - f[1];
-          return (
-            <div key={f[0]} style={{ marginBottom: 10 }}>
-              <div className="font-body" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 4 }}>
-                <span style={{ color: T.text, fontWeight: 700 }}>{f[0]}</span>
-                <span style={{ color: T.muted }}>{fmt(f[1], 0)} / {fmt(f[2], 0)} {f[3]} · <b style={{ color: resta >= 0 ? '#A3E635' : '#FB7185' }}>{resta >= 0 ? 'faltan ' + fmt(resta, 0) : 'te pasas ' + fmt(-resta, 0)}</b></span>
-              </div>
-              <Bar pct={f[2] > 0 ? (f[1] / f[2]) * 100 : 0} color={f[4]} height={9} />
-            </div>
-          );
-        })}
-      </Card>
 
       {MOMENTOS.map((m) => {
         const items = lista.filter((e) => e.momento === m[0]);
+        const pendientes = (planDia[m[0]] || []).filter((it) => recetaDe(it.recetaId) && !yaApuntado(m[0], it.recetaId));
         return (
           <Card key={m[0]} style={{ marginBottom: 10 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: items.length ? 8 : 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: items.length || pendientes.length ? 8 : 0 }}>
               <div className="font-body" style={{ color: T.text, fontWeight: 800, fontSize: 13.5 }}>{m[1]}</div>
               <div style={{ display: 'flex', gap: 6 }}>
                 <button onClick={() => setAddMomento(m[0])} className="font-body btn btn-ghost" style={{ padding: '6px 10px', fontSize: 12 }}>🍳 Receta</button>
                 <button onClick={() => setManual(m[0])} className="font-body btn btn-ghost" style={{ padding: '6px 10px', fontSize: 12 }}>✍️ A mano</button>
               </div>
             </div>
+            {pendientes.map((it) => {
+              const r = recetaDe(it.recetaId);
+              return (
+                <div key={'plan_' + it.id} data-testid="plan-pendiente" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '8px 10px', borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px dashed rgba(140,170,255,0.3)', marginBottom: 6 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div className="font-body" style={{ color: T.text, fontSize: 13, fontWeight: 600 }}>{r.nombre}{it.raciones !== 1 ? ' × ' + fmt(it.raciones, 2) : ''}</div>
+                    <div className="font-body" style={{ color: T.dim, fontSize: 11 }}>Del plan · {Math.round(recTotals(r, it.raciones).kcal)} kcal</div>
+                  </div>
+                  <button onClick={() => apuntarPlan(m[0], it)} className="font-body btn" style={{ padding: '6px 12px', fontSize: 12, fontWeight: 800, border: '1.5px solid #A3E635', color: '#A3E635', background: 'transparent', flexShrink: 0 }}>Comido</button>
+                </div>
+              );
+            })}
             {items.map((e) => (
               <div key={e.id} style={{ padding: '8px 0', borderTop: '1px solid rgba(140,170,255,0.12)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
@@ -202,6 +179,7 @@ export function DiarioSec({ fecha, setFecha }) {
           </Card>
         );
       })}
+      <AguaRapida fecha={fecha} />
       <SugerenciasFaltan fecha={fecha} />
       {lista.length > 0 && (
         <button onClick={() => askConfirm({ title: '¿Vaciar el día?', text: 'Se quitarán todas las comidas de este día.', confirmLabel: 'Vaciar', onConfirm: () => commit((prev) => { const d = { ...prev.comida.diario }; delete d[fecha]; return { ...prev, comida: { ...prev.comida, diario: d } }; }) })} className="font-body btn btn-danger" style={{ width: '100%', fontSize: 12.5 }}>🗑️ Vaciar este día</button>
@@ -511,84 +489,149 @@ export function CompraSec() {
 
 /* ---------- Agua (en litros; una botella de 1 L = 1) ---------- */
 
-export function AguaSec() {
-  const { state, commit } = useGym();
+/* ---------- Agua: tocar la tarjeta suma una botella de 1 L ---------- */
+export function AguaRapida({ fecha }) {
+  const { state, commit, showToast } = useGym();
   const ag = state.comida.agua;
+  const editMode = state.meta.editMode;
   const hoy = ymd(new Date());
-  const n = ag.dias[hoy] || 0;
+  const n = ag.dias[fecha] || 0;
   const r2 = (v) => Math.round(v * 100) / 100;
-  const set = (v) => commit((prev) => ({ ...prev, comida: { ...prev.comida, agua: { ...prev.comida.agua, dias: { ...prev.comida.agua.dias, [hoy]: Math.max(0, r2(v)) } } } }), { key: 'agua' });
-  const meta = (v) => commit((prev) => ({ ...prev, comida: { ...prev.comida, agua: { ...prev.comida.agua, objetivo: v } } }));
+  const set = (v) => commit((prev) => ({ ...prev, comida: { ...prev.comida, agua: { ...prev.comida.agua, dias: { ...prev.comida.agua.dias, [fecha]: Math.max(0, r2(v)) } } } }), { key: 'agua:' + fecha });
+  const meta = (v) => commit((prev) => ({ ...prev, comida: { ...prev.comida, agua: { ...prev.comida.agua, objetivo: v } } }), { key: 'agua:meta' });
+  const cumplido = n >= ag.objetivo;
+  const botellas = Math.min(12, Math.max(Math.ceil(ag.objetivo), Math.ceil(n)));
+  const sumar = (e) => {
+    if (e && e.target.closest && e.target.closest('[data-agua-ajustes]')) return;
+    const v = r2(n + 1);
+    set(v);
+    Native.vibrate(20);
+    showToast('💧 +1 botella · ' + fmt(v, 2) + ' de ' + fmt(ag.objetivo, 2) + ' L' + (v >= ag.objetivo && n < ag.objetivo ? ' · ¡objetivo cumplido!' : ''));
+  };
   const ult = [];
   for (let i = 6; i >= 0; i--) { const k = ymd(addDays(new Date(), -i)); ult.push({ k, v: ag.dias[k] || 0 }); }
   const maxV = Math.max(ag.objetivo, ...ult.map((u) => u.v), 1);
-  const botellas = Math.min(12, Math.max(Math.ceil(ag.objetivo), Math.ceil(n)));
   return (
-    <div>
-      <Card style={{ marginBottom: 14, textAlign: 'center' }}>
-        <div className="font-body" style={{ color: T.dim, fontSize: 11.5 }}>Hoy</div>
-        <div className="font-display" style={{ color: n >= ag.objetivo ? '#A3E635' : '#FFFFFF', fontSize: 46, fontWeight: 700, lineHeight: 1.05 }}>{fmt(n, 2)} / {fmt(ag.objetivo, 2)} L</div>
-        <div className="font-body" style={{ color: T.muted, fontSize: 12, marginBottom: 12 }}>
-          {fmt(n, 2)} {n === 1 ? 'botella' : 'botellas'} de 1 L {n >= ag.objetivo ? '· ¡objetivo cumplido! 💧' : '· te faltan ' + fmt(Math.max(0, r2(ag.objetivo - n)), 2) + ' L'}
+    <div data-testid="agua" role="button" tabIndex={0} onClick={sumar} onKeyDown={(e) => { if (e.key === 'Enter') sumar(e); }} className="card"
+      style={{ marginBottom: 10, padding: 14, cursor: 'pointer', userSelect: 'none', borderColor: cumplido ? 'rgba(163,230,53,0.6)' : undefined }}>
+      <div className="font-body" style={{ color: T.text, fontWeight: 800, fontSize: 14.5 }}>
+        💧 Agua · <span data-testid="agua-total" style={{ color: cumplido ? '#A3E635' : T.text }}>{fmt(n, 2)} de {fmt(ag.objetivo, 2)} L{cumplido ? ' ✓' : ''}</span>
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '10px 0 8px' }}>
+        {Array.from({ length: botellas }).map((_, i) => {
+          const nivel = Math.max(0, Math.min(1, n - i));
+          return (
+            <span key={i} style={{ position: 'relative', width: 24, height: 36, borderRadius: '7px 7px 8px 8px', overflow: 'hidden', border: '1.5px solid rgba(56,189,248,0.85)', background: 'rgba(10,15,30,0.4)' }}>
+              <span style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: nivel * 100 + '%', background: 'linear-gradient(180deg, rgba(var(--ac-rgb),0.6), rgba(56,189,248,0.95))' }} />
+            </span>
+          );
+        })}
+      </div>
+      <div className="font-body" style={{ color: T.muted, fontSize: 12 }}>
+        {cumplido ? '¡Objetivo cumplido! Toca para sumar otra botella de 1 L' : 'Toca para sumar una botella de 1 L · te faltan ' + fmt(Math.max(0, r2(ag.objetivo - n)), 2) + ' L'}
+        {fecha !== hoy ? ' (día ' + fecha.split('-').reverse().slice(0, 2).join('/') + ')' : ''}
+      </div>
+      {editMode && (
+        <div data-agua-ajustes onClick={(e) => e.stopPropagation()} style={{ marginTop: 12, paddingTop: 12, borderTop: '1px dashed rgba(251,191,36,0.6)', cursor: 'default' }}>
+          <Label>Botellas al día (1 L cada una)</Label>
+          <Stepper value={ag.objetivo} onChange={meta} min={1} max={10} step={0.5} suffix="L" />
+          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+            <button disabled={n <= 0} onClick={() => set(n - 1)} data-testid="agua-quitar" className="font-body btn btn-ghost" style={{ flex: 1, fontSize: 12.5 }}>Quitar una botella</button>
+            <button disabled={n <= 0} onClick={() => set(n - 0.5)} className="font-body btn btn-ghost" style={{ flex: 1, fontSize: 12.5 }}>➖ 0,5 L</button>
+            <button onClick={() => set(n + 0.5)} className="font-body btn btn-ghost" style={{ flex: 1, fontSize: 12.5 }}>➕ 0,5 L</button>
+          </div>
+          <div style={{ marginTop: 10 }}>
+            <LabeledNum label="Corregir el total (litros, por ejemplo 2,5)" suffix="L" value={n} onChange={(v) => set(v === null ? 0 : v)} />
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <div className="font-body" style={{ color: T.text, fontWeight: 700, fontSize: 13, marginBottom: 10 }}>Últimos 7 días (litros)</div>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 96 }}>
+              {ult.map((u) => (
+                <div key={u.k} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
+                  <div className="font-body" style={{ color: T.dim, fontSize: 10, marginBottom: 2 }}>{u.v ? fmt(u.v, 1) : ''}</div>
+                  <div style={{ width: '100%', height: Math.max(3, (u.v / maxV) * 60) + 'px', borderRadius: 6, background: u.v >= ag.objetivo ? '#A3E635' : u.v ? 'linear-gradient(180deg, #22D3EE, #818CF8)' : 'rgba(255,255,255,0.08)' }} />
+                  <div className="font-body" style={{ color: T.dim, fontSize: 10, marginTop: 3 }}>{DIAS_SEMANA[(fromYmd(u.k).getDay() + 6) % 7].slice(0, 1)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginBottom: 14 }}>
-          {Array.from({ length: botellas }).map((_, i) => {
-            const nivel = Math.max(0, Math.min(1, n - i));
+      )}
+    </div>
+  );
+}
+
+/* ---------- Macros del día: siempre arriba en Comida ---------- */
+export function MacrosDia({ fecha, onAjustar }) {
+  const { state } = useGym();
+  const { plan, obj } = effNutri(state);
+  const tot = entryTotals(state.comida.diario[fecha] || []);
+  const hoy = ymd(new Date());
+  const filas = plan.falta ? [] : [
+    ['🔥 Calorías', tot.kcal, plan.kcal, 'kcal', '#F5F7FF'], ['🥩 Proteína', tot.p, plan.protG, 'g', '#22D3EE'], ['🍚 Hidratos', tot.c, plan.carbG, 'g', '#A3E635'], ['🥑 Grasas', tot.g, plan.fatG, 'g', '#F472B6'],
+  ];
+  return (
+    <Card testid="macros-dia" style={{ marginBottom: 12 }}>
+      {plan.falta ? (
+        <div className="font-body" style={{ color: '#FDE68A', fontSize: 12.5, lineHeight: 1.5 }}>
+          Rellena <b>Mi objetivo</b> para ver cuánto te queda de calorías y macros. {fecha === hoy ? 'Hoy llevas' : 'Ese día llevaste'} {Math.round(tot.kcal)} kcal.
+        </div>
+      ) : (
+        <>
+          <div className="font-body" style={{ display: 'flex', justifyContent: 'space-between', color: T.dim, fontSize: 11.5, marginBottom: 6 }}>
+            <span>{fecha === hoy ? 'Hoy llevas' : 'Ese día llevaste'}</span><span>te quedan</span>
+          </div>
+          {filas.map((f) => {
+            const resta = f[2] - f[1];
             return (
-              <span key={i} onClick={() => set(nivel >= 1 ? i : i + 1)} title={'Botella ' + (i + 1)} style={{ position: 'relative', width: 44, height: 62, borderRadius: 12, overflow: 'hidden', cursor: 'pointer', border: '1.5px solid ' + (nivel > 0 ? T.cyan : 'rgba(140,170,255,0.35)'), background: 'rgba(255,255,255,0.05)' }}>
-                <span style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: nivel * 100 + '%', background: 'linear-gradient(180deg, rgba(var(--ac-rgb),0.55), rgba(56,189,248,0.85))' }} />
-                <span className="font-body" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11.5, fontWeight: 800, color: '#FFFFFF', textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}>{i + 1} L</span>
-              </span>
+              <div key={f[0]} style={{ marginBottom: 9 }}>
+                <div className="font-body" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 4 }}>
+                  <span style={{ color: T.text }}>{f[0]} <b>{fmt(f[1], 0)}</b> <span style={{ color: T.muted }}>/ {fmt(f[2], 0)} {f[3]}</span></span>
+                  <b style={{ color: resta >= 0 ? '#A3E635' : '#FB7185' }}>{resta >= 0 ? fmt(resta, 0) + ' ' + f[3] : 'te pasas ' + fmt(-resta, 0)}</b>
+                </div>
+                <Bar pct={f[2] > 0 ? (f[1] / f[2]) * 100 : 0} color={f[4]} height={8} />
+              </div>
             );
           })}
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button disabled={n <= 0} onClick={() => set(n - 0.5)} className="font-body btn btn-ghost" style={{ flex: 1, fontSize: 12.5 }}>➖ 0,5 L</button>
-          <button onClick={() => set(n + 0.5)} className="font-body btn btn-ghost" style={{ flex: 1, fontSize: 12.5 }}>➕ 0,5 L</button>
-          <button onClick={() => set(n + 1)} className="font-body btn btn-primary" style={{ flex: 1.4, fontSize: 12.5 }}>🍼 +1 L (botella)</button>
-        </div>
-        <div style={{ marginTop: 12, textAlign: 'left' }}>
-          <LabeledNum label="Corregir el total de hoy (litros, por ejemplo 2,5)" suffix="L" value={n} onChange={(v) => set(v === null ? 0 : v)} />
-        </div>
-      </Card>
-      <Card style={{ marginBottom: 14 }}>
-        <Label>Objetivo diario (litros)</Label>
-        <Stepper value={ag.objetivo} onChange={meta} min={1} max={10} step={0.5} suffix="L" />
-      </Card>
-      <Card>
-        <div className="font-body" style={{ color: T.text, fontWeight: 700, fontSize: 13, marginBottom: 10 }}>Últimos 7 días (litros)</div>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 96 }}>
-          {ult.map((u) => (
-            <div key={u.k} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
-              <div className="font-body" style={{ color: T.dim, fontSize: 10, marginBottom: 2 }}>{u.v ? fmt(u.v, 1) : ''}</div>
-              <div style={{ width: '100%', height: Math.max(3, (u.v / maxV) * 60) + 'px', borderRadius: 6, background: u.v >= ag.objetivo ? '#A3E635' : u.v ? 'linear-gradient(180deg, #22D3EE, #818CF8)' : 'rgba(255,255,255,0.08)' }} />
-              <div className="font-body" style={{ color: T.dim, fontSize: 10, marginTop: 3 }}>{DIAS_SEMANA[(fromYmd(u.k).getDay() + 6) % 7].slice(0, 1)}</div>
-            </div>
-          ))}
-        </div>
-      </Card>
-    </div>
+        </>
+      )}
+      <div className="font-body" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginTop: 6, paddingTop: 8, borderTop: '1px dashed rgba(140,170,255,0.25)', fontSize: 12 }}>
+        <span style={{ color: T.muted }}>{plan.falta ? 'Sin objetivo todavía' : 'Objetivo: ' + obj.label.toLowerCase() + ' · ' + fmt(plan.kcal, 0) + ' kcal'}</span>
+        <button onClick={onAjustar} data-testid="macros-ajustar" className="font-body" style={{ background: 'transparent', border: 0, color: T.cyan, fontWeight: 800, fontSize: 12.5, cursor: 'pointer', padding: 0 }}>⚙️ Ajustar</button>
+      </div>
+    </Card>
   );
 }
 
 /* ---------- Pestaña ---------- */
 
+export const SECCIONES_COMIDA = [['hoy', 'Hoy'], ['semana', 'Semana'], ['recetas', 'Recetas'], ['objetivo', 'Mi objetivo']];
+
 export function ComidaTab() {
-  const [sec, setSec] = useState('diario');
+  const { state, commit } = useGym();
+  const sec = SECCIONES_COMIDA.some((x) => x[0] === state.meta.comidaSec) ? state.meta.comidaSec : 'hoy';
+  const setSec = (k) => commit((prev) => ({ ...prev, meta: { ...prev.meta, comidaSec: k } }));
   const [fecha, setFecha] = useState(ymd(new Date()));
-  const secs = [['diario', '📓 Diario'], ['agua', '💧 Agua'], ['recetas', '🍳 Recetas'], ['plan', '📅 Plan'], ['compra', '🛒 Compra']];
   return (
     <div>
-      <SectionTitle emoji="🍽️">Comida</SectionTitle>
-      <div className="gt-scroll" style={{ display: 'flex', gap: 6, overflowX: 'auto', marginBottom: 14, paddingBottom: 4 }}>
-        {secs.map((s) => <Chip key={s[0]} active={sec === s[0]} onClick={() => setSec(s[0])}>{s[1]}</Chip>)}
-      </div>
-      {sec === 'diario' && <DiarioSec fecha={fecha} setFecha={setFecha} />}
+      <EditLockBar />
+      <MacrosDia fecha={fecha} onAjustar={() => setSec('objetivo')} />
+      <Segmentos opciones={SECCIONES_COMIDA} valor={sec} onChange={setSec} testid="comida-secciones" />
+      {sec === 'hoy' && <DiarioSec fecha={fecha} setFecha={setFecha} />}
+      {sec === 'semana' && (
+        <>
+          <PlanSec />
+          <SectionTitle emoji="🛒">Lista de la compra</SectionTitle>
+          <CompraSec />
+        </>
+      )}
       {sec === 'recetas' && <RecetasSec />}
-      {sec === 'plan' && <PlanSec />}
-      {sec === 'compra' && <CompraSec />}
-      {sec === 'agua' && <AguaSec />}
+      {sec === 'objetivo' && (
+        <>
+          <div className="font-body" style={{ color: T.muted, fontSize: 12.5, marginBottom: 10, lineHeight: 1.5 }}>Cambia tu objetivo y tus datos: las calorías y macros de arriba se ajustan solas.</div>
+          <NutricionCard />
+        </>
+      )}
     </div>
   );
 }
-

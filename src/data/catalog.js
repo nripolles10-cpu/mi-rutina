@@ -113,7 +113,9 @@ export const MOMENTOS = [['desayuno', '🌅 Desayuno'], ['comida', '🍽️ Comi
 
 export const DIAS_SEMANA = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
-export const TAB_IDS = ['rutina', 'cardio', 'progreso', 'fisico', 'comida', 'extras'];
+// Pestañas: Entreno (id 'rutina'), Progreso, Comida, Diana (id 'fisico') y Recursos (id 'extras').
+// Los ids antiguos se mantienen para no perder la pestaña guardada; 'cardio' ahora vive dentro de Entreno.
+export const TAB_IDS = ['rutina', 'progreso', 'comida', 'fisico', 'extras'];
 
 /* =========================================================================
    DIANA FÍSICA (mapa corporal + estado manual por músculo)

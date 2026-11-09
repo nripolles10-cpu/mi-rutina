@@ -9,7 +9,7 @@ import { aplicarObjetivoPeso, validarObjetivoPeso } from '../utils/peso.js';
 import { calc1RM, calcDiscos } from '../utils/training.js';
 
 /* =========================================================================
-   TAB: EXTRAS
+   TAB: RECURSOS (antes Extras)
    ========================================================================= */
 
 export function AjusteRealCard({ plan }) {
@@ -215,7 +215,7 @@ export function SuplementosSection() {
 
   return (
     <div style={{ marginBottom: 22 }}>
-      {sups.length === 0 && <Card><p className="font-body" style={{ color: T.muted, fontSize: 13, textAlign: 'center', margin: 0 }}>No tienes suplementos apuntados.{editMode ? '' : ' Desbloquea la edición para añadirlos.'}</p></Card>}
+      {sups.length === 0 && <Card><p className="font-body" style={{ color: T.muted, fontSize: 13, textAlign: 'center', margin: 0 }}>No tienes suplementos apuntados.{editMode ? '' : ' Abre el candado 🔒 de arriba para añadirlos.'}</p></Card>}
       {sups.map((s) => (
         <Card key={s.id} style={{ marginBottom: 14 }}>
           {editMode ? (
@@ -350,20 +350,36 @@ export function GlosarioCard() {
   );
 }
 
+// Suplementos: ficha de consulta plegada (con el candado abierto se ve desplegada para editarla)
+function SuplementosPlegable() {
+  const { state } = useGym();
+  const [abierto, setAbierto] = useState(false);
+  const ver = abierto || state.meta.editMode;
+  const n = (state.extras.suplementos || []).length;
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <button type="button" onClick={() => setAbierto(!abierto)} aria-expanded={ver} data-testid="sup-plegable" className="card font-body"
+        style={{ width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, cursor: 'pointer', marginBottom: ver ? 10 : 14, color: T.text }}>
+        <span>
+          <b style={{ fontSize: 14.5 }}>💊 Mis suplementos</b><br />
+          <span style={{ color: T.muted, fontSize: 12 }}>{n ? n + (n === 1 ? ' suplemento' : ' suplementos') + ' · qué tomas y cuánto' : 'Todavía no tienes ninguno'}</span>
+        </span>
+        <span style={{ color: T.cyan, fontWeight: 800, flexShrink: 0 }}>{ver ? '▲' : '▼'}</span>
+      </button>
+      {ver && <SuplementosSection />}
+    </div>
+  );
+}
+
+/* RECURSOS (antes Extras): suplementos, 1RM, discos y glosario */
 export function ExtrasTab() {
   return (
     <div>
       <EditLockBar />
-      <SectionTitle emoji="🥗">Calculadora nutricional</SectionTitle>
-      <NutricionCard />
+      <SectionTitle emoji="💊">Suplementos</SectionTitle>
+      <SuplementosPlegable />
 
-      <SectionTitle emoji="🎥">Movilidad</SectionTitle>
-      <MovilidadCard />
-
-      <SectionTitle emoji="💊">Suplementación recomendada</SectionTitle>
-      <SuplementosSection />
-
-      <SectionTitle emoji="🧰">Calculadoras</SectionTitle>
+      <SectionTitle emoji="🧮">Calculadoras</SectionTitle>
       <OneRMCard />
       <DiscosCard />
 
