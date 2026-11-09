@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Propuesta de orden · Mi Rutina</title>
+<style>
+  :root { --bg:#0b1020; --card:#131a30; --line:rgba(140,170,255,.18); --text:#eef2ff; --muted:#9aa6c8; --cyan:#2dd4bf; --lime:#a3e635; --amber:#f5b54a; --pink:#f472b6; --blue:#60a5fa; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
+  .wrap { max-width:460px; margin:0 auto; padding:16px; }
+  h1 { font-size:20px; margin:6px 0 4px; }
+  .sub { color:var(--muted); font-size:13px; margin:0 0 16px; }
+  .bloque { background:linear-gradient(180deg,#131a30,#0f1629); border:1px solid var(--line); border-radius:22px; padding:16px; margin-bottom:18px; }
+  .etiq { display:inline-block; font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--cyan); margin-bottom:8px; }
+  .tab { border:1px solid var(--line); border-radius:16px; padding:12px 14px; margin-bottom:10px; background:var(--card); }
+  .tab h2 { font-size:16px; margin:0 0 2px; }
+  .tab .peq { color:var(--muted); font-size:12.5px; margin-bottom:8px; }
+  ul { margin:0; padding-left:18px; }
+  li { margin:3px 0; font-size:13.5px; }
+  .mov { display:inline-block; font-size:11.5px; font-weight:800; padding:3px 8px; border-radius:999px; margin-left:4px; }
+  .m-nuevo { background:rgba(45,212,191,.16); color:var(--cyan); }
+  .m-mueve { background:rgba(245,181,74,.16); color:var(--amber); }
+  .m-quita { background:rgba(244,114,182,.16); color:var(--pink); }
+  .m-igual { background:rgba(163,230,53,.14); color:var(--lime); }
+  /* teléfono */
+  .movil { max-width:300px; margin:0 auto; background:#060913; border:8px solid #1d2442; border-radius:34px; padding:14px 12px 10px; }
+  .pant { background:var(--card); border-radius:18px; padding:14px 12px; min-height:200px; }
+  .pant .titulo { font-weight:800; font-size:14px; margin-bottom:6px; }
+  .pant .bloque-mini { background:#0a0f1e; border:1px solid var(--line); border-radius:12px; padding:9px 10px; margin-bottom:8px; font-size:12.5px; }
+  .pant .bloque-mini b { display:block; font-size:12.5px; }
+  .pant .peq { color:var(--muted); font-size:11.5px; }
+  .nav { display:grid; grid-template-columns:repeat(5,1fr); gap:4px; margin-top:12px; }
+  .nav div { text-align:center; font-size:10.5px; color:var(--muted); padding:6px 2px; border-radius:10px; }
+  .nav div span { display:block; font-size:17px; margin-bottom:2px; }
+  .nav .on { background:rgba(45,212,191,.16); color:var(--text); }
+  .lista-cambios li { margin-bottom:8px; }
+  .nota { color:var(--muted); font-size:12.5px; margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Propuesta de orden: Mi Rutina</h1>
+  <p class="sub">Cinco pestañas en vez de seis. Cada cosa está donde la buscarías. Es solo una vista para que la revises.</p>
+
+  <section class="bloque">
+    <span class="etiq">Así se vería en el móvil</span>
+    <div class="movil">
+      <div class="pant">
+        <div class="titulo">🏋️ Entreno</div>
+        <div class="bloque-mini"><b>Rutina de hoy</b><span class="peq">Lo de siempre, sin cambios</span></div>
+        <div class="bloque-mini"><b>🏃 Cardio</b><span class="peq">Plegado: cada cardio con su descripción y si lo has cumplido esta semana</span></div>
+        <div class="bloque-mini"><b>🧘 Movilidad</b><span class="peq">El vídeo de movilidad, antes de entrenar</span></div>
+        <div class="bloque-mini"><b>▶ Empezar entreno en vivo</b><span class="peq">Con sus tiempos de descanso</span></div>
+      </div>
+      <div class="nav">
+        <div class="on"><span>🏋️</span>Entreno</div>
+        <div><span>📊</span>Progreso</div>
+        <div><span>🍽️</span>Comida</div>
+        <div><span>🎯</span>Diana</div>
+        <div><span>🧰</span>Herramientas</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="bloque">
+    <span class="etiq">Las cinco pestañas</span>
+
+    <div class="tab">
+      <h2>🏋️ Entreno <span class="mov m-igual">igual</span></h2>
+      <div class="peq">Antes era Rutina, más Cardio y Movilidad.</div>
+      <ul>
+        <li>Rutina de cada día, tal cual está.</li>
+        <li>🏃 Cardio <span class="mov m-mueve">viene de su propia pestaña</span></li>
+        <li>🧘 Movilidad, con el vídeo <span class="mov m-mueve">viene de Extras</span></li>
+        <li>Empezar entreno en vivo y los tiempos de descanso.</li>
+      </ul>
+    </div>
+
+    <div class="tab">
+      <h2>📊 Progreso <span class="mov m-igual">ordenado</span></h2>
+      <div class="peq">Al entrar ves solo lo importante. Lo demás está en botones.</div>
+      <ul>
+        <li><b>Arriba:</b> racha, resumen de la semana y peso.</li>
+        <li><b>📅 Calendario</b>: los entrenos y los días de cardio.</li>
+        <li><b>📈 Análisis</b>: series por semana, volumen, progreso por ejercicio y objetivos. <span class="mov m-mueve">antes estaban mezclados</span></li>
+        <li><b>📏 Cuerpo</b>: medidas y "Tu día". <span class="mov m-quita">fotos de progreso quitadas</span></li>
+        <li><b>🏅 Logros</b>.</li>
+      </ul>
+    </div>
+
+    <div class="tab">
+      <h2>🍽️ Comida <span class="mov m-igual">igual</span> <span class="mov m-nuevo">+2</span></h2>
+      <div class="peq">Ya está bien. Se le suman dos cosas que son de alimentación.</div>
+      <ul>
+        <li>Diario, agua, recetas, plan y compra, como ahora.</li>
+        <li>🥗 Calculadora nutricional <span class="mov m-mueve">viene de Extras</span></li>
+        <li>💊 Suplementación <span class="mov m-mueve">viene de Extras</span></li>
+      </ul>
+    </div>
+
+    <div class="tab">
+      <h2>🎯 Diana <span class="mov m-igual">igual</span></h2>
+      <div class="peq">Ya está bien.</div>
+    </div>
+
+    <div class="tab">
+      <h2>🧰 Herramientas <span class="mov m-mueve">antes Extras</span></h2>
+      <div class="peq">Lo que consultas de vez en cuando.</div>
+      <ul>
+        <li>🧮 Calculadoras: 1RM y discos.</li>
+        <li>📖 Glosario de técnicas.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="bloque">
+    <span class="etiq">Resumen de cambios</span>
+    <ul class="lista-cambios">
+      <li><span class="mov m-quita">Quitar</span> fotos de progreso (Progreso → Cuerpo).</li>
+      <li><span class="mov m-mueve">Mover</span> Cardio a Entreno.</li>
+      <li><span class="mov m-mueve">Mover</span> Movilidad a Entreno.</li>
+      <li><span class="mov m-mueve">Mover</span> Calculadora nutricional y Suplementación a Comida.</li>
+      <li><span class="mov m-mueve">Renombrar</span> Extras a Herramientas, con solo calculadoras y glosario.</li>
+      <li><span class="mov m-nuevo">Separar</span> Progreso en vista principal y Análisis.</li>
+    </ul>
+    <div class="nota">Qué no cambia: la rutina, Diana y la lógica de Comida.</div>
+  </section>
+</div>
+</body>
+</html>

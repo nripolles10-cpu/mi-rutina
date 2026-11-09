@@ -310,108 +310,6 @@ export function MedidasCard() {
 }
 
 // Comparador antes / después: las dos fotos superpuestas, con una barra para deslizar
-function EditFotoModal({ foto, onSave, onClose }) {
-  const [fecha, setFecha] = useState(foto.fecha);
-  const [nota, setNota] = useState(foto.nota);
-  return (
-    <Modal title="Editar foto" onClose={onClose}>
-      <Card>
-        <Label>Fecha</Label>
-        <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className="font-body inp" />
-        <Label style={{ marginTop: 12 }}>Etiqueta o nota</Label>
-        <input type="text" maxLength={60} value={nota} onChange={(e) => setNota(e.target.value)} className="font-body inp" />
-        <button disabled={!fecha} onClick={() => { onSave(fecha, nota.trim()); onClose(); }} className="font-body btn btn-primary" style={{ width: '100%', marginTop: 16 }}>Guardar cambios</button>
-      </Card>
-    </Modal>
-  );
-}
-
-function Comparador({ antes, despues, srcDe }) {
-  const [pos, setPos] = useState(50);
-  return (
-    <div>
-      <div style={{ position: 'relative', width: '100%', aspectRatio: '3 / 4', borderRadius: 14, overflow: 'hidden', background: '#000' }}>
-        <img src={srcDe(despues)} alt="Después" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-        <div style={{ position: 'absolute', inset: 0, clipPath: 'inset(0 ' + (100 - pos) + '% 0 0)' }}>
-          <img src={srcDe(antes)} alt="Antes" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-        </div>
-        <div style={{ position: 'absolute', top: 0, bottom: 0, left: pos + '%', width: 2, background: '#FFFFFF', boxShadow: '0 0 8px rgba(0,0,0,0.8)' }} />
-        <span className="font-body" style={{ position: 'absolute', top: 8, left: 8, background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: 11, fontWeight: 800, padding: '3px 8px', borderRadius: 8 }}>Antes · {fmtDateShort(antes.date)}</span>
-        <span className="font-body" style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: 11, fontWeight: 800, padding: '3px 8px', borderRadius: 8 }}>Después · {fmtDateShort(despues.date)}</span>
-      </div>
-      <input type="range" min="0" max="100" value={pos} onChange={(e) => setPos(Number(e.target.value))} aria-label="Deslizar entre antes y después" style={{ width: '100%', marginTop: 10, accentColor: T.cyan }} />
-    </div>
-  );
-}
-
-export function FotosProgresoCard() {
-  const { state, fotos, addFotoProgreso, delFotoProgreso, editFotoProgreso, askConfirm, showToast } = useGym();
-  const [editandoFoto, setEditandoFoto] = useState(null);
-  const [ocupado, setOcupado] = useState(false);
-  const [nota, setNota] = useState('');
-  const [antesId, setAntesId] = useState(null);
-  const [despuesId, setDespuesId] = useState(null);
-  const [ver, setVer] = useState(null);
-  const lista = (state.fotosProgreso || []).slice().sort((a, b) => new Date(a.date) - new Date(b.date)).filter((f) => fotos && fotos['prog_' + f.id]);
-  const srcDe = (f) => Native.photoSrc(fotos['prog_' + f.id]);
-  const antes = lista.find((f) => f.id === antesId) || lista[0];
-  const despues = lista.find((f) => f.id === despuesId) || lista[lista.length - 1];
-  const nueva = async (origen) => {
-    if (ocupado) return;
-    setOcupado(true);
-    try {
-      // Las fotos de progreso se guardan algo más grandes que las de los ejercicios (900 px) para poder compararlas
-      const url = await Native.pickPhoto(origen, 900, 0.72);
-      if (url && await addFotoProgreso(url, nota.trim())) setNota('');
-    } catch (e) { showToast('No se pudo abrir la ' + (origen === 'camara' ? 'cámara' : 'galería') + '.', 'warn'); } finally { setOcupado(false); }
-  };
-  return (
-    <Card style={{ marginBottom: 14 }}>
-      <input type="text" maxLength={60} value={nota} onChange={(e) => setNota(e.target.value)} placeholder="Nota opcional (ej. en ayunas, 82 kg)" className="font-body inp" style={{ fontSize: 13, marginBottom: 8 }} />
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-        <button disabled={ocupado} onClick={() => nueva('camara')} className="font-body btn btn-primary" style={{ flex: 1, fontSize: 12.5 }}>📷 Hacer foto</button>
-        <button disabled={ocupado} onClick={() => nueva('galeria')} className="font-body btn btn-ghost" style={{ flex: 1, fontSize: 12.5 }}>🖼️ De la galería</button>
-      </div>
-      {lista.length >= 2 && antes && despues && (
-        <div style={{ marginBottom: 12 }}>
-          <Comparador antes={antes} despues={despues} srcDe={srcDe} />
-          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-            <label className="font-body" style={{ flex: 1, color: T.muted, fontSize: 11 }}>Antes
-              <select value={antes.id} onChange={(e) => setAntesId(e.target.value)} className="font-body inp" style={{ fontSize: 12, padding: '6px 8px' }}>
-                {lista.map((f) => <option key={f.id} value={f.id}>{fmtDateShort(f.date)}{f.nota ? ' · ' + f.nota : ''}</option>)}
-              </select>
-            </label>
-            <label className="font-body" style={{ flex: 1, color: T.muted, fontSize: 11 }}>Después
-              <select value={despues.id} onChange={(e) => setDespuesId(e.target.value)} className="font-body inp" style={{ fontSize: 12, padding: '6px 8px' }}>
-                {lista.map((f) => <option key={f.id} value={f.id}>{fmtDateShort(f.date)}{f.nota ? ' · ' + f.nota : ''}</option>)}
-              </select>
-            </label>
-          </div>
-        </div>
-      )}
-      {lista.length === 0 && <div className="font-body" style={{ color: T.dim, fontSize: 12, textAlign: 'center', padding: '10px 6px' }}>Haz una foto cada 2–4 semanas, con la misma luz y la misma postura, para comparar.</div>}
-      {lista.length === 1 && <div className="font-body" style={{ color: T.dim, fontSize: 12, textAlign: 'center', marginBottom: 8 }}>Con dos fotos o más aparece el comparador antes / después.</div>}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
-        {lista.slice().reverse().map((f) => (
-          <button key={f.id} onClick={() => setVer(f)} style={{ padding: 0, border: '1px solid rgba(140,170,255,0.25)', borderRadius: 10, overflow: 'hidden', aspectRatio: '3 / 4', background: '#000', cursor: 'pointer', position: 'relative' }}>
-            <img src={srcDe(f)} alt={'Foto del ' + fmtDateShort(f.date)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            <span className="font-body" style={{ position: 'absolute', bottom: 2, left: 2, right: 2, background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: 9.5, borderRadius: 6 }}>{fmtDateShort(f.date)}</span>
-          </button>
-        ))}
-      </div>
-      {editandoFoto && <EditFotoModal foto={editandoFoto} onSave={(f, n) => { editFotoProgreso(editandoFoto.id, f, n); setVer(null); }} onClose={() => setEditandoFoto(null)} />}
-      {ver && (
-        <Modal title={'📸 ' + fmtDateShort(ver.date)} onClose={() => setVer(null)}>
-          <img src={srcDe(ver)} alt="" style={{ width: '100%', borderRadius: 14 }} />
-          {ver.nota && <div className="font-body" style={{ color: T.muted, fontSize: 13, marginTop: 8 }}>{ver.nota}</div>}
-          <button onClick={() => setEditandoFoto({ id: ver.id, fecha: ymd(ver.date), nota: ver.nota || '' })} className="font-body btn btn-ghost" style={{ width: '100%', marginTop: 10, fontSize: 12.5 }}>✏️ Cambiar fecha o etiqueta</button>
-                    <button onClick={() => askConfirm({ title: '¿Borrar esta foto?', text: 'Se borrará la foto del ' + fmtDateLong(ver.date) + '.', confirmLabel: 'Borrar', onConfirm: () => { delFotoProgreso(ver.id); setVer(null); } })} className="font-body btn btn-danger" style={{ width: '100%', marginTop: 12 }}>🗑️ Borrar foto</button>
-        </Modal>
-      )}
-    </Card>
-  );
-}
-
 export function CuerpoSec() {
   return (
     <div>
@@ -419,8 +317,6 @@ export function CuerpoSec() {
       <HoyCard />
       <SectionTitle emoji="📏">Medidas corporales</SectionTitle>
       <MedidasCard />
-      <SectionTitle emoji="📸">Fotos de progreso</SectionTitle>
-      <FotosProgresoCard />
     </div>
   );
 }

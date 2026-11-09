@@ -134,20 +134,6 @@ describe('progreso: calendario, cuerpo y logros', () => {
     sinBasura();
   });
 
-  test('fotos de progreso: se guardan aparte y aparece el comparador con dos', async () => {
-    const st = A.buildInitialState();
-    st.fotosProgreso = [{ id: 'fa', date: '2026-09-01T10:00:00.000Z', nota: '' }, { id: 'fb', date: '2026-10-01T10:00:00.000Z', nota: 'después' }];
-    localStorage.setItem(A.STORAGE_KEY, JSON.stringify(st));
-    const img = 'data:image/jpeg;base64,' + btoa('x');
-    localStorage.setItem('gymtracker_fotos_v1', JSON.stringify({ prog_fa: img, prog_fb: img }));
-    await montar();
-    await tab('Progreso');
-    await click(btn('📏 Cuerpo'));
-    expect(screen.getByAltText('Antes')).toBeTruthy();
-    expect(screen.getByAltText('Después')).toBeTruthy();
-    expect(screen.getByLabelText('Deslizar entre antes y después')).toBeTruthy();
-    sinBasura();
-  });
 });
 
 describe('ajustes y extras', () => {
