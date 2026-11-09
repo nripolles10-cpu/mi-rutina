@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Chip, DescansoPicker, EditLockBar, Label, MiniBtn, NumField, Stepper, TextField, chipStyle, useGym } from '../components/ui.jsx';
+import { DESCANSO_CALENTAMIENTO_DEFECTO, DESCANSO_LADOS_DEFECTO, DESCANSO_SERIES_DEFECTO, RAPIDOS, textoDescanso } from '../utils/descanso.js';
 import { CATS, CAT_IDS, SET_TYPES, catInfo } from '../data/catalog.js';
 import { T } from '../data/theme.js';
 import { Native } from '../native/index.js';
@@ -263,6 +264,21 @@ export function SetRow({ s, idx, onPatch, onRemove, canRemove, editMode }) {
    `embedded` = la tarjeta va dentro de un bloque de ejercicios alternos (sin marco propio)
    ========================================================================= */
 
+/* Botones rápidos para un tiempo de descanso. Si `conGeneral`, un botón deja el valor del general. */
+export function RapidosDescanso({ valor, opciones, onChange, conGeneral = null, textoGeneral = '' }) {
+  const v = valor === null || valor === undefined ? null : Number(valor);
+  // El valor guardado siempre aparece, aunque no sea uno de los botones rápidos
+  const lista = v === null || opciones.indexOf(v) !== -1 ? opciones : opciones.concat([v]).sort((a, b) => a - b);
+  return (
+    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+      {conGeneral !== null && <Chip active={v === null} onClick={() => onChange(null)} style={{ padding: '6px 12px', fontSize: 12 }}>{textoGeneral}</Chip>}
+      {lista.map((o) => (
+        <Chip key={o} active={v === o} onClick={() => onChange(o)} style={{ padding: '6px 12px', fontSize: 12 }}>{textoDescanso(o)}</Chip>
+      ))}
+    </div>
+  );
+}
+
 export function ExerciseCard({ id, dayId, embedded }) {
   const { state, updateExercise, updateDay, saveEntry, suggestObjetivo, removeFromDay, addSerie, removeSerieAt, askConfirm, fotos, setFoto, delFoto, showToast, duplicarEjercicio } = useGym();
   const [open, setOpen] = useState(false);
@@ -382,6 +398,18 @@ export function ExerciseCard({ id, dayId, embedded }) {
                   <Label>🔁 Alternar con otro ejercicio (una semana uno y otra semana el otro)</Label>
                   <AlternoPicker day={day} id={id} />
                 </div>
+              )}
+              <Label style={{ marginTop: 10 }}>Tipo de ejercicio</Label>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <Chip active={ex.lado !== 'unilateral'} onClick={() => updateExercise(id, { lado: 'bilateral' })} style={{ padding: '6px 12px', fontSize: 12 }}>Bilateral (los dos a la vez)</Chip>
+                <Chip active={ex.lado === 'unilateral'} onClick={() => updateExercise(id, { lado: 'unilateral' })} style={{ padding: '6px 12px', fontSize: 12 }}>Unilateral (un lado y luego el otro)</Chip>
+              </div>
+              {ex.lado === 'unilateral' && (
+                <>
+                  <Label style={{ marginTop: 10 }}>Tiempo entre un lado y el otro</Label>
+                  <RapidosDescanso valor={ex.descansoLados ?? null} opciones={RAPIDOS.lados} conGeneral textoGeneral="Igual que general"
+                    onChange={(v) => updateExercise(id, { descansoLados: v })} />
+                </>
               )}
               <Label style={{ marginTop: 10 }}>Músculo (el ejercicio cuenta solo para este)</Label>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -593,9 +621,14 @@ export function RutinaTab() {
       {vivo && <EntrenoVivoModal dayId={vivo} onClose={() => setVivo(null)} />}
       {!editMode && day.ids.length > 0 && (
         <Card style={{ marginBottom: 12, padding: 12 }}>
-          <div className="font-body" style={{ color: T.text, fontSize: 13, fontWeight: 700, marginBottom: 2 }}>⏱️ Descanso entre series</div>
-          <div className="font-body" style={{ color: T.muted, fontSize: 11.5, marginBottom: 8 }}>Este tiempo se usa en todos tus entrenos en vivo. Cámbialo aquí y se guarda.</div>
-          <DescansoPicker value={(state.preferencias && state.preferencias.descanso) || 90} onChange={(v) => setPreferencia({ descanso: v })} />
+          <div className="font-body" style={{ color: T.text, fontSize: 13, fontWeight: 700, marginBottom: 2 }}>⏱️ Tiempos de descanso</div>
+          <div className="font-body" style={{ color: T.muted, fontSize: 11.5, marginBottom: 6 }}>Se usan en el entreno en vivo. Toca uno y se guarda.</div>
+          <Label>Entre series</Label>
+          <RapidosDescanso valor={(state.preferencias && state.preferencias.descanso) || DESCANSO_SERIES_DEFECTO} opciones={RAPIDOS.series} onChange={(v) => setPreferencia({ descanso: v })} />
+          <Label style={{ marginTop: 10 }}>Entre lados (ejercicios unilaterales)</Label>
+          <RapidosDescanso valor={(state.preferencias && state.preferencias.descansoLados) || DESCANSO_LADOS_DEFECTO} opciones={RAPIDOS.lados} onChange={(v) => setPreferencia({ descansoLados: v })} />
+          <Label style={{ marginTop: 10 }}>En series de calentamiento</Label>
+          <RapidosDescanso valor={(state.preferencias && state.preferencias.descansoCalentamiento) || DESCANSO_CALENTAMIENTO_DEFECTO} opciones={RAPIDOS.calentamiento} onChange={(v) => setPreferencia({ descansoCalentamiento: v })} />
         </Card>
       )}
       {!editMode && day.ids.length > 0 && (

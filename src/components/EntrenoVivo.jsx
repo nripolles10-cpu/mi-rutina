@@ -5,7 +5,7 @@ import { T } from '../data/theme.js';
 import { Native } from '../native/index.js';
 import { fmt, fmtMS, formatDecimal, parseDecimal } from '../utils/format.js';
 import { ensureStruct, setsVolume } from '../utils/training.js';
-import { textoDescanso } from '../utils/descanso.js';
+import { descansoTrasSerie, textoDescanso } from '../utils/descanso.js';
 import { bloquesDelDia } from '../tabs/RutinaTab.jsx';
 import { SugerenciaProgresion } from './HistorialEjercicio.jsx';
 
@@ -55,7 +55,11 @@ export function EntrenoVivoModal({ dayId, onClose }) {
   const [serie, setSerie] = useState(0);
   const [hechas, setHechas] = useState({}); // { exId: [true, false…] }
   const [guardados, setGuardados] = useState({}); // ejercicios ya guardados en esta sesión
-  const descanso = (state.preferencias && state.preferencias.descanso) || 90;
+  const prefs = state.preferencias || {};
+  const descanso = prefs.descanso || 90;
+  const [ladoHecho, setLadoHecho] = useState({}); // { 'exId:serie': true } cuando ya está hecho el primer lado
+  const [descansoAct, setDescansoAct] = useState(descanso); // lo que dura el descanso que está corriendo
+  const arrancar = (seg) => { setDescansoAct(seg); startTimer(seg); };
 
   // Pantalla encendida mientras dura el entreno (al salir se vuelve a tu preferencia)
   useEffect(() => {
@@ -90,7 +94,19 @@ export function EntrenoVivoModal({ dayId, onClose }) {
 
   const irA = (i) => { setIdx(Math.max(0, Math.min(lista.length - 1, i))); setSerie(0); };
 
+  const claveSerie = exId + ':' + nSerie;
+  const unilateral = ex.lado === 'unilateral';
+  const primerLadoPendiente = unilateral && !ladoHecho[claveSerie];
+  const tras = descansoTrasSerie({ tipo: s.tipo, unilateral: false }, prefs);
+
   const marcarSerie = () => {
+    if (primerLadoPendiente) {
+      // Unilateral: primero un lado, descanso entre lados, y luego el otro lado en la misma serie
+      setLadoHecho({ ...ladoHecho, [claveSerie]: true });
+      arrancar(descansoTrasSerie({ tipo: s.tipo, unilateral: true, ladoPendiente: true }, prefs, ex.descansoLados));
+      return;
+    }
+    if (ladoHecho[claveSerie]) { const sin = { ...ladoHecho }; delete sin[claveSerie]; setLadoHecho(sin); }
     const m = sets.map((_, i) => !!marcadas[i]);
     m[nSerie] = true;
     setHechas({ ...hechas, [exId]: m });
@@ -103,10 +119,10 @@ export function EntrenoVivoModal({ dayId, onClose }) {
       let sig = lista.findIndex((id, i) => i > idx && !nuevos[id]);
       if (sig === -1) sig = lista.findIndex((id) => !nuevos[id]);
       if (sig === -1) { if (timer) stopTimer(); return; } // entreno terminado
-      startTimer(descanso);
+      arrancar(tras);
       setIdx(sig); setSerie(0);
     } else {
-      startTimer(descanso);
+      arrancar(tras);
       setSerie(quedan);
     }
   };
@@ -147,7 +163,7 @@ export function EntrenoVivoModal({ dayId, onClose }) {
 
       {timer && (
         <div className="card" data-testid="vivo-descanso" style={{ marginBottom: 12, textAlign: 'center', padding: 12, borderColor: 'rgba(var(--ac-rgb),0.5)' }}>
-          <div className="font-body" style={{ color: T.muted, fontSize: 12 }}>Descanso · {textoDescanso(descanso)}</div>
+          <div className="font-body" style={{ color: T.muted, fontSize: 12 }}>Descanso · {textoDescanso(descansoAct)}</div>
           <div className="font-display" style={{ fontSize: 44, fontWeight: 700, color: '#FFFFFF', lineHeight: 1.1 }}>{fmtMS(resta)}</div>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 6 }}>
             <button onClick={() => addTimer(15)} className="font-body btn btn-ghost" style={{ padding: '7px 12px', fontSize: 12 }}>+15 s</button>
@@ -168,6 +184,11 @@ export function EntrenoVivoModal({ dayId, onClose }) {
             }}>{marcadas[i] ? '✓' : i + 1}</button>
           ))}
         </div>
+        {unilateral && (
+          <div className="font-body" data-testid="vivo-lado" style={{ marginTop: 10, color: T.cyan, fontWeight: 800, fontSize: 13 }}>
+            ↔️ Unilateral · {primerLadoPendiente ? 'primer lado' : 'ahora el otro lado'}
+          </div>
+        )}
         <div className="font-body" style={{ marginTop: 12, marginBottom: 12, color: tipo.soft, fontWeight: 800, fontSize: 15 }}>
           {tipo.emoji} Serie {nSerie + 1} de {sets.length} · {tipo.label}
           {antes && <span style={{ color: T.dim, fontWeight: 600, fontSize: 12 }}> · la última vez: {antes.reps === null ? '–' : antes.reps}×{antes.weight === null ? '–' : fmt(antes.weight, 2)} kg</span>}
@@ -191,7 +212,9 @@ export function EntrenoVivoModal({ dayId, onClose }) {
         )}
 
         <button onClick={marcarSerie} data-testid="vivo-hecha" className="font-body btn" style={{ width: '100%', padding: 16, fontSize: 16, marginTop: 4, background: color, color: '#060913', boxShadow: '0 6px 20px ' + color + '55' }}>
-          {marcadas.filter(Boolean).length + (marcadas[nSerie] ? 0 : 1) >= sets.length && !guardados[exId] ? '✓ Última serie · guardar y descansar' : '✓ Serie hecha · descanso ' + fmtMS(descanso * 1000)}
+          {primerLadoPendiente
+            ? '✓ Primer lado hecho · descanso ' + textoDescanso(descansoTrasSerie({ tipo: s.tipo, unilateral: true, ladoPendiente: true }, prefs, ex.descansoLados))
+            : marcadas.filter(Boolean).length + (marcadas[nSerie] ? 0 : 1) >= sets.length && !guardados[exId] ? '✓ Última serie · guardar y descansar' : '✓ Serie hecha · descanso ' + fmtMS(tras * 1000)}
         </button>
         <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
           <button disabled={idx === 0} onClick={() => irA(idx - 1)} className="font-body btn btn-ghost" style={{ flex: 1, minWidth: 0, fontSize: 12.5, padding: '10px 6px' }}>‹ Anterior</button>
