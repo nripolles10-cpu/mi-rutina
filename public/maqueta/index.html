@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maqueta · descansos y calentamiento</title>
+<style>
+  :root { --bg:#0b1020; --card:#131a30; --line:rgba(140,170,255,.18); --text:#eef2ff; --muted:#9aa6c8; --cyan:#2dd4bf; --lime:#a3e635; --amber:#f5b54a; --pink:#f472b6; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
+  .wrap { max-width:430px; margin:0 auto; padding:16px; }
+  h1 { font-size:20px; margin:6px 0 4px; }
+  .sub { color:var(--muted); font-size:13px; margin:0 0 16px; }
+  .pantalla { background:linear-gradient(180deg,#131a30,#0f1629); border:1px solid var(--line); border-radius:22px; padding:16px; margin-bottom:22px; }
+  .etiq { display:inline-block; font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--cyan); margin-bottom:8px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; margin-bottom:12px; }
+  .fila { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .titulo { font-weight:800; font-size:16px; }
+  .peq { color:var(--muted); font-size:12.5px; }
+  .seg { display:grid; grid-template-columns:1fr 1fr; background:#0a0f1e; border-radius:14px; padding:4px; gap:4px; margin:10px 0; }
+  .seg button { border:0; background:transparent; color:var(--muted); padding:10px; border-radius:11px; font-weight:800; font-size:14px; }
+  .seg .on { background:var(--cyan); color:#06202b; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .chip { border:1.5px solid var(--line); background:#0a0f1e; color:var(--muted); border-radius:999px; padding:7px 12px; font-weight:800; font-size:13px; }
+  .chip.on { border-color:var(--cyan); color:var(--text); background:rgba(45,212,191,.16); }
+  .ajuste { border-top:1px solid var(--line); padding-top:12px; margin-top:12px; }
+  .ajuste .lab { font-weight:800; font-size:14px; }
+  .ajuste .ayu { color:var(--muted); font-size:12px; margin-top:2px; }
+  .stepper { display:flex; align-items:center; gap:8px; }
+  .stepper button { width:36px; height:36px; border-radius:12px; border:1.5px solid var(--line); background:#0a0f1e; color:var(--text); font-size:18px; font-weight:800; }
+  .stepper .val { min-width:72px; text-align:center; font-weight:900; font-size:17px; }
+  .serie { display:grid; grid-template-columns:auto 1fr auto; gap:10px; align-items:center; padding:10px 0; border-bottom:1px dashed var(--line); }
+  .serie:last-child { border-bottom:0; }
+  .badge { font-size:11.5px; font-weight:800; padding:4px 9px; border-radius:999px; white-space:nowrap; }
+  .b-cal { background:rgba(245,181,74,.15); color:var(--amber); }
+  .b-efe { background:rgba(163,230,53,.15); color:var(--lime); }
+  .b-uni { background:rgba(244,114,182,.15); color:var(--pink); }
+  .descanso { background:rgba(45,212,191,.10); border:1px dashed var(--cyan); border-radius:14px; padding:10px 12px; text-align:center; margin:8px 0; color:var(--cyan); font-weight:800; }
+  .nota { font-size:12.5px; color:var(--muted); margin-top:10px; }
+  .btn { width:100%; border:0; border-radius:14px; padding:14px; background:var(--cyan); color:#06202b; font-weight:900; font-size:15px; margin-top:12px; }
+  .dim { opacity:.55; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Maqueta: descansos, unilaterales y calentamiento</h1>
+  <p class="sub">Así quedaría. Es solo una vista: la app todavía no cambia.</p>
+
+  <!-- 1. Ficha del ejercicio -->
+  <section class="pantalla">
+    <span class="etiq">1 · Al pulsar un ejercicio</span>
+    <div class="card">
+      <div class="titulo">Extensión de cuádriceps</div>
+      <div class="peq">3 series · 10–12 reps</div>
+      <div class="seg" role="group" aria-label="Tipo de ejercicio">
+        <button class="on">Bilateral (los dos lados a la vez)</button>
+        <button>Unilateral (un lado y luego el otro)</button>
+      </div>
+      <div class="ajuste">
+        <div class="lab">Tiempo entre un lado y el otro</div>
+        <div class="ayu">Solo aparece si el ejercicio es unilateral.</div>
+        <div class="peq dim" style="margin-top:8px">Con "Bilateral" no se muestra.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="titulo">Extensión de cuádriceps unilateral</div>
+      <div class="peq">3 series · 10–12 reps</div>
+      <div class="seg" role="group" aria-label="Tipo de ejercicio">
+        <button>Bilateral (los dos lados a la vez)</button>
+        <button class="on">Unilateral (un lado y luego el otro)</button>
+      </div>
+      <div class="ajuste">
+        <div class="lab">Tiempo entre un lado y el otro</div>
+        <div class="ayu">Descanso antes de pasar a la otra pierna o brazo.</div>
+        <div class="chips">
+          <span class="chip">15 s</span><span class="chip on">30 s</span><span class="chip">45 s</span><span class="chip">1 min</span><span class="chip">Otro</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Antes de entrenar: tres tiempos, en una sola pantalla -->
+  <section class="pantalla">
+    <span class="etiq">2 · Antes de empezar el entreno</span>
+    <div class="titulo" style="margin-bottom:4px">Tiempos de descanso</div>
+    <div class="peq">Se aplican al entreno en directo. Cámbialos aquí cuando quieras.</div>
+
+    <div class="ajuste" style="border-top:0;padding-top:12px">
+      <div class="fila"><div><div class="lab">Descanso entre series</div><div class="ayu">Entre dos series de trabajo.</div></div></div>
+      <div class="chips"><span class="chip">1 min</span><span class="chip">1 min y medio</span><span class="chip on">2 min</span><span class="chip">2 min y medio</span><span class="chip">3 min</span></div>
+    </div>
+
+    <div class="ajuste">
+      <div class="fila"><div><div class="lab">Descanso entre lados (unilateral)</div><div class="ayu">Entre un brazo y el otro, o una pierna y la otra.</div></div></div>
+      <div class="chips"><span class="chip">15 s</span><span class="chip on">30 s</span><span class="chip">45 s</span><span class="chip">1 min</span></div>
+    </div>
+
+    <div class="ajuste">
+      <div class="fila"><div><div class="lab">Descanso en calentamiento</div><div class="ayu">Entre series de calentamiento y hasta la primera serie efectiva.</div></div></div>
+      <div class="chips"><span class="chip">30 s</span><span class="chip on">1 min</span><span class="chip">1 min y medio</span><span class="chip">2 min</span></div>
+    </div>
+
+    <div class="nota">Cada tiempo tiene un valor propio. Si no eliges ninguno, quedan los que ya tienes.</div>
+    <button class="btn">Empezar entreno en directo</button>
+  </section>
+
+  <!-- 3. Entreno en directo: cómo se ve el orden y lo que cuenta -->
+  <section class="pantalla">
+    <span class="etiq">3 · En el entreno en directo</span>
+    <div class="card">
+      <div class="titulo">Press banca</div>
+      <div class="serie"><span class="badge b-cal">🌡️ Calentamiento</span><div><b>40 kg × 10</b><div class="peq">No cuenta como serie efectiva</div></div><span class="peq">✓</span></div>
+      <div class="descanso">Descanso · 1 min</div>
+      <div class="serie"><span class="badge b-cal">🌡️ Calentamiento</span><div><b>60 kg × 6</b><div class="peq">No cuenta como serie efectiva</div></div><span class="peq">✓</span></div>
+      <div class="descanso">Descanso · 1 min</div>
+      <div class="serie"><span class="badge b-efe">🔥 Top set</span><div><b>80 kg × 5</b><div class="peq">Cuenta como efectiva</div></div><span class="peq">✓</span></div>
+      <div class="descanso">Descanso · 2 min</div>
+      <div class="serie"><span class="badge b-efe">📐 Back-off</span><div><b>70 kg × 8</b><div class="peq">Cuenta como efectiva</div></div><span class="peq">○</span></div>
+    </div>
+
+    <div class="card">
+      <div class="titulo">Extensión de cuádriceps unilateral</div>
+      <div class="serie"><span class="badge b-uni">↔️ Unilateral</span><div><b>Pierna izquierda · 12 × 20 kg</b><div class="peq">Cuenta como efectiva</div></div><span class="peq">✓</span></div>
+      <div class="descanso">Descanso entre lados · 30 s</div>
+      <div class="serie"><span class="badge b-uni">↔️ Unilateral</span><div><b>Pierna derecha · 12 × 20 kg</b><div class="peq">Cuenta como efectiva</div></div><span class="peq">○</span></div>
+      <div class="descanso">Descanso entre series · 2 min</div>
+    </div>
+
+    <div class="nota">Resumen de reglas: calentamiento = no cuenta · top set, back-off, rest-pause y drop set = cuentan · unilateral = el descanso entre lados se usa entre las dos piernas o brazos.</div>
+  </section>
+</div>
+</body>
+</html>
