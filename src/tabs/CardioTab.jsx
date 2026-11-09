@@ -91,6 +91,49 @@ function Cumplir({ c, onChange, showToast }) {
   );
 }
 
+// Una tarjeta de cardio: por defecto solo nombre, descripción y cumplimiento de la semana.
+// Al pulsar "Editar" aparecen los días, la frecuencia y el resto de ajustes.
+function CardioItem({ c, editMode, updateCardio, askConfirm, removeCardio, showToast }) {
+  const [editando, setEditando] = useState(false);
+  return (
+    <Card style={{ marginBottom: 10 }}>
+      <div className="fila-cardio" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+        <div className="font-body" style={{ color: T.text, fontWeight: 700, fontSize: 15 }}>🏃 {c.name}</div>
+        <button onClick={() => setEditando(!editando)} className="font-body btn btn-ghost" style={{ padding: '6px 12px', fontSize: 12 }} aria-expanded={editando}>
+          {editando ? '✓ Listo' : '✏️ Editar'}
+        </button>
+      </div>
+      {!editando && (
+        <>
+          <div className="font-body" style={{ color: T.muted, fontSize: 13, marginBottom: 10, lineHeight: 1.5 }}>{c.detalle || 'Sin descripción. Toca Editar para añadirla.'}</div>
+          <Cumplir c={c} showToast={showToast} onChange={(p) => updateCardio(c.id, p)} />
+        </>
+      )}
+      {editando && (
+        <>
+          {editMode && (
+            <>
+              <Label>Nombre</Label>
+              <TextField value={c.name} onChange={(v) => updateCardio(c.id, { name: v }, 'cardio:' + c.id + ':name')} placeholder="ej. Cinta" />
+            </>
+          )}
+          <Label style={{ marginTop: editMode ? 10 : 0 }}>Frecuencia</Label>
+          <TextField value={c.frecuencia} onChange={(v) => updateCardio(c.id, { frecuencia: v }, 'cardio:' + c.id + ':frec')} placeholder="ej. 3 días / semana" />
+          <Label style={{ marginTop: 10 }}>Descripción</Label>
+          <TextField multiline value={c.detalle} onChange={(v) => updateCardio(c.id, { detalle: v }, 'cardio:' + c.id + ':det')} placeholder="ej. 20 min · inclinación 12 · velocidad 4,5" rows={2} />
+          <div style={{ marginTop: 12 }}>
+            <ModoCardio c={c} onChange={(p) => updateCardio(c.id, p, 'cardio:' + c.id + ':modo')} />
+          </div>
+          {editMode && (
+            <button onClick={() => askConfirm({ title: '¿Quitar este cardio?', text: 'Se quitará "' + c.name + '".', confirmLabel: 'Quitar', onConfirm: () => removeCardio(c.id) })}
+              className="font-body btn btn-danger" style={{ width: '100%', marginTop: 12, fontSize: 12.5 }}>🗑️ Quitar este cardio</button>
+          )}
+        </>
+      )}
+    </Card>
+  );
+}
+
 export function CardioTab() {
   const { state, updateCardio, addCardio, removeCardio, askConfirm, showToast } = useGym();
   const editMode = state.meta.editMode;
@@ -105,28 +148,7 @@ export function CardioTab() {
         <Card style={{ marginBottom: 10 }}><p className="font-body" style={{ color: T.muted, fontSize: 13, textAlign: 'center', margin: 0 }}>No tienes cardio apuntado.{editMode ? '' : ' Desbloquea la edición para añadirlo.'}</p></Card>
       )}
       {state.cardio.map((c) => (
-        <Card key={c.id} style={{ marginBottom: 10 }}>
-          {editMode ? (
-            <>
-              <Label>Nombre</Label>
-              <TextField value={c.name} onChange={(v) => updateCardio(c.id, { name: v }, 'cardio:' + c.id + ':name')} placeholder="ej. Cinta" />
-            </>
-          ) : (
-            <div className="font-body" style={{ color: T.text, fontWeight: 700, fontSize: 15, marginBottom: 8 }}>🏃 {c.name}</div>
-          )}
-          <Label style={{ marginTop: editMode ? 10 : 0 }}>Frecuencia</Label>
-          <TextField value={c.frecuencia} onChange={(v) => updateCardio(c.id, { frecuencia: v }, 'cardio:' + c.id + ':frec')} placeholder="ej. 3 días / semana" />
-          <Label style={{ marginTop: 10 }}>Detalle</Label>
-          <TextField multiline value={c.detalle} onChange={(v) => updateCardio(c.id, { detalle: v }, 'cardio:' + c.id + ':det')} placeholder="ej. 20 min · inclinación 12 · velocidad 4,5" rows={2} />
-          <div style={{ marginTop: 12 }}>
-            <ModoCardio c={c} onChange={(p) => updateCardio(c.id, p, 'cardio:' + c.id + ':modo')} />
-          </div>
-          <Cumplir c={c} showToast={showToast} onChange={(p) => updateCardio(c.id, p)} />
-          {editMode && (
-            <button onClick={() => askConfirm({ title: '¿Quitar este cardio?', text: 'Se quitará "' + c.name + '".', confirmLabel: 'Quitar', onConfirm: () => removeCardio(c.id) })}
-              className="font-body btn btn-danger" style={{ width: '100%', marginTop: 12, fontSize: 12.5 }}>🗑️ Quitar este cardio</button>
-          )}
-        </Card>
+        <CardioItem key={c.id} c={c} editMode={editMode} updateCardio={updateCardio} askConfirm={askConfirm} removeCardio={removeCardio} showToast={showToast} />
       ))}
       {editMode && (
         <button onClick={addCardio} className="font-body btn btn-ghost" style={{ width: '100%', padding: '13px', borderRadius: 14 }}>➕ Añadir cardio</button>
