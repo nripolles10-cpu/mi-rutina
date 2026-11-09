@@ -108,6 +108,19 @@
   .sup.abierto .detalle { display:block; }
   .dosis { display:flex; justify-content:space-between; font-size:12.5px; padding:6px 0; border-bottom:1px dashed var(--line); }
   .dosis:last-child { border-bottom:0; }
+  .semana-dia { font-size:12px; font-weight:800; color:var(--cyan); }
+  .asignar { display:none; gap:4px; margin-top:8px; }
+  body.edicion .asignar { display:flex; }
+  .asignar span { flex:1; text-align:center; border:1.5px solid var(--line); border-radius:9px; padding:5px 0; font-size:11.5px; font-weight:800; color:var(--muted); cursor:pointer; }
+  .asignar span.on { border-color:var(--amber); color:#1a1200; background:var(--amber); }
+  .hecho-hoy { font-size:10.5px; font-weight:900; color:#0b1500; background:var(--lime); padding:2px 8px; border-radius:999px; margin-left:6px; vertical-align:middle; }
+  .descanso-hoy { text-align:center; padding:14px; }
+  .terminar { width:100%; border:0; border-radius:13px; background:var(--lime); color:#0b1500; font-weight:900; padding:13px; font-size:14px; margin-top:6px; cursor:pointer; }
+  .terminar.hecho { background:transparent; color:var(--lime); border:1.5px solid var(--lime); }
+  .obj-campo { margin-bottom:12px; }
+  .obj-campo .lab { font-weight:800; font-size:13px; margin-bottom:6px; }
+  .resultado { background:var(--card2); border:1px solid var(--cyan); border-radius:14px; padding:11px; }
+  .resultado .fila { font-size:12.5px; padding:3px 0; }
   .toast { position:absolute; left:50%; bottom:78px; transform:translateX(-50%); background:#1e293b; border:1px solid var(--line); padding:8px 14px; border-radius:999px; font-size:12px; font-weight:800; opacity:0; transition:opacity .25s; pointer-events:none; white-space:nowrap; }
   .toast.ver { opacity:1; }
   .oculto { display:none !important; }
@@ -162,15 +175,8 @@
   <!-- COMIDA -->
   <div class="contenido oculto" data-pantalla="comida">
     <div class="cabecera">🍽️ Comida</div>
-    <div class="card macros">
-      <div class="fila"><span class="peq">Hoy llevas</span><span class="peq">te quedan</span></div>
-      <div class="m"><div class="fila"><span>🔥 Calorías <b>1.240</b> / 2.450</span><b>1.210</b></div><div class="barrita"><div style="width:51%;background:#f5f7ff"></div></div></div>
-      <div class="m"><div class="fila"><span>🥩 Proteína <b>80</b> / 175 g</span><b>95 g</b></div><div class="barrita"><div style="width:46%;background:#22d3ee"></div></div></div>
-      <div class="m"><div class="fila"><span>🍚 Hidratos <b>150</b> / 290 g</span><b>140 g</b></div><div class="barrita"><div style="width:52%;background:#a3e635"></div></div></div>
-      <div class="m"><div class="fila"><span>🥑 Grasas <b>38</b> / 70 g</span><b>32 g</b></div><div class="barrita"><div style="width:54%;background:#f472b6"></div></div></div>
-      <div class="objetivo"><span>Objetivo: definición · 2.450 kcal</span><b>⚙️ Ajustar</b></div>
-    </div>
-    <div class="seg"><button class="on" data-g="com" data-v="hoy">Hoy</button><button data-g="com" data-v="semana">Semana y compra</button><button data-g="com" data-v="recetas">Recetas</button></div>
+    <div class="card macros" data-macros></div>
+    <div class="seg"><button class="on" data-g="com" data-v="hoy">Hoy</button><button data-g="com" data-v="semana">Semana</button><button data-g="com" data-v="recetas">Recetas</button><button data-g="com" data-v="objetivo">Mi objetivo</button></div>
     <div data-p="com" data-v="hoy">
       <div class="card">
         <div class="momento"><div class="t">☕ Desayuno</div><div class="item hecho"><span>Avena con plátano · 520 kcal</span><button class="tick on" data-t>✓ Comido</button></div></div>
@@ -194,6 +200,18 @@
       <div class="card"><h3>Lunes</h3><div class="peq">Avena · Pollo con arroz · Tortilla · 1.840 kcal</div><span class="mas">✏️ Cambiar comidas</span></div>
       <div class="card"><h3>🛒 Lista de la compra</h3><div class="peq">Sale sola del plan de la semana</div><button class="boton sec">Ver lista</button></div>
     </div>
+    <div data-p="com" data-v="objetivo" class="oculto">
+      <div class="peq" style="margin-bottom:10px">Cambia lo que quieras y los números de arriba se ajustan solos.</div>
+      <div class="obj-campo"><div class="lab">¿Qué buscas?</div>
+        <div class="chips" style="margin:0"><span class="chip on" data-obj="def">🔥 Definición</span><span class="chip" data-obj="man">⚖️ Mantener</span><span class="chip" data-obj="vol">💪 Volumen</span></div></div>
+      <div class="obj-campo" data-ritmo-campo><div class="lab">Ritmo</div>
+        <div class="chips" style="margin:0"><span class="chip" data-ritmo="suave">Suave</span><span class="chip on" data-ritmo="medio">Medio</span><span class="chip" data-ritmo="rapido">Rápido</span></div></div>
+      <div class="obj-campo"><div class="fila"><div class="lab" style="margin:0">Peso actual</div><div class="stepper"><button data-peso="-0.5" style="border-color:var(--cyan);color:var(--cyan)">−</button><b data-peso-txt></b><button data-peso="0.5" style="border-color:var(--cyan);color:var(--cyan)">+</button></div></div></div>
+      <div class="obj-campo"><div class="fila"><div class="lab" style="margin:0">Peso objetivo</div><div class="stepper"><button data-pobj="-0.5" style="border-color:var(--cyan);color:var(--cyan)">−</button><b data-pobj-txt></b><button data-pobj="0.5" style="border-color:var(--cyan);color:var(--cyan)">+</button></div></div></div>
+      <div class="resultado" data-resultado></div>
+      <div class="card" style="margin-top:10px;background:var(--card2)"><b style="font-size:12.5px">🔬 Ajuste con tus datos reales</b><div class="peq">Cuando tengas 14 días de comidas y de peso apuntados, te propongo corregir las calorías con tu gasto real.</div></div>
+    </div>
+
     <div data-p="com" data-v="recetas" class="oculto">
       <button class="boton sec" style="margin-top:0;margin-bottom:9px">🥫 ¿Qué tengo en casa?</button>
       <div class="card"><h3>Pollo con arroz</h3><div class="peq">780 kcal · 55 g proteína</div></div>
@@ -210,9 +228,7 @@
 
   <!-- HERRAMIENTAS -->
   <div class="contenido oculto" data-pantalla="herramientas">
-    <div class="cabecera">🧰 Herramientas</div>
-    <div class="card"><h3>🧮 1RM estimado</h3><div class="peq">Tu máximo a partir de una serie</div></div>
-    <div class="card"><h3>🏋️ Discos</h3><div class="peq">Qué discos poner en cada lado</div></div>
+    <div class="cabecera">🧰 Recursos</div>
     <div class="card sup" data-sup>
       <div class="fila"><div><h3>💊 Mis suplementos</h3><div class="peq">Qué tomas y cuánto. Solo para consultar.</div></div><span class="peq" data-sup-flecha>▼</span></div>
       <div class="detalle">
@@ -222,6 +238,8 @@
         <div class="peq" style="margin-top:8px">Ejemplo: en la app salen los tuyos. Con el candado abierto los editas.</div>
       </div>
     </div>
+    <div class="card"><h3>🧮 1RM estimado</h3><div class="peq">Tu máximo a partir de una serie</div></div>
+    <div class="card"><h3>🏋️ Discos</h3><div class="peq">Qué discos poner en cada lado</div></div>
     <div class="card"><h3>📖 Glosario de técnicas</h3><div class="peq">Top set, back-off, drop set…</div></div>
   </div>
 
@@ -230,7 +248,7 @@
     <button data-ir="progreso"><span>📊</span>Progreso</button>
     <button data-ir="comida"><span>🍽️</span>Comida</button>
     <button data-ir="diana"><span>🎯</span>Diana</button>
-    <button data-ir="herramientas"><span>🧰</span>Herram.</button>
+    <button data-ir="herramientas"><span>🧰</span>Recursos</button>
   </nav>
   <div class="toast" data-toast></div>
 </div>
@@ -242,28 +260,28 @@
   const TIPO = { top: ['🔥 Top Set', 't-top'], backoff: ['📐 Back-off', 't-backoff'], rp: ['⚡ Rest-Pause', 't-rp'], warm: ['🌡️ Calentamiento', 't-warm'] };
   // Tus 5 días reales (los de la app), con nombre "Día 1, Día 2…"
   const DIAS = [
-    { nom: 'Pierna A', llevar: 'Banda, mosquetón y cincha', ej: [
+    { nom: 'Pierna A', sem: 6, llevar: 'Banda, mosquetón y cincha', ej: [
       ['Gemelo de pie', 'gemelos', '100', '120', [['top', 100, 7], ['backoff', 90, 7], ['backoff', 80, 8]]],
       ['Aductores', 'aductores', '102,5', '115', [['top', 102.5, 9], ['backoff', 95.5, 8]]],
       ['Extensión de cuádriceps', 'cuadriceps', '73', '', [['top', 73, 8], ['backoff', 66, 8]], true],
       ['Belt squat', 'cuadriceps', '100', '120', [['top', 100, 5], ['backoff', 90, 5]]],
       ['Prensa de placas', 'cuadriceps', '75,3', '100', [['top', 75.3, 8], ['backoff', 68.3, 9]]],
       ['Extensión de cuádriceps bilateral', 'cuadriceps', '73', '', [['rp', 73, 8]]]] },
-    { nom: 'Pecho, hombro y bíceps', ej: [
+    { nom: 'Pecho, hombro y bíceps', sem: 0, ej: [
       ['Aperturas en máquina', 'pecho', '127', '', [['warm', 127, 8], ['warm', 113, 9]]],
       ['Press inclinado en máquina', 'pecho', '60', '70', [['top', 60, 7], ['backoff', 50, 8]]],
       ['Elevaciones laterales', 'hombro', '25', '30', [['top', 25, 5], ['backoff', 20, 8], ['backoff', 15, 10]]],
       ['Press en máquina', 'pecho', '65', '', [['top', 65, 7], ['backoff', 55, 6]]],
       ['Curl bayesian en polea', 'biceps', '32', '', [['top', 32, 7], ['backoff', 27, 10]]],
       ['Curl predicador', 'biceps', '32', '', [['top', 32, 8], ['backoff', 23, 8]]]] },
-    { nom: 'Pierna B', ej: [
+    { nom: 'Pierna B', sem: 2, ej: [
       ['Gemelo de pie', 'gemelos', '100', '120', [['top', 100, 7], ['backoff', 90, 7], ['backoff', 80, 8]]],
       ['Femoral sentado', 'isquios', '106,5', '', [['top', 106.5, 9], ['backoff', 99.5, 7], ['backoff', 92.5, 7]]],
       ['Peso muerto belt', 'lumbar', '140', '160', [['top', 140, 8], ['backoff', 120, 8]]],
       ['Hip thrust', 'gluteo', '95', '', [['top', 95, 8], ['backoff', 75, 8]]],
       ['Abducción de cadera', 'abductores', '93', '', [['top', 93, 8], ['backoff', 79, 8]]],
       ['Abdominales en máquina', 'core', '77', '', [['top', 77, 9], ['backoff', 68, 10]]]] },
-    { nom: 'Espalda, hombro y tríceps', ej: [
+    { nom: 'Espalda, hombro y tríceps', sem: 3, ej: [
       ['Remo T en máquina', 'espalda', '100', '', [['top', 100, 8], ['backoff', 90, 8]]],
       ['Jalón al pecho', 'espalda', '59', '', [['top', 59, 7], ['backoff', 50, 7]]],
       ['Encogimientos en remo', 'trapecio', '79', '', [['top', 79, 10], ['backoff', 66, 10], ['backoff', 59, 11]]],
@@ -271,26 +289,40 @@
       ['Aperturas hacia atrás', 'hombro', '66', '', [['top', 66, 12], ['backoff', 52, 12]]],
       ['Press francés en máquina', 'triceps', '60', '', [['top', 60, 8], ['backoff', 50, 9]]],
       ['Extensión de tríceps en polea', 'triceps', '32', '', [['top', 32, 10], ['backoff', 23, 10]]]] },
-    { nom: 'Abs y músculos +', ej: [
+    { nom: 'Abs y músculos +', sem: 4, ej: [
       ['Press inclinado en Multipower', 'pecho', '85', '', [['top', 85, 7], ['backoff', 75, 8]]],
       ['Femoral sentado', 'isquios', '84', '', [['top', 84, 8], ['backoff', 70, 8]]],
       ['Abdominales en máquina', 'core', '73', '', [['top', 73, 8], ['backoff', 64, 8]]],
       ['Antebrazo en polea', 'antebrazo', '', '', [['top', '', ''], ['backoff', '', '']]]] },
   ];
-  const HOY = 0; // el día que te toca hoy (ejemplo)
+  const SEMANA = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+  const LETRAS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+  const hoySem = (new Date().getDay() + 6) % 7; // 0 = lunes
+  const diaDeHoy = () => DIAS.findIndex((d) => d.sem === hoySem);
+  const terminados = {};
   const kg = (n) => String(n).replace('.', ',');
   let diaActual = 0, abierto = -1;
 
   const toast = (t) => { const e = $('[data-toast]'); e.textContent = t; e.classList.add('ver'); clearTimeout(toast.h); toast.h = setTimeout(() => e.classList.remove('ver'), 1600); };
 
   const listaDias = () => {
-    $('[data-lista-dias]').innerHTML = DIAS.map((d, i) => {
-      const series = d.ej.reduce((a, e) => a + e[4].filter((s) => s[0] !== 'warm').length, 0);
+    const h = diaDeHoy();
+    const aviso = h === -1 ? '<div class="card descanso-hoy"><h3>😴 Hoy (' + SEMANA[hoySem].toLowerCase() + ') descansas</h3><div class="peq">No tienes ningún entreno asignado a este día.</div></div>' : '';
+    $('[data-lista-dias]').innerHTML = aviso + DIAS.map((d, i) => {
+      const series = d.ej.reduce((a, e) => a + e[4].filter((x) => x[0] !== 'warm').length, 0);
       const musc = [...new Set(d.ej.map((e) => CAT[e[1]][0]))].slice(0, 4).join(' · ');
-      return '<div class="card dia' + (i === HOY ? ' es-hoy' : '') + '" data-dia="' + i + '"><div><h3>Día ' + (i + 1) + ' · ' + d.nom + (i === HOY ? '<span class="hoy">HOY</span>' : '') + '</h3>'
-        + '<div class="peq">' + d.ej.length + ' ejercicios · ' + series + ' series efectivas</div><div class="peq">' + musc + '</div></div><span class="flecha">›</span></div>';
+      const asignar = '<div class="asignar">' + LETRAS.map((l, k) => '<span data-asig="' + i + ':' + k + '" class="' + (d.sem === k ? 'on' : '') + '">' + l + '</span>').join('') + '</div>';
+      return '<div class="card dia' + (i === h ? ' es-hoy' : '') + '" data-dia="' + i + '"><div style="flex:1"><div class="semana-dia">' + (d.sem === null || d.sem === undefined ? 'Sin día asignado' : SEMANA[d.sem]) + '</div>'
+        + '<h3>Día ' + (i + 1) + ' · ' + d.nom + (i === h ? '<span class="hoy">HOY</span>' : '') + (terminados[i] ? '<span class="hecho-hoy">✓ HECHO</span>' : '') + '</h3>'
+        + '<div class="peq">' + d.ej.length + ' ejercicios · ' + series + ' series efectivas</div><div class="peq">' + musc + '</div>' + asignar + '</div><span class="flecha">›</span></div>';
     }).join('');
-    $$('[data-dia]').forEach((c) => c.onclick = () => abrirDia(+c.dataset.dia));
+    $$('[data-dia]').forEach((c) => c.onclick = (e) => { if (e.target.closest('.asignar')) return; abrirDia(+c.dataset.dia); });
+    $$('[data-asig]').forEach((b) => b.onclick = () => {
+      const [i, k] = b.dataset.asig.split(':').map(Number);
+      DIAS.forEach((d, j) => { if (j !== i && d.sem === k) d.sem = null; }); // un día de la semana, un entreno
+      DIAS[i].sem = DIAS[i].sem === k ? null : k;
+      listaDias(); toast('Día ' + (i + 1) + (DIAS[i].sem === null ? ' sin día asignado' : ' → ' + SEMANA[k].toLowerCase()));
+    });
   };
 
   const vistaDia = () => {
@@ -304,20 +336,23 @@
         + (abierto === i ? '<div class="cuerpo">' + series + '<div class="acciones"><button>💾 Guardar registro de hoy</button><button>📈 Historial y 1RM</button></div></div>' : '') + '</div>';
     }).join('');
     $('[data-vista-dia]').innerHTML = '<span class="volver" data-volver>‹ Todos los días</span>'
-      + '<div class="selector"><button data-ant>‹</button><div class="nom">Día ' + (diaActual + 1) + ' · ' + d.nom + (diaActual === HOY ? ' <span class="hoy">HOY</span>' : '') + '</div><button data-sig>›</button></div>'
+      + '<div class="selector"><button data-ant>‹</button><div class="nom">Día ' + (diaActual + 1) + ' · ' + d.nom + (diaActual === diaDeHoy() ? ' <span class="hoy">HOY</span>' : '') + '<div class="semana-dia">' + (d.sem === null || d.sem === undefined ? 'Sin día asignado' : SEMANA[d.sem]) + '</div></div><button data-sig>›</button></div>'
       + '<div class="puntos">' + DIAS.map((_, i) => '<i class="' + (i === diaActual ? 'on' : '') + '"></i>').join('') + '</div>'
       + '<div class="card descansos" data-desc><span>⏱️ Descansos: <b>1 min y medio</b> · lados <b>30 s</b> · calentamiento <b>1 min</b></span><span class="peq">Cambiar ›</span></div>'
       + '<button class="boton">▶ Empezar entreno en vivo</button>'
       + (d.llevar ? '<div class="llevar">🎒 Llevar: ' + d.llevar + '</div>' : '<div style="height:10px"></div>')
-      + ejHtml + '<button class="anadir">➕ Añadir ejercicio</button>';
+      + ejHtml + '<button class="anadir">➕ Añadir ejercicio</button>'
+      + '<button class="terminar' + (terminados[diaActual] ? ' hecho' : '') + '" data-terminar>' + (terminados[diaActual] ? '✓ Entreno terminado · deshacer' : '✅ Terminar entreno') + '</button>'
+      + '<div class="peq" style="text-align:center;margin-top:6px">Cuenta para tu racha y sale en el calendario.</div>';
     $('[data-volver]').onclick = cerrarDia;
     $('[data-ant]').onclick = () => { diaActual = (diaActual + DIAS.length - 1) % DIAS.length; abierto = -1; vistaDia(); };
     $('[data-sig]').onclick = () => { diaActual = (diaActual + 1) % DIAS.length; abierto = -1; vistaDia(); };
     $('[data-desc]').onclick = () => toast('Aquí se abren los tres tiempos de descanso');
+    $('[data-terminar]').onclick = () => { terminados[diaActual] = !terminados[diaActual]; toast(terminados[diaActual] ? '🏁 ¡Entreno terminado! +1 en tu racha' : 'Deshecho'); vistaDia(); };
     $$('[data-ej]').forEach((c) => c.onclick = () => { abierto = abierto === +c.dataset.ej ? -1 : +c.dataset.ej; vistaDia(); });
   };
   const abrirDia = (i) => { diaActual = i; abierto = -1; $('[data-lista-dias]').classList.add('oculto'); $('[data-p="ent"][data-v="rutina"] > .anadir').classList.add('oculto'); $('[data-vista-dia]').classList.remove('oculto'); vistaDia(); $('[data-pantalla="entreno"]').scrollTop = 0; };
-  const cerrarDia = () => { $('[data-vista-dia]').classList.add('oculto'); $('[data-lista-dias]').classList.remove('oculto'); $('[data-p="ent"][data-v="rutina"] > .anadir').classList.remove('oculto'); };
+  const cerrarDia = () => { listaDias(); $('[data-vista-dia]').classList.add('oculto'); $('[data-lista-dias]').classList.remove('oculto'); $('[data-p="ent"][data-v="rutina"] > .anadir').classList.remove('oculto'); };
 
   $$('[data-ir]').forEach((b) => b.onclick = () => {
     $$('[data-ir]').forEach((x) => x.classList.toggle('on', x === b));
@@ -354,6 +389,43 @@
   $('[data-quitar]').onclick = () => { agua = Math.max(0, agua - 1); pintaAgua(); };
   pintaAgua();
   $('[data-sup]').onclick = () => { const c = $('[data-sup]'); c.classList.toggle('abierto'); $('[data-sup-flecha]').textContent = c.classList.contains('abierto') ? '▲' : '▼'; };
+  // Mi objetivo: cambia el plan y se recalculan los macros de arriba
+  const nut = { obj: 'def', ritmo: 'medio', peso: 78.4, pobj: 75 };
+  const LLEVAS = { kcal: 1240, p: 80, c: 150, g: 38 };
+  const fmtN = (n) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const calcular = () => {
+    const mant = Math.round(nut.peso * 33);
+    const pct = nut.obj === 'man' ? 0 : nut.obj === 'vol' ? ({ suave: 0.05, medio: 0.1, rapido: 0.15 })[nut.ritmo] : -({ suave: 0.1, medio: 0.15, rapido: 0.2 })[nut.ritmo];
+    const kcal = Math.round(mant * (1 + pct) / 10) * 10;
+    const p = Math.round(nut.peso * 2.2), g = Math.round(nut.peso * 0.9), c = Math.max(0, Math.round((kcal - p * 4 - g * 9) / 4));
+    return { mant, kcal, p, c, g, pct };
+  };
+  const NOMBRE = { def: 'definición', man: 'mantener', vol: 'volumen' };
+  const pintaNut = () => {
+    const r = calcular();
+    const fila = (emoji, nom, llevas, obj, uni, color) => '<div class="m"><div class="fila"><span>' + emoji + ' ' + nom + ' <b>' + fmtN(llevas) + '</b> / ' + fmtN(obj) + (uni ? ' ' + uni : '') + '</span><b>' + fmtN(Math.max(0, obj - llevas)) + (uni ? ' ' + uni : '') + '</b></div><div class="barrita"><div style="width:' + Math.min(100, llevas / obj * 100) + '%;background:' + color + '"></div></div></div>';
+    $('[data-macros]').innerHTML = '<div class="fila"><span class="peq">Hoy llevas</span><span class="peq">te quedan</span></div>'
+      + fila('🔥', 'Calorías', LLEVAS.kcal, r.kcal, '', '#f5f7ff') + fila('🥩', 'Proteína', LLEVAS.p, r.p, 'g', '#22d3ee')
+      + fila('🍚', 'Hidratos', LLEVAS.c, r.c, 'g', '#a3e635') + fila('🥑', 'Grasas', LLEVAS.g, r.g, 'g', '#f472b6')
+      + '<div class="objetivo"><span>Objetivo: ' + NOMBRE[nut.obj] + ' · ' + fmtN(r.kcal) + ' kcal</span><b data-ir-obj>⚙️ Ajustar</b></div>';
+    $('[data-ir-obj]').onclick = () => $('[data-g="com"][data-v="objetivo"]').click();
+    $('[data-peso-txt]').textContent = String(nut.peso).replace('.', ',') + ' kg';
+    $('[data-pobj-txt]').textContent = String(nut.pobj).replace('.', ',') + ' kg';
+    $('[data-ritmo-campo]').classList.toggle('oculto', nut.obj === 'man');
+    const sem = nut.obj === 'man' ? 0 : Math.abs(r.mant * r.pct * 7 / 7700);
+    const semanas = sem ? Math.ceil(Math.abs(nut.peso - nut.pobj) / sem) : 0;
+    $('[data-resultado]').innerHTML = '<div class="fila"><span class="peq">Tu gasto estimado</span><b>' + fmtN(r.mant) + ' kcal</b></div>'
+      + '<div class="fila"><span class="peq">Para ' + NOMBRE[nut.obj] + '</span><b style="color:var(--cyan)">' + fmtN(r.kcal) + ' kcal/día</b></div>'
+      + '<div class="fila"><span class="peq">Proteína · hidratos · grasas</span><b>' + r.p + ' · ' + r.c + ' · ' + r.g + ' g</b></div>'
+      + (semanas ? '<div class="fila"><span class="peq">Llegarías a ' + String(nut.pobj).replace('.', ',') + ' kg en</span><b>unas ' + semanas + ' semanas</b></div>' : '');
+  };
+  const chipsNut = (attr, clave) => $$('[' + attr + ']').forEach((c) => c.onclick = () => {
+    $$('[' + attr + ']').forEach((x) => x.classList.toggle('on', x === c)); nut[clave] = c.getAttribute(attr); pintaNut(); toast('Macros recalculados');
+  });
+  chipsNut('data-obj', 'obj'); chipsNut('data-ritmo', 'ritmo');
+  $$('[data-peso]').forEach((b) => b.onclick = () => { nut.peso = Math.round((nut.peso + Number(b.dataset.peso)) * 10) / 10; pintaNut(); });
+  $$('[data-pobj]').forEach((b) => b.onclick = () => { nut.pobj = Math.round((nut.pobj + Number(b.dataset.pobj)) * 10) / 10; pintaNut(); });
+  pintaNut();
   listaDias();
 </script>
 </body>
