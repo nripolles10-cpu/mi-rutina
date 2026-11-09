@@ -3,213 +3,241 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Maqueta · Mi Rutina por dentro</title>
+<title>Maqueta · Mi Rutina</title>
 <style>
-  :root { --bg:#070b17; --card:#121a2f; --card2:#0b1224; --line:rgba(140,170,255,.18); --text:#eef2ff; --muted:#9aa6c8; --cyan:#2dd4bf; --lime:#a3e635; --amber:#f5b54a; --pink:#f472b6; }
+  :root { --bg:#070b17; --card:#121a2f; --card2:#0b1224; --line:rgba(140,170,255,.18); --text:#eef2ff; --muted:#9aa6c8; --cyan:#2dd4bf; --lime:#a3e635; --amber:#f5b54a; --pink:#f472b6; --blue:#22d3ee; }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--text); font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; min-height:100vh; display:flex; justify-content:center; padding:16px 8px; }
-  .movil { width:360px; max-width:100%; background:#02040a; border:8px solid #1b2340; border-radius:36px; overflow:hidden; display:flex; flex-direction:column; height:720px; }
-  .barra { padding:14px 18px 6px; font-size:12px; color:var(--muted); display:flex; justify-content:space-between; }
-  .cabecera { padding:4px 16px 10px; font-weight:900; font-size:18px; }
+  body { margin:0; background:var(--bg); color:var(--text); font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; padding:14px 8px 30px; }
+  .top { max-width:380px; margin:0 auto 12px; }
+  .top h1 { font-size:17px; margin:0 0 4px; }
+  .top p { margin:0 0 10px; color:var(--muted); font-size:12.5px; }
+  .opciones { display:flex; gap:6px; }
+  .opciones button { flex:1; border:1.5px solid var(--line); background:var(--card2); color:var(--muted); border-radius:12px; padding:9px 6px; font-weight:800; font-size:12.5px; cursor:pointer; }
+  .opciones button.on { border-color:var(--cyan); color:var(--text); background:rgba(45,212,191,.14); }
+  .explica { max-width:380px; margin:10px auto 0; color:var(--muted); font-size:12.5px; }
+  .movil { width:360px; max-width:100%; margin:0 auto; background:#02040a; border:8px solid #1b2340; border-radius:36px; overflow:hidden; display:flex; flex-direction:column; height:720px; }
+  .barra { padding:12px 16px 4px; display:flex; justify-content:space-between; align-items:center; }
+  .barra .app { font-weight:900; font-size:15px; }
+  .iconos { display:flex; gap:6px; }
+  .iconos span { width:32px; height:32px; border-radius:10px; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:15px; cursor:pointer; }
+  .cabecera { padding:2px 16px 10px; font-weight:900; font-size:18px; }
   .contenido { flex:1; overflow-y:auto; padding:0 14px 12px; }
   .nav { display:grid; grid-template-columns:repeat(5,1fr); background:#0a0f1e; border-top:1px solid var(--line); }
-  .nav button { background:none; border:0; color:var(--muted); padding:10px 2px 12px; font-size:10.5px; font-weight:700; cursor:pointer; }
+  .nav button { background:none; border:0; color:var(--muted); padding:9px 2px 11px; font-size:10.5px; font-weight:700; cursor:pointer; }
   .nav button span { display:block; font-size:18px; margin-bottom:2px; }
   .nav button.on { color:var(--text); }
-  .nav button.on::after { content:""; display:block; width:18px; height:3px; border-radius:3px; background:var(--cyan); margin:4px auto 0; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:13px; margin-bottom:10px; }
-  .card h3 { margin:0 0 3px; font-size:15px; }
+  .nav button.on::after { content:""; display:block; width:18px; height:3px; border-radius:3px; background:var(--cyan); margin:3px auto 0; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:12px; margin-bottom:9px; }
+  .card h3 { margin:0 0 3px; font-size:14.5px; }
   .peq { color:var(--muted); font-size:12px; }
-  .seg { display:flex; gap:4px; background:var(--card2); border:1px solid var(--line); border-radius:14px; padding:4px; margin-bottom:12px; }
-  .seg button { flex:1; border:0; background:transparent; color:var(--muted); padding:9px 4px; border-radius:11px; font-weight:800; font-size:12.5px; cursor:pointer; }
+  .seg { display:flex; gap:4px; background:var(--card2); border:1px solid var(--line); border-radius:14px; padding:4px; margin-bottom:10px; }
+  .seg button { flex:1; border:0; background:transparent; color:var(--muted); padding:8px 4px; border-radius:11px; font-weight:800; font-size:12.5px; cursor:pointer; }
   .seg button.on { background:var(--cyan); color:#06202b; }
-  .boton { width:100%; border:0; border-radius:14px; background:var(--cyan); color:#06202b; font-weight:900; padding:13px; font-size:14px; margin-top:6px; }
+  .boton { width:100%; border:0; border-radius:13px; background:var(--cyan); color:#06202b; font-weight:900; padding:11px; font-size:13.5px; margin-top:6px; }
   .boton.sec { background:transparent; color:var(--cyan); border:1.5px solid var(--cyan); }
-  .grande { font-size:34px; font-weight:900; margin:4px 0 2px; }
   .fila { display:flex; justify-content:space-between; align-items:center; gap:8px; }
-  .tick { border:1.5px solid var(--lime); color:var(--lime); background:transparent; border-radius:999px; padding:6px 12px; font-weight:800; font-size:12px; }
-  .chips { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0 12px; }
+  .grande { font-size:30px; font-weight:900; margin:2px 0; }
+  /* macros */
+  .macros .m { margin-top:7px; }
+  .macros .m .fila { font-size:12px; }
+  .macros .m .fila b { font-size:12.5px; }
+  .barrita { height:7px; border-radius:999px; background:rgba(255,255,255,.08); overflow:hidden; margin-top:3px; }
+  .barrita div { height:100%; border-radius:999px; }
+  .objetivo { display:flex; justify-content:space-between; align-items:center; margin-top:9px; padding-top:9px; border-top:1px dashed var(--line); font-size:12px; color:var(--muted); }
+  .objetivo b { color:var(--cyan); cursor:pointer; }
+  /* momentos */
+  .momento { padding:8px 0; border-bottom:1px dashed var(--line); }
+  .momento:last-child { border-bottom:0; }
+  .momento .t { font-weight:800; font-size:13px; margin-bottom:5px; }
+  .item { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:7px 9px; border-radius:11px; background:var(--card2); margin-bottom:5px; font-size:12.5px; }
+  .item.hecho { background:rgba(163,230,53,.10); }
+  .tick { border:1.5px solid var(--lime); color:var(--lime); background:transparent; border-radius:999px; padding:4px 10px; font-weight:800; font-size:11.5px; cursor:pointer; white-space:nowrap; }
+  .tick.on { background:var(--lime); color:#0b1500; }
+  .mas { color:var(--cyan); font-size:12px; font-weight:800; }
+  .nuevo { display:inline-block; font-size:10px; font-weight:900; padding:2px 6px; border-radius:999px; background:rgba(245,181,74,.18); color:var(--amber); margin-left:4px; vertical-align:middle; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 10px; }
   .chip { border:1.5px solid var(--line); background:var(--card2); color:var(--muted); border-radius:999px; padding:6px 11px; font-weight:800; font-size:12px; cursor:pointer; }
   .chip.on { border-color:var(--cyan); color:var(--text); background:rgba(45,212,191,.14); }
-  .video { height:150px; border-radius:14px; background:linear-gradient(135deg,#1c2a4d,#0b1224); display:flex; align-items:center; justify-content:center; font-size:38px; border:1px solid var(--line); margin-bottom:8px; }
-  .barras { display:flex; align-items:flex-end; gap:6px; height:90px; margin-top:8px; }
+  .vasos { display:flex; gap:4px; }
+  .vasos i { width:16px; height:20px; border-radius:4px; border:1.5px solid var(--blue); display:block; }
+  .vasos i.l { background:var(--blue); }
+  .video { height:140px; border-radius:14px; background:linear-gradient(135deg,#1c2a4d,#0b1224); display:flex; align-items:center; justify-content:center; font-size:36px; border:1px solid var(--line); margin-bottom:8px; }
+  .barras { display:flex; align-items:flex-end; gap:6px; height:70px; margin-top:8px; }
   .barras div { flex:1; background:var(--cyan); border-radius:6px 6px 2px 2px; opacity:.85; }
-  .pastilla { display:inline-block; font-size:11px; font-weight:800; padding:3px 8px; border-radius:999px; background:rgba(163,230,53,.14); color:var(--lime); }
-  .aviso { color:var(--muted); font-size:11.5px; margin-top:8px; }
-  .oculto { display:none; }
+  .hoja { position:absolute; inset:auto 0 0 0; }
+  .oculto { display:none !important; }
 </style>
 </head>
 <body>
+<div class="top">
+  <h1>Mi Rutina · maqueta</h1>
+  <p>Toca las pestañas. Arriba puedes cambiar entre las dos opciones de orden.</p>
+  <div class="opciones">
+    <button class="on" data-opcion="A">A · 5 pestañas</button>
+    <button data-opcion="B">B · con pantalla "Hoy"</button>
+  </div>
+</div>
+
 <div class="movil">
-  <div class="barra"><span>10:57</span><span>Mi Rutina</span></div>
+  <div class="barra">
+    <span class="app">Mi Rutina 💪</span>
+    <div class="iconos"><span data-herr title="Herramientas" class="oculto">🧰</span><span>⏱️</span><span>⚙️</span></div>
+  </div>
+
+  <!-- HOY (solo opción B) -->
+  <div class="contenido oculto" data-pantalla="hoy">
+    <div class="cabecera">☀️ Hoy · lunes 9</div>
+    <div class="card"><div class="fila"><div><h3>🏋️ Te toca: Día B · Espalda</h3><div class="peq">5 ejercicios · unos 70 min</div></div></div><button class="boton">▶ Empezar entreno</button></div>
+    <div class="card"><div class="fila"><div><h3>🏃 Cinta</h3><div class="peq">Esta semana 1 de 3</div></div><button class="tick" data-t>✅ Hecho</button></div></div>
+    <div class="card"><div class="fila"><div><h3>🍽️ Te quedan 1.210 kcal</h3><div class="peq">Proteína: 95 g · Hidratos: 140 g</div></div><span class="mas">Ver ›</span></div>
+      <div class="barrita"><div style="width:51%;background:#f5f7ff"></div></div></div>
+    <div class="card"><div class="fila"><div><h3>💧 Agua</h3><div class="vasos"><i class="l"></i><i class="l"></i><i class="l"></i><i></i><i></i><i></i></div></div><button class="tick">+1 vaso</button></div></div>
+    <div class="card"><div class="fila"><div><h3>💊 Suplementos</h3><div class="peq">Creatina · Proteína</div></div><button class="tick" data-t>Tomados</button></div></div>
+    <div class="card"><div class="fila"><div><h3>⚖️ Peso de hoy</h3><div class="peq">Último: 78,4 kg (hace 2 días)</div></div><button class="tick">Apuntar</button></div></div>
+    <div class="card"><h3>🎯 Para tu hombro (débil)</h3><div class="peq">Hoy, si entrenas espalda: 2 series extra de pájaros.</div></div>
+  </div>
 
   <!-- ENTRENO -->
   <div class="contenido" data-pantalla="entreno">
     <div class="cabecera">🏋️ Entreno</div>
-    <div class="seg" role="tablist">
-      <button class="on" data-sub="rutina">Rutina</button>
-      <button data-sub="cardio">Cardio</button>
-      <button data-sub="movilidad">Movilidad</button>
-    </div>
-
-    <div data-sub-panel="rutina">
+    <div class="seg"><button class="on" data-g="ent" data-v="rutina">Rutina</button><button data-g="ent" data-v="cardio">Cardio</button><button data-g="ent" data-v="mov">Movilidad</button></div>
+    <div data-p="ent" data-v="rutina">
       <div class="card"><h3>Día A · Pecho y tríceps</h3><div class="peq">5 ejercicios · 16 series</div></div>
       <div class="card"><h3>Día B · Espalda y bíceps</h3><div class="peq">5 ejercicios · 17 series</div></div>
       <div class="card"><h3>Día C · Piernas</h3><div class="peq">4 ejercicios · 15 series</div></div>
       <button class="boton">▶ Empezar entreno en vivo</button>
-      <div class="aviso">Tiempos de descanso: entre series, entre lados y en calentamiento.</div>
     </div>
-
-    <div data-sub-panel="cardio" class="oculto">
-      <div class="card">
-        <div class="fila"><h3>🏃 Cinta</h3><span class="peq">✏️ Editar</span></div>
-        <div class="peq" style="margin:4px 0 10px">20 min · inclinación 12 · velocidad 4,5</div>
-        <div class="fila"><span class="peq">Esta semana</span><b>1 de 3</b></div>
-        <button class="boton sec" style="margin-top:8px">✅ He hecho el cardio de hoy</button>
-      </div>
-      <div class="card">
-        <div class="fila"><h3>🏃 Intervalos</h3><span class="peq">✏️ Editar</span></div>
-        <div class="peq" style="margin:4px 0 10px">8 × 30 s rápido · 60 s suave</div>
-        <div class="fila"><span class="pastilla">Esta semana cumplida ✓</span><b>2 de 2</b></div>
-      </div>
+    <div data-p="ent" data-v="cardio" class="oculto">
+      <div class="card"><div class="fila"><h3>🏃 Cinta</h3><span class="peq">✏️ Editar</span></div><div class="peq" style="margin:3px 0 8px">20 min · inclinación 12 · velocidad 4,5</div><div class="fila"><span class="peq">Esta semana</span><b>1 de 3</b></div><button class="boton sec">✅ He hecho el cardio de hoy</button></div>
     </div>
-
-    <div data-sub-panel="movilidad" class="oculto">
-      <div class="card">
-        <h3>🧘 Rutina de movilidad</h3>
-        <div class="peq" style="margin-bottom:10px">Antes de entrenar, 10 min</div>
-        <div class="video">▶</div>
-        <div class="peq">Vídeo guardado en tu app</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- PROGRESO -->
-  <div class="contenido oculto" data-pantalla="progreso">
-    <div class="cabecera">📊 Progreso</div>
-    <div class="card">
-      <div class="peq">⚖️ Peso corporal</div>
-      <div class="grande">78,4 kg</div>
-      <div class="peq">Hace 1 semana: 79,1 kg · −0,7 kg</div>
-      <svg viewBox="0 0 300 60" width="100%" height="60" style="margin-top:8px"><polyline fill="none" stroke="#2dd4bf" stroke-width="3" points="0,18 45,22 90,20 135,30 180,28 225,38 270,40 300,44"/></svg>
-      <button class="boton" style="margin-top:8px">+ Apuntar peso de hoy</button>
-    </div>
-    <div class="card">
-      <div class="fila"><span class="peq">🔥 Racha</span><b>0 semanas</b></div>
-      <div class="fila" style="margin-top:6px"><span class="peq">📆 Esta semana</span><b>1 de 3 días</b></div>
-    </div>
-    <div class="card">
-      <h3>📋 Resumen de la semana</h3>
-      <div class="peq">3 días entrenados · 2 de cardio · 1.970 kg de volumen</div>
-    </div>
-    <div class="chips" data-prog-chips>
-      <span class="chip on" data-p="calendario">📅 Calendario</span>
-      <span class="chip" data-p="analisis">📈 Análisis</span>
-      <span class="chip" data-p="cuerpo">📏 Cuerpo</span>
-      <span class="chip" data-p="logros">🏅 Logros</span>
-    </div>
-    <div data-prog-panel="calendario" class="card">
-      <h3>📅 Noviembre</h3>
-      <div class="peq">Los días con entreno van en color, y los de cardio con un punto verde.</div>
-      <div class="barras" style="height:50px"><div style="opacity:.3"></div><div></div><div style="opacity:.5"></div><div></div><div></div><div style="opacity:.7"></div><div></div></div>
-    </div>
-    <div data-prog-panel="analisis" class="card oculto">
-      <h3>📈 Series efectivas por semana</h3>
-      <div class="barras"><div style="height:40%"></div><div style="height:60%"></div><div style="height:50%"></div><div style="height:80%"></div><div style="height:70%"></div></div>
-      <div class="peq" style="margin-top:8px">También: volumen por semana, progreso por ejercicio y cuánto te falta para tus objetivos.</div>
-    </div>
-    <div data-prog-panel="cuerpo" class="card oculto">
-      <h3>📏 Medidas corporales</h3>
-      <div class="peq">Cintura, pecho, brazo y muslo. Y "Tu día": sueño, energía y pasos.</div>
-    </div>
-    <div data-prog-panel="logros" class="card oculto">
-      <h3>🏅 Logros (4/12)</h3>
-      <div class="peq">Primer entreno, 10 entrenos, primera semana completa…</div>
+    <div data-p="ent" data-v="mov" class="oculto">
+      <div class="card"><h3>🧘 Rutina de movilidad</h3><div class="peq" style="margin-bottom:8px">Antes de entrenar</div><div class="video">▶</div><div class="peq">Abre tu vídeo</div></div>
     </div>
   </div>
 
   <!-- COMIDA -->
   <div class="contenido oculto" data-pantalla="comida">
     <div class="cabecera">🍽️ Comida</div>
-    <div class="seg" role="tablist">
-      <button class="on" data-com="hoy">Hoy</button>
-      <button data-com="planificar">Planificar</button>
-      <button data-com="calorias">Mis calorías</button>
+    <div class="card macros">
+      <div class="fila"><span class="peq">Hoy llevas</span><span class="peq">te quedan</span></div>
+      <div class="m"><div class="fila"><span>🔥 Calorías <b>1.240</b> / 2.450</span><b>1.210</b></div><div class="barrita"><div style="width:51%;background:#f5f7ff"></div></div></div>
+      <div class="m"><div class="fila"><span>🥩 Proteína <b>80</b> / 175 g</span><b>95 g</b></div><div class="barrita"><div style="width:46%;background:#22d3ee"></div></div></div>
+      <div class="m"><div class="fila"><span>🍚 Hidratos <b>150</b> / 290 g</span><b>140 g</b></div><div class="barrita"><div style="width:52%;background:#a3e635"></div></div></div>
+      <div class="m"><div class="fila"><span>🥑 Grasas <b>38</b> / 70 g</span><b>32 g</b></div><div class="barrita"><div style="width:54%;background:#f472b6"></div></div></div>
+      <div class="objetivo"><span>Objetivo: definición · 2.450 kcal</span><b data-calc>⚙️ Ajustar</b></div>
+    </div>
+    <div class="seg"><button class="on" data-g="com" data-v="hoy">Hoy</button><button data-g="com" data-v="semana">Semana y compra</button><button data-g="com" data-v="recetas">Recetas</button></div>
+
+    <div data-p="com" data-v="hoy">
+      <div class="card">
+        <div class="momento"><div class="t">☕ Desayuno</div>
+          <div class="item hecho"><span>Avena con plátano · 520 kcal</span><button class="tick on" data-t>✓ Comido</button></div></div>
+        <div class="momento"><div class="t">🍽️ Comida</div>
+          <div class="item"><span>Pollo con arroz · 780 kcal <span class="peq">(del plan)</span></span><button class="tick" data-t>Comido</button></div>
+          <span class="mas">+ Añadir otra cosa</span></div>
+        <div class="momento"><div class="t">🌙 Cena</div>
+          <div class="item"><span>Tortilla y ensalada · 540 kcal <span class="peq">(del plan)</span></span><button class="tick" data-t>Comido</button></div></div>
+        <div class="momento"><div class="t">🍎 Snacks</div><span class="mas">+ Añadir</span></div>
+      </div>
+      <div class="card"><div class="fila"><div><h3>💧 Agua</h3><div class="vasos"><i class="l"></i><i class="l"></i><i class="l"></i><i></i><i></i><i></i></div></div><button class="tick">+1 vaso</button></div></div>
+      <div class="card"><div class="fila"><div><h3>💊 Suplementos <span class="nuevo">NUEVO</span></h3><div class="peq">Creatina 5 g · Proteína 30 g</div></div><button class="tick" data-t>Tomados</button></div></div>
     </div>
 
-    <div data-com-panel="hoy">
-      <div class="card">
-        <div class="fila"><span class="peq">Objetivo del día</span><b>2.450 kcal</b></div>
-        <div class="fila" style="margin-top:6px"><span class="peq">Llevas hoy</span><b>1.240 kcal</b></div>
-        <div style="height:8px;border-radius:999px;background:rgba(255,255,255,.08);margin-top:10px;overflow:hidden"><div style="width:51%;height:100%;background:var(--cyan)"></div></div>
-      </div>
-      <div class="card"><h3>📅 Tu plan para hoy</h3><div class="peq">Pollo con arroz · Yogur con fruta</div><button class="boton sec" style="margin-top:8px">Apuntar todo</button></div>
-      <div class="card"><h3>Lo que has comido</h3><div class="peq">Desayuno · Comida · Cena · Snacks</div></div>
-      <div class="card"><h3>💧 Agua</h3><div class="peq">3 de 6 vasos</div></div>
+    <div data-p="com" data-v="semana" class="oculto">
+      <div class="chips"><span class="chip on">L</span><span class="chip">M</span><span class="chip">X</span><span class="chip">J</span><span class="chip">V</span><span class="chip">S</span><span class="chip">D</span></div>
+      <div class="card"><h3>Lunes</h3><div class="peq">Avena · Pollo con arroz · Tortilla · 1.840 kcal</div><span class="mas">✏️ Cambiar comidas</span></div>
+      <div class="card"><h3>🛒 Lista de la compra</h3><div class="peq">Sale sola del plan de la semana: pollo 1,2 kg, arroz 500 g, huevos 12…</div><button class="boton sec">Ver lista</button></div>
     </div>
 
-    <div data-com-panel="planificar" class="oculto">
-      <div class="card"><h3>📋 Plan de la semana</h3><div class="peq">Cada día, qué vas a comer</div></div>
-      <div class="card"><h3>🥫 Recetas</h3><div class="peq">Tus recetas y "¿qué tengo en casa?"</div></div>
-      <div class="card"><h3>🛒 Lista de la compra</h3><div class="peq">Lo que te falta para el plan</div></div>
+    <div data-p="com" data-v="recetas" class="oculto">
+      <button class="boton sec" style="margin-top:0;margin-bottom:9px">🥫 ¿Qué tengo en casa?</button>
+      <div class="card"><h3>Pollo con arroz</h3><div class="peq">780 kcal · 55 g proteína</div></div>
+      <div class="card"><h3>Avena con plátano</h3><div class="peq">520 kcal · 22 g proteína</div></div>
+      <div class="peq">+ Crear receta</div>
     </div>
 
-    <div data-com-panel="calorias" class="oculto">
-      <div class="card">
-        <h3>🧮 Calculadora</h3>
-        <div class="peq">Pon tus datos una vez y te dice cuántas kcal necesitas al día.</div>
-        <button class="boton" style="margin-top:8px">Calcular ahora</button>
-      </div>
-      <div class="card">
-        <div class="fila"><span class="peq">Tu objetivo guardado</span><b>2.450 kcal/día</b></div>
-        <div class="peq" style="margin-top:6px">Se guarda hasta que lo cambies. Lo usan el diario y el plan.</div>
-        <button class="boton sec" style="margin-top:8px">Cambiar objetivo</button>
-      </div>
+    <div data-hoja-calc class="card oculto" style="border-color:var(--cyan)">
+      <h3>⚙️ Tus calorías y macros</h3>
+      <div class="peq" style="margin-bottom:6px">La calculadora que antes estaba en Extras. La usas una vez y el resultado se queda arriba.</div>
+      <div class="chips"><span class="chip on">Definición</span><span class="chip">Mantener</span><span class="chip">Volumen</span></div>
+      <div class="fila"><span class="peq">Peso actual / objetivo</span><b>78,4 → 75 kg</b></div>
+      <div class="fila" style="margin-top:4px"><span class="peq">Resultado</span><b>2.450 kcal</b></div>
+      <div class="card" style="margin-top:8px;background:var(--card2)"><b style="font-size:12.5px">🔬 Ajuste con tus datos reales</b><div class="peq">Con 14 días de diario y de peso, te ajusto las kcal a tu gasto real.</div></div>
+      <button class="boton" data-cerrar>Guardar</button>
     </div>
+  </div>
+
+  <!-- PROGRESO -->
+  <div class="contenido oculto" data-pantalla="progreso">
+    <div class="cabecera">📊 Progreso</div>
+    <div class="card"><div class="peq">⚖️ Peso corporal</div><div class="grande">78,4 kg</div><div class="peq">Hace 1 semana: 79,1 kg · −0,7 kg</div>
+      <svg viewBox="0 0 300 56" width="100%" height="56" style="margin-top:6px"><polyline fill="none" stroke="#2dd4bf" stroke-width="3" points="0,16 45,20 90,18 135,28 180,26 225,36 270,38 300,42"/></svg>
+      <button class="boton">+ Apuntar peso de hoy</button></div>
+    <div class="card"><div class="fila"><span class="peq">🔥 Racha</span><b>2 semanas</b></div><div class="fila" style="margin-top:5px"><span class="peq">📆 Esta semana</span><b>1 de 3 días</b></div></div>
+    <div class="chips"><span class="chip on" data-g="pro" data-v="cal">📅 Calendario</span><span class="chip" data-g="pro" data-v="ana">📈 Análisis</span><span class="chip" data-g="pro" data-v="cue">📏 Cuerpo</span><span class="chip" data-g="pro" data-v="log">🏅 Logros</span></div>
+    <div data-p="pro" data-v="cal" class="card"><h3>📅 Noviembre</h3><div class="peq">Entrenos en color y cardio con punto verde.</div></div>
+    <div data-p="pro" data-v="ana" class="card oculto"><h3>📈 Series efectivas por semana</h3><div class="barras"><div style="height:40%"></div><div style="height:60%"></div><div style="height:50%"></div><div style="height:80%"></div></div><div class="peq" style="margin-top:6px">Y volumen, progreso por ejercicio y objetivos.</div></div>
+    <div data-p="pro" data-v="cue" class="card oculto"><h3>📏 Medidas</h3><div class="peq">Cintura, pecho, brazo… y "Tu día": sueño, energía, pasos.</div></div>
+    <div data-p="pro" data-v="log" class="card oculto"><h3>🏅 Logros (4/12)</h3></div>
   </div>
 
   <!-- DIANA -->
   <div class="contenido oculto" data-pantalla="diana">
     <div class="cabecera">🎯 Diana</div>
-    <div class="card"><h3>Puntos débiles</h3><div class="peq">Gemelo: intermedio · Hombro: débil</div></div>
-    <div class="card"><h3>Consejos para tu hombro</h3><div class="peq">Trabaja la lateral con poco peso y más repeticiones…</div></div>
+    <div class="card"><h3>Puntos débiles</h3><div class="peq">Hombro: débil · Gemelo: intermedio</div></div>
+    <div class="card"><h3>💡 Cómo mejorar tu hombro</h3><div class="peq">Lateral con poco peso y más repeticiones…</div></div>
   </div>
 
   <!-- HERRAMIENTAS -->
   <div class="contenido oculto" data-pantalla="herramientas">
     <div class="cabecera">🧰 Herramientas</div>
-    <div class="card"><h3>🧮 1RM estimado</h3><div class="peq">Calcula tu máximo a partir de una serie</div></div>
+    <div class="card"><h3>🧮 1RM estimado</h3><div class="peq">Tu máximo a partir de una serie</div></div>
     <div class="card"><h3>🏋️ Discos</h3><div class="peq">Qué discos poner en cada lado</div></div>
-    <div class="card"><h3>💊 Suplementos</h3><div class="peq">Tu suplementación recomendada</div></div>
-    <div class="card"><h3>📖 Glosario de técnicas</h3><div class="peq">Qué es un top set, back-off, drop set…</div></div>
+    <div class="card"><h3>💊 Mis suplementos</h3><div class="peq">Dosis y notas de cada uno (para editarlos)</div></div>
+    <div class="card"><h3>📖 Glosario de técnicas</h3><div class="peq">Top set, back-off, drop set…</div></div>
   </div>
 
-  <nav class="nav" data-nav>
-    <button class="on" data-ir="entreno"><span>🏋️</span>Entreno</button>
-    <button data-ir="progreso"><span>📊</span>Progreso</button>
-    <button data-ir="comida"><span>🍽️</span>Comida</button>
-    <button data-ir="diana"><span>🎯</span>Diana</button>
-    <button data-ir="herramientas"><span>🧰</span>Herramientas</button>
-  </nav>
+  <nav class="nav" data-nav></nav>
 </div>
+
+<div class="explica" data-explica></div>
+
 <script>
   const $ = (q, r = document) => r.querySelector(q), $$ = (q, r = document) => [...r.querySelectorAll(q)];
-  $$('[data-ir]').forEach((b) => b.onclick = () => {
-    $$('[data-ir]').forEach((x) => x.classList.toggle('on', x === b));
-    $$('[data-pantalla]').forEach((p) => p.classList.toggle('oculto', p.dataset.pantalla !== b.dataset.ir));
+  const NAV = {
+    A: [['entreno', '🏋️', 'Entreno'], ['comida', '🍽️', 'Comida'], ['progreso', '📊', 'Progreso'], ['diana', '🎯', 'Diana'], ['herramientas', '🧰', 'Herram.']],
+    B: [['hoy', '☀️', 'Hoy'], ['entreno', '🏋️', 'Entreno'], ['comida', '🍽️', 'Comida'], ['progreso', '📊', 'Progreso'], ['diana', '🎯', 'Diana']],
+  };
+  const TEXTO = {
+    A: 'Opción A: cinco pestañas. Herramientas tiene su propia pestaña.',
+    B: 'Opción B: la primera pestaña, "Hoy", junta todo lo del día (entreno, cardio, comida, agua, suplementos, peso y un consejo de Diana). Herramientas pasa al icono 🧰 de arriba.',
+  };
+  const ir = (id) => {
+    $$('[data-pantalla]').forEach((p) => p.classList.toggle('oculto', p.dataset.pantalla !== id));
+    $$('[data-nav] button').forEach((b) => b.classList.toggle('on', b.dataset.ir === id));
+  };
+  const opcion = (o) => {
+    $$('[data-opcion]').forEach((b) => b.classList.toggle('on', b.dataset.opcion === o));
+    $('[data-nav]').innerHTML = NAV[o].map((t) => '<button data-ir="' + t[0] + '"><span>' + t[1] + '</span>' + t[2] + '</button>').join('');
+    $$('[data-nav] button').forEach((b) => b.onclick = () => ir(b.dataset.ir));
+    $('[data-herr]').classList.toggle('oculto', o !== 'B');
+    $('[data-explica]').textContent = TEXTO[o];
+    ir(NAV[o][0][0]);
+  };
+  $$('[data-opcion]').forEach((b) => b.onclick = () => opcion(b.dataset.opcion));
+  $('[data-herr]').onclick = () => ir('herramientas');
+  // segmentos y chips (grupo + valor)
+  $$('[data-g]').forEach((b) => b.onclick = () => {
+    const g = b.dataset.g;
+    $$('[data-g="' + g + '"]').forEach((x) => x.classList.toggle('on', x === b));
+    $$('[data-p="' + g + '"]').forEach((p) => p.classList.toggle('oculto', p.dataset.v !== b.dataset.v));
   });
-  $$('[data-sub]').forEach((b) => b.onclick = () => {
-    $$('[data-sub]').forEach((x) => x.classList.toggle('on', x === b));
-    $$('[data-sub-panel]').forEach((p) => p.classList.toggle('oculto', p.dataset.subPanel !== b.dataset.sub));
-  });
-  $$('[data-p]').forEach((c) => c.onclick = () => {
-    $$('[data-p]').forEach((x) => x.classList.toggle('on', x === c));
-    $$('[data-prog-panel]').forEach((p) => p.classList.toggle('oculto', p.dataset.progPanel !== c.dataset.p));
-  });
-  $$('[data-com]').forEach((c) => c.onclick = () => {
-    $$('[data-com]').forEach((x) => x.classList.toggle('on', x === c));
-    $$('[data-com-panel]').forEach((p) => p.classList.toggle('oculto', p.dataset.comPanel !== c.dataset.com));
-  });
+  // ticks
+  $$('[data-t]').forEach((b) => b.onclick = () => { b.classList.toggle('on'); b.closest('.item') && b.closest('.item').classList.toggle('hecho'); });
+  // hoja de la calculadora
+  $('[data-calc]').onclick = () => $('[data-hoja-calc]').classList.remove('oculto');
+  $('[data-cerrar]').onclick = () => $('[data-hoja-calc]').classList.add('oculto');
+  opcion('A');
 </script>
 </body>
 </html>
