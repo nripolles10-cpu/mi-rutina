@@ -92,6 +92,22 @@
   .video { height:140px; border-radius:14px; background:linear-gradient(135deg,#1c2a4d,#0b1224); display:flex; align-items:center; justify-content:center; font-size:36px; border:1px solid var(--line); margin-bottom:8px; }
   .barras { display:flex; align-items:flex-end; gap:6px; height:70px; margin-top:8px; }
   .barras div { flex:1; background:var(--cyan); border-radius:6px 6px 2px 2px; opacity:.85; }
+  .agua { cursor:pointer; user-select:none; }
+  .agua:active { transform:scale(.99); }
+  .botellas { display:flex; gap:5px; flex-wrap:wrap; justify-content:flex-end; max-width:150px; }
+  .botella { position:relative; width:20px; height:30px; border-radius:6px 6px 7px 7px; border:1.5px solid var(--blue); overflow:hidden; }
+  .botella::before { content:""; position:absolute; top:-5px; left:6px; width:6px; height:5px; border:1.5px solid var(--blue); border-bottom:0; border-radius:2px 2px 0 0; }
+  .botella i { position:absolute; left:0; right:0; bottom:0; background:linear-gradient(180deg,rgba(45,212,191,.7),rgba(56,189,248,.95)); display:block; }
+  .agua.cumplido { border-color:rgba(163,230,53,.6); }
+  .ajuste-agua { display:none; margin-top:10px; padding-top:10px; border-top:1px dashed var(--amber); }
+  body.edicion .ajuste-agua { display:block; }
+  .stepper { display:flex; align-items:center; gap:8px; }
+  .stepper button { width:34px; height:34px; border-radius:11px; border:1.5px solid var(--amber); background:transparent; color:var(--amber); font-size:17px; font-weight:900; cursor:pointer; }
+  .stepper b { min-width:70px; text-align:center; }
+  .sup .detalle { display:none; margin-top:8px; }
+  .sup.abierto .detalle { display:block; }
+  .dosis { display:flex; justify-content:space-between; font-size:12.5px; padding:6px 0; border-bottom:1px dashed var(--line); }
+  .dosis:last-child { border-bottom:0; }
   .toast { position:absolute; left:50%; bottom:78px; transform:translateX(-50%); background:#1e293b; border:1px solid var(--line); padding:8px 14px; border-radius:999px; font-size:12px; font-weight:800; opacity:0; transition:opacity .25s; pointer-events:none; white-space:nowrap; }
   .toast.ver { opacity:1; }
   .oculto { display:none !important; }
@@ -162,8 +178,16 @@
         <div class="momento"><div class="t">🌙 Cena</div><div class="item"><span>Tortilla y ensalada · 540 kcal</span><button class="tick" data-t>Comido</button></div></div>
         <div class="momento"><div class="t">🍎 Snacks</div><span class="mas">+ Añadir</span></div>
       </div>
-      <div class="card"><div class="fila"><div><h3>💧 Agua</h3><div class="vasos"><i class="l"></i><i class="l"></i><i class="l"></i><i></i><i></i><i></i></div></div><button class="tick">+1 vaso</button></div></div>
-      <div class="card"><div class="fila"><div><h3>💊 Suplementos</h3><div class="peq">Creatina 5 g · Proteína 30 g</div></div><button class="tick" data-t>Tomados</button></div></div>
+      <div class="card agua" data-agua>
+        <h3>💧 Agua · <span data-agua-txt></span></h3>
+        <div class="botellas" data-botellas style="max-width:none;justify-content:flex-start;margin:8px 0 6px"></div>
+        <div class="peq" data-agua-ayuda>Toca para sumar una botella de 1 L</div>
+        <div class="ajuste-agua" data-ajuste-agua>
+          <div class="fila"><span class="peq" style="color:var(--amber);font-weight:800">Botellas al día (1 L cada una)</span>
+            <div class="stepper"><button data-meta="-1">−</button><b data-meta-txt></b><button data-meta="1">+</button></div></div>
+          <div class="fila" style="margin-top:8px"><span class="peq">¿Te has pasado?</span><button class="tick" data-quitar style="border-color:var(--amber);color:var(--amber)">Quitar una botella</button></div>
+        </div>
+      </div>
     </div>
     <div data-p="com" data-v="semana" class="oculto">
       <div class="chips"><span class="chip on">L</span><span class="chip">M</span><span class="chip">X</span><span class="chip">J</span><span class="chip">V</span><span class="chip">S</span><span class="chip">D</span></div>
@@ -189,7 +213,15 @@
     <div class="cabecera">🧰 Herramientas</div>
     <div class="card"><h3>🧮 1RM estimado</h3><div class="peq">Tu máximo a partir de una serie</div></div>
     <div class="card"><h3>🏋️ Discos</h3><div class="peq">Qué discos poner en cada lado</div></div>
-    <div class="card"><h3>💊 Mis suplementos</h3><div class="peq">Dosis y notas de cada uno</div></div>
+    <div class="card sup" data-sup>
+      <div class="fila"><div><h3>💊 Mis suplementos</h3><div class="peq">Qué tomas y cuánto. Solo para consultar.</div></div><span class="peq" data-sup-flecha>▼</span></div>
+      <div class="detalle">
+        <div class="dosis"><span>Creatina</span><b>5 g al día · a cualquier hora</b></div>
+        <div class="dosis"><span>Proteína en polvo</span><b>30 g · si no llegas con la comida</b></div>
+        <div class="dosis"><span>Cafeína</span><b>Antes de entrenar (opcional)</b></div>
+        <div class="peq" style="margin-top:8px">Ejemplo: en la app salen los tuyos. Con el candado abierto los editas.</div>
+      </div>
+    </div>
     <div class="card"><h3>📖 Glosario de técnicas</h3><div class="peq">Top set, back-off, drop set…</div></div>
   </div>
 
@@ -304,6 +336,24 @@
     $('[data-aviso]').classList.toggle('oculto', !on);
     toast(on ? '🔓 Puedes editar' : '🔒 Bloqueado');
   };
+  // Agua: tocar la tarjeta suma 1 botella (1 L). Con el candado abierto cambias cuántas quieres al día.
+  let agua = 2, meta = 3;
+  const pintaAgua = () => {
+    const total = Math.max(meta, agua);
+    $('[data-botellas]').innerHTML = Array.from({ length: total }, (_, i) => '<span class="botella"><i style="height:' + (i < agua ? 100 : 0) + '%"></i></span>').join('');
+    $('[data-agua-txt]').textContent = agua + ' de ' + meta + ' L' + (agua >= meta ? ' ✓' : '');
+    $('[data-agua-ayuda]').textContent = agua >= meta ? '¡Objetivo cumplido! Toca para sumar otra' : 'Toca para sumar una botella de 1 L · te faltan ' + (meta - agua) + ' L';
+    $('[data-meta-txt]').textContent = meta + (meta === 1 ? ' botella' : ' botellas');
+    $('[data-agua]').classList.toggle('cumplido', agua >= meta);
+  };
+  $('[data-agua]').onclick = (e) => {
+    if (e.target.closest('[data-ajuste-agua]')) return;
+    agua += 1; pintaAgua(); toast('💧 +1 botella · ' + agua + ' de ' + meta + ' L');
+  };
+  $$('[data-meta]').forEach((b) => b.onclick = () => { meta = Math.min(8, Math.max(1, meta + Number(b.dataset.meta))); pintaAgua(); });
+  $('[data-quitar]').onclick = () => { agua = Math.max(0, agua - 1); pintaAgua(); };
+  pintaAgua();
+  $('[data-sup]').onclick = () => { const c = $('[data-sup]'); c.classList.toggle('abierto'); $('[data-sup-flecha]').textContent = c.classList.contains('abierto') ? '▲' : '▼'; };
   listaDias();
 </script>
 </body>
