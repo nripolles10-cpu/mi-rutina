@@ -131,10 +131,41 @@
   <!-- COMIDA -->
   <div class="contenido oculto" data-pantalla="comida">
     <div class="cabecera">🍽️ Comida</div>
-    <div class="card"><h3>📅 Tu plan para hoy</h3><div class="peq">Pollo con arroz · Yogur con fruta</div><button class="boton sec" style="margin-top:8px">Apuntar todo</button></div>
-    <div class="chips"><span class="chip on">Diario</span><span class="chip">Agua</span><span class="chip">Recetas</span><span class="chip">Plan</span><span class="chip">Compra</span><span class="chip">🥗 Calculadora</span><span class="chip">💊 Suplementos</span></div>
-    <div class="card"><h3>Lo que has comido hoy</h3><div class="peq">Desayuno · Comida · Cena · Snacks</div></div>
-    <div class="card"><h3>💧 Agua</h3><div class="peq">3 de 6 vasos</div></div>
+    <div class="seg" role="tablist">
+      <button class="on" data-com="hoy">Hoy</button>
+      <button data-com="planificar">Planificar</button>
+      <button data-com="calorias">Mis calorías</button>
+    </div>
+
+    <div data-com-panel="hoy">
+      <div class="card">
+        <div class="fila"><span class="peq">Objetivo del día</span><b>2.450 kcal</b></div>
+        <div class="fila" style="margin-top:6px"><span class="peq">Llevas hoy</span><b>1.240 kcal</b></div>
+        <div style="height:8px;border-radius:999px;background:rgba(255,255,255,.08);margin-top:10px;overflow:hidden"><div style="width:51%;height:100%;background:var(--cyan)"></div></div>
+      </div>
+      <div class="card"><h3>📅 Tu plan para hoy</h3><div class="peq">Pollo con arroz · Yogur con fruta</div><button class="boton sec" style="margin-top:8px">Apuntar todo</button></div>
+      <div class="card"><h3>Lo que has comido</h3><div class="peq">Desayuno · Comida · Cena · Snacks</div></div>
+      <div class="card"><h3>💧 Agua</h3><div class="peq">3 de 6 vasos</div></div>
+    </div>
+
+    <div data-com-panel="planificar" class="oculto">
+      <div class="card"><h3>📋 Plan de la semana</h3><div class="peq">Cada día, qué vas a comer</div></div>
+      <div class="card"><h3>🥫 Recetas</h3><div class="peq">Tus recetas y "¿qué tengo en casa?"</div></div>
+      <div class="card"><h3>🛒 Lista de la compra</h3><div class="peq">Lo que te falta para el plan</div></div>
+    </div>
+
+    <div data-com-panel="calorias" class="oculto">
+      <div class="card">
+        <h3>🧮 Calculadora</h3>
+        <div class="peq">Pon tus datos una vez y te dice cuántas kcal necesitas al día.</div>
+        <button class="boton" style="margin-top:8px">Calcular ahora</button>
+      </div>
+      <div class="card">
+        <div class="fila"><span class="peq">Tu objetivo guardado</span><b>2.450 kcal/día</b></div>
+        <div class="peq" style="margin-top:6px">Se guarda hasta que lo cambies. Lo usan el diario y el plan.</div>
+        <button class="boton sec" style="margin-top:8px">Cambiar objetivo</button>
+      </div>
+    </div>
   </div>
 
   <!-- DIANA -->
@@ -149,6 +180,7 @@
     <div class="cabecera">🧰 Herramientas</div>
     <div class="card"><h3>🧮 1RM estimado</h3><div class="peq">Calcula tu máximo a partir de una serie</div></div>
     <div class="card"><h3>🏋️ Discos</h3><div class="peq">Qué discos poner en cada lado</div></div>
+    <div class="card"><h3>💊 Suplementos</h3><div class="peq">Tu suplementación recomendada</div></div>
     <div class="card"><h3>📖 Glosario de técnicas</h3><div class="peq">Qué es un top set, back-off, drop set…</div></div>
   </div>
 
@@ -173,6 +205,10 @@
   $$('[data-p]').forEach((c) => c.onclick = () => {
     $$('[data-p]').forEach((x) => x.classList.toggle('on', x === c));
     $$('[data-prog-panel]').forEach((p) => p.classList.toggle('oculto', p.dataset.progPanel !== c.dataset.p));
+  });
+  $$('[data-com]').forEach((c) => c.onclick = () => {
+    $$('[data-com]').forEach((x) => x.classList.toggle('on', x === c));
+    $$('[data-com-panel]').forEach((p) => p.classList.toggle('oculto', p.dataset.comPanel !== c.dataset.com));
   });
 </script>
 </body>
