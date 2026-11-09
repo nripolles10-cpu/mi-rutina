@@ -5,7 +5,7 @@ import { T } from '../data/theme.js';
 import { Native } from '../native/index.js';
 import { fmt, uid } from '../utils/format.js';
 import { effNutri, entryTotals } from '../utils/health.js';
-import { recetasConLoQueTienes, sugerirParaFaltan, consejosDebiles, CARDIO_OBJETIVOS_SIN_IA, CARDIO_PRESETS, cardioPresetParaGuardar, resumenSemanaLocal, frasesResumen } from '../utils/sinIA.js';
+import { recetasConLoQueTienes, sugerirParaFaltan, consejosDebiles, CARDIO_OBJETIVOS_SIN_IA, CARDIO_PRESETS, cardioPresetParaGuardar } from '../utils/sinIA.js';
 
 const txtPeq = { color: T.muted, fontSize: 12, lineHeight: 1.5 };
 const caja = { background: 'rgba(7,11,22,0.7)', border: '1px solid rgba(140,170,255,0.18)', borderRadius: 14, padding: 12 };
@@ -129,21 +129,6 @@ export function ConsejosDianaCard() {
         </div>
       ))}
       {lista.length > 0 && <div className="font-body" style={{ color: T.dim, fontSize: 11, marginTop: 10 }}>Son recomendaciones: tú decides si las aplicas en tu rutina.</div>}
-    </Card>
-  );
-}
-
-/* ---------- 4) Resumen de la semana con tus cifras (sin IA) ---------- */
-
-export function RepasoSemanalCard() {
-  const { state } = useGym();
-  const r = resumenSemanaLocal(state, new Date());
-  const frases = frasesResumen(r);
-  return (
-    <Card style={{ marginBottom: 14 }}>
-      <div className="font-body" style={{ color: T.text, fontWeight: 800, fontSize: 14, marginBottom: 8 }}>📋 Esta semana</div>
-      {frases.map((f, i) => <div key={i} className="font-body" style={{ ...txtPeq, color: T.text, marginBottom: 6 }}>{f}</div>)}
-      <div className="font-body" style={{ color: T.dim, fontSize: 11, marginTop: 6 }}>Cifras calculadas con lo que tienes apuntado. Empieza el lunes.</div>
     </Card>
   );
 }

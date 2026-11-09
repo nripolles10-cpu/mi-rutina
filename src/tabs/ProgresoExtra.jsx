@@ -3,9 +3,9 @@ import { LineChartSVG } from '../components/LineChart.jsx';
 import { Card, Chip, Label, MiniBtn, NumInput, SectionTitle, SupRow, useGym } from '../components/ui.jsx';
 import { T } from '../data/theme.js';
 import { ZONAS_DEFECTO, UNIDADES_MEDIDA, validarNombreZona } from '../utils/medidasZonas.js';
-import { addDays, fmt, fmtDateLong, fmtDateShort, fromYmd, monthLabel, ymd } from '../utils/format.js';
+import { fmt, fmtDateLong, fmtDateShort, fromYmd, monthLabel, ymd } from '../utils/format.js';
 import { fechasHechasCardio } from '../utils/cardio.js';
-import { calendarioMes, logros, porSemana, rachaDias, rachaSemanas, resumenSemana, semanaDe, sesionesDe } from '../utils/entreno.js';
+import { COMBOS_DIA, calendarioMes, comboDelDia, logros, rachaDias, rachaSemanas, sesionesDe } from '../utils/entreno.js';
 import { EditRecordModal, RANGOS } from './ProgresoTab.jsx';
 
 /* =========================================================================
@@ -13,10 +13,10 @@ import { EditRecordModal, RANGOS } from './ProgresoTab.jsx';
    ========================================================================= */
 
 // Apartados de Progreso, por debajo del peso, la racha y el resumen (Logros el último)
-export const SECCIONES_PROGRESO = [['calendario', '📅 Calendario'], ['analisis', '📈 Análisis'], ['cuerpo', '📏 Cuerpo'], ['logros', '🏅 Logros']];
+export const SECCIONES_PROGRESO = [['analisis', '📈 Análisis'], ['cuerpo', '📏 Cuerpo'], ['logros', '🏅 Logros']];
 const DIAS_CORTOS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 
-/* ---------- Calendario, rachas, volumen y resumen semanal ---------- */
+/* ---------- Racha y calendario ---------- */
 
 export function RachaCard({ sesiones }) {
   const { state } = useGym();
@@ -41,15 +41,18 @@ export function RachaCard({ sesiones }) {
   );
 }
 
-export function CalendarioCard({ sesiones, cardioFechas = {} }) {
+export function CalendarioCard({ sesiones, cardioFechas = {}, entrenoFechas = {}, movilidadFechas = {} }) {
   const hoy = ymd(new Date());
   const [mes, setMes] = useState(hoy.slice(0, 7));
   const [sel, setSel] = useState(null);
-  const celdas = useMemo(() => calendarioMes(mes, sesiones, cardioFechas), [mes, sesiones, cardioFechas]);
-  const cardioDelMes = celdas.filter((c) => c.delMes && c.cardio).length;
+  const celdas = useMemo(() => calendarioMes(mes, sesiones, cardioFechas, { entrenoFechas, movilidadFechas }), [mes, sesiones, cardioFechas, entrenoFechas, movilidadFechas]);
   const cambiaMes = (d) => { const f = fromYmd(mes + '-01'); f.setMonth(f.getMonth() + d); setMes(ymd(f).slice(0, 7)); setSel(null); };
-  const sesSel = sel ? sesiones.find((s) => s.fecha === sel) : null;
-  const delMes = sesiones.filter((s) => s.fecha.slice(0, 7) === mes);
+  const delMes = celdas.filter((c) => c.delMes);
+  const cuenta = (k) => delMes.filter((c) => c[k]).length;
+  const completos = delMes.filter((c) => c.entreno && c.cardio && c.movilidad).length;
+  const celSel = sel ? celdas.find((c) => c.fecha === sel) : null;
+  const comboSel = celSel ? comboDelDia(celSel) : null;
+  const plural = (n, uno, varios) => n + ' ' + (n === 1 ? uno : varios);
   return (
     <Card style={{ marginBottom: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 10 }}>
@@ -59,161 +62,64 @@ export function CalendarioCard({ sesiones, cardioFechas = {} }) {
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
         {DIAS_CORTOS.map((d) => <div key={d} className="font-body" style={{ textAlign: 'center', color: T.dim, fontSize: 10.5, fontWeight: 800 }}>{d}</div>)}
-        {celdas.map((c) => (
-          <button key={c.fecha} data-testid={'cal-' + c.fecha} onClick={() => setSel(c.sesion ? c.fecha : null)} className="font-body" style={{
-            position: 'relative', aspectRatio: '1 / 1', borderRadius: 9, cursor: c.sesion ? 'pointer' : 'default', fontSize: 12, fontWeight: 700, padding: 0,
-            color: c.delMes ? '#FFFFFF' : 'rgba(255,255,255,0.25)',
-            background: c.sesion ? 'rgba(var(--ac-rgb),' + (0.2 + c.intensidad * 0.6).toFixed(2) + ')' : 'rgba(255,255,255,0.03)',
-            border: c.fecha === hoy ? '1.5px solid #FFFFFF' : sel === c.fecha ? '1.5px solid ' + T.cyan : '1px solid rgba(140,170,255,0.12)',
-          }}>
-            {c.dia}
-            {c.cardio && <span aria-label="Cardio hecho" title="Cardio hecho" style={{ position: 'absolute', right: 3, bottom: 3, width: 6, height: 6, borderRadius: '50%', background: '#A3E635' }} />}
-          </button>
+        {celdas.map((c) => {
+          const combo = comboDelDia(c);
+          return (
+            <button key={c.fecha} data-testid={'cal-' + c.fecha} data-combo={combo ? combo.k : ''} title={combo ? combo.label : ''}
+              onClick={() => setSel(combo && sel !== c.fecha ? c.fecha : null)} className="font-body" style={{
+                position: 'relative', aspectRatio: '1 / 1', borderRadius: 9, cursor: combo ? 'pointer' : 'default', fontSize: 12, fontWeight: 800, padding: 0,
+                color: !c.delMes ? 'rgba(255,255,255,0.25)' : combo ? combo.fg : '#FFFFFF',
+                background: combo ? combo.bg : 'rgba(255,255,255,0.03)',
+                opacity: c.delMes ? 1 : 0.45,
+                border: c.fecha === hoy ? '1.5px solid #FFFFFF' : sel === c.fecha ? '1.5px solid ' + T.cyan : '1px solid rgba(140,170,255,0.12)',
+              }}>
+              {c.dia}
+              {combo && combo.fuerte && <span aria-hidden="true" style={{ position: 'absolute', right: 2, top: 0, fontSize: 9, fontWeight: 900 }}>✓</span>}
+            </button>
+          );
+        })}
+      </div>
+      <div data-testid="cal-leyenda" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px 10px', marginTop: 10 }}>
+        {COMBOS_DIA.map((x) => (
+          <div key={x.k} className="font-body" style={{ display: 'flex', alignItems: 'center', gap: 6, color: T.muted, fontSize: 11 }}>
+            <span style={{ width: 12, height: 12, borderRadius: 4, background: x.bg, flexShrink: 0, border: '1px solid rgba(255,255,255,0.15)' }} />{x.label}
+          </div>
         ))}
       </div>
-      <div className="font-body" style={{ color: T.dim, fontSize: 11, marginTop: 8, textAlign: 'center' }}>
-        {delMes.length} día{delMes.length === 1 ? '' : 's'} entrenados · {fmt(delMes.reduce((a, s) => a + s.volumen, 0), 0)} kg en el mes · {cardioDelMes} día{cardioDelMes === 1 ? '' : 's'} de cardio (punto verde). Cuanto más intenso el color, más volumen. Toca un día para verlo.
+      <div className="font-body" data-testid="cal-resumen" style={{ color: T.dim, fontSize: 11, marginTop: 8, textAlign: 'center', lineHeight: 1.5 }}>
+        Este mes: {plural(cuenta('entreno'), 'día', 'días')} de entreno · {cuenta('cardio')} de cardio · {cuenta('movilidad')} de movilidad{completos ? ' · ' + plural(completos, 'día completo', 'días completos') + ' ✓' : ''}. Toca un día para verlo.
       </div>
-      {sesSel && (
+      {celSel && comboSel && (
         <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid rgba(140,170,255,0.14)' }}>
-          <div className="font-body" style={{ color: T.text, fontWeight: 800, fontSize: 13.5, textTransform: 'capitalize', marginBottom: 6 }}>{fmtDateLong(sesSel.fecha + 'T12:00:00')}</div>
-          {sesSel.ejercicios.map((e) => (
+          <div className="font-body" style={{ color: T.text, fontWeight: 800, fontSize: 13.5, textTransform: 'capitalize', marginBottom: 2 }}>{fmtDateLong(celSel.fecha + 'T12:00:00')}</div>
+          <div className="font-body" style={{ color: T.muted, fontSize: 12, marginBottom: 6 }}>{comboSel.label}</div>
+          {celSel.sesion && celSel.sesion.ejercicios.map((e) => (
             <SupRow key={e.id} label={e.nombre} value={fmt(e.volumen, 0) + ' kg'} />
           ))}
-          <SupRow label={'Total · ' + fmt(sesSel.series, 1) + ' series efectivas'} value={fmt(sesSel.volumen, 0) + ' kg'} highlight />
+          {celSel.sesion && <SupRow label={'Total · ' + fmt(celSel.sesion.series, 1) + ' series efectivas'} value={fmt(celSel.sesion.volumen, 0) + ' kg'} highlight />}
         </div>
       )}
     </Card>
   );
 }
 
-export function VolumenSemanasCard({ sesiones }) {
-  const semanas = porSemana(sesiones);
-  const lunesHoy = semanaDe(new Date());
-  const filas = [];
-  for (let i = 7; i >= 0; i--) { const k = ymd(addDays(fromYmd(lunesHoy), -7 * i)); filas.push({ k, ...(semanas[k] || { sesiones: 0, volumen: 0, series: 0 }) }); }
-  const max = Math.max(1, ...filas.map((f) => f.volumen));
-  return (
-    <Card style={{ marginBottom: 14 }}>
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 110 }}>
-        {filas.map((f) => (
-          <div key={f.k} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
-            <div className="font-body" style={{ color: T.muted, fontSize: 9.5, marginBottom: 3 }}>{f.volumen ? fmt(f.volumen / 1000, 1) + 't' : ''}</div>
-            <div style={{ width: '100%', height: Math.max(3, (f.volumen / max) * 80) + 'px', borderRadius: 6, background: f.k === lunesHoy ? T.grad : 'rgba(var(--ac-rgb),0.45)' }} />
-          </div>
-        ))}
-      </div>
-      <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
-        {filas.map((f) => <div key={f.k} className="font-body" style={{ flex: 1, textAlign: 'center', color: T.dim, fontSize: 9.5 }}>{fmtDateShort(f.k + 'T12:00:00').replace('.', '')}</div>)}
-      </div>
-      <div className="font-body" style={{ color: T.dim, fontSize: 11, marginTop: 8, textAlign: 'center' }}>Volumen (kg levantados) de las últimas 8 semanas, de lunes a domingo. t = toneladas.</div>
-    </Card>
-  );
-}
-
-function compara(a, b, d) {
-  if (a === null || a === undefined) return '—';
-  const base = fmt(a, d);
-  if (b === null || b === undefined || b === 0) return base;
-  const dif = a - b;
-  if (Math.abs(dif) < 1e-9) return base + ' (=)';
-  return base + ' (' + (dif > 0 ? '+' : '') + fmt(dif, d) + ')';
-}
-
-export function ResumenSemanalCard() {
-  const { state } = useGym();
-  const lunes = semanaDe(new Date());
-  const esta = resumenSemana(state, lunes);
-  const ant = resumenSemana(state, ymd(addDays(fromYmd(lunes), -7)));
-  return (
-    <Card style={{ marginBottom: 14 }}>
-      <div className="font-body" style={{ color: T.dim, fontSize: 11, marginBottom: 6 }}>Desde el lunes {fmtDateShort(lunes + 'T12:00:00')} · entre paréntesis, la diferencia con la semana pasada</div>
-      <SupRow label="🏋️ Días entrenados" value={compara(esta.sesiones, ant.sesiones, 0)} highlight />
-      <SupRow label="📦 Volumen (kg)" value={compara(Math.round(esta.volumen), Math.round(ant.volumen), 0)} />
-      <SupRow label="📊 Series efectivas" value={compara(esta.series, ant.series, 1)} />
-      <SupRow label="🏆 Récords" value={compara(esta.records, ant.records, 0)} />
-      <SupRow label="⚖️ Peso medio (kg)" value={compara(esta.pesoMedio, ant.pesoMedio, 1)} />
-      <SupRow label="👟 Pasos de media" value={compara(esta.pasosMedios === null ? null : Math.round(esta.pasosMedios), ant.pasosMedios === null ? null : Math.round(ant.pasosMedios), 0)} />
-      <SupRow label="😴 Sueño medio (1–5)" value={compara(esta.suenoMedio, ant.suenoMedio, 1)} />
-      <SupRow label="⚡ Energía media (1–5)" value={compara(esta.energiaMedia, ant.energiaMedia, 1)} />
-    </Card>
-  );
-}
+const aFechas = (lista) => { const o = {}; (lista || []).forEach((f) => { o[f] = true; }); return o; };
 
 export function CalendarioSec() {
   const { state } = useGym();
   const sesiones = useMemo(() => sesionesDe(state), [state.exercises]);
   const cardioFechas = useMemo(() => fechasHechasCardio(state.cardio), [state.cardio]);
+  const entrenoFechas = useMemo(() => aFechas(Object.keys(state.entrenosHechos || {})), [state.entrenosHechos]);
+  const movilidadFechas = useMemo(() => aFechas(state.extras && state.extras.movilidad && state.extras.movilidad.hechos), [state.extras]);
   return (
     <div>
-      <SectionTitle emoji="📅">Calendario de entrenamientos</SectionTitle>
-      <CalendarioCard sesiones={sesiones} cardioFechas={cardioFechas} />
-      <div className="font-body" style={{ color: T.dim, fontSize: 11, textAlign: 'center', marginBottom: 18, lineHeight: 1.5 }}>
-        Un día cuenta como entrenado cuando guardas el registro de algún ejercicio ("Guardar registro de hoy", "Terminar entreno" o el modo en vivo).
-      </div>
+      <SectionTitle emoji="📅">Calendario</SectionTitle>
+      <CalendarioCard sesiones={sesiones} cardioFechas={cardioFechas} entrenoFechas={entrenoFechas} movilidadFechas={movilidadFechas} />
     </div>
   );
 }
 
-/* ---------- Cuerpo: pasos, sueño y energía del día; medidas; fotos de progreso ---------- */
-
-function Escala({ valor, onChange, etiqueta, emojis }) {
-  return (
-    <div style={{ marginBottom: 12 }}>
-      <Label>{etiqueta}</Label>
-      <div style={{ display: 'flex', gap: 6 }}>
-        {[1, 2, 3, 4, 5].map((n) => (
-          <button key={n} onClick={() => onChange(valor === n ? null : n)} aria-label={etiqueta + ' ' + n} className="font-body" style={{
-            flex: 1, height: 44, borderRadius: 12, cursor: 'pointer', fontSize: 18,
-            border: '1.5px solid ' + (valor === n ? T.cyan : 'rgba(140,170,255,0.25)'), background: valor === n ? 'rgba(var(--ac-rgb),0.18)' : 'rgba(10,15,30,0.45)',
-          }}>{emojis[n - 1]}<div style={{ fontSize: 10, color: T.muted, fontWeight: 700 }}>{n}</div></button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-export function HoyCard() {
-  const { state, setRegistroDia } = useGym();
-  const hoy = ymd(new Date());
-  const [fecha, setFecha] = useState(hoy);
-  const r = (state.registro || {})[fecha] || {};
-  const objetivo = (state.formulario && state.formulario.objetivoPasosDiarios) || 10000;
-  const pct = r.pasos ? Math.min(100, (r.pasos / objetivo) * 100) : 0;
-  const ultimos = [];
-  for (let i = 6; i >= 0; i--) { const k = ymd(addDays(fromYmd(hoy), -i)); ultimos.push({ k, ...((state.registro || {})[k] || {}) }); }
-  return (
-    <Card style={{ marginBottom: 14 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 12 }}>
-        <MiniBtn title="Día anterior" onClick={() => setFecha(ymd(addDays(fromYmd(fecha), -1)))}>‹</MiniBtn>
-        <span className="font-body" style={{ color: '#E7EAF8', fontSize: 13, fontWeight: 800, textTransform: 'capitalize', minWidth: 160, textAlign: 'center' }}>{fecha === hoy ? 'Hoy · ' : ''}{fmtDateLong(fecha + 'T12:00:00')}</span>
-        <MiniBtn title="Día siguiente" disabled={fecha >= hoy} onClick={() => setFecha(ymd(addDays(fromYmd(fecha), 1)))}>›</MiniBtn>
-      </div>
-      <Label>👟 Pasos (apúntalos tú: la app no cuenta pasos)</Label>
-      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 6 }}>
-        <div style={{ width: 130 }}><NumInput value={r.pasos === undefined ? null : r.pasos} onChange={(v) => setRegistroDia(fecha, { pasos: v === null ? null : Math.max(0, Math.round(v)) })} placeholder="pasos" className="font-body inp" /></div>
-        <div className="font-body" style={{ color: T.muted, fontSize: 12 }}>Objetivo: {fmt(objetivo, 0)}<br /><span style={{ color: pct >= 100 ? '#A3E635' : T.dim }}>{r.pasos ? Math.round(pct) + ' %' + (pct >= 100 ? ' ✓' : '') : '—'}</span></div>
-      </div>
-      <div style={{ height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.08)', overflow: 'hidden', marginBottom: 14 }}>
-        <div style={{ width: pct + '%', height: '100%', background: pct >= 100 ? '#A3E635' : T.grad }} />
-      </div>
-      <Escala etiqueta="😴 Sueño (1 = fatal, 5 = genial)" valor={r.sueno || null} emojis={['😫', '😪', '😐', '🙂', '😴']} onChange={(v) => setRegistroDia(fecha, { sueno: v })} />
-      <Escala etiqueta="⚡ Energía (1 = sin fuerzas, 5 = a tope)" valor={r.energia || null} emojis={['🪫', '😮‍💨', '😐', '💪', '⚡']} onChange={(v) => setRegistroDia(fecha, { energia: v })} />
-      <div className="font-body" style={{ color: T.dim, fontSize: 11, marginBottom: 6 }}>Últimos 7 días</div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'auto repeat(7, 1fr)', gap: 4, alignItems: 'center' }}>
-        <span />
-        {ultimos.map((u) => <span key={u.k} className="font-body" style={{ textAlign: 'center', color: T.dim, fontSize: 10 }}>{DIAS_CORTOS[(fromYmd(u.k).getDay() + 6) % 7]}</span>)}
-        {[['👟', 'pasos', (v) => (v ? fmt(v / 1000, 1) + 'k' : '·')], ['😴', 'sueno', (v) => v || '·'], ['⚡', 'energia', (v) => v || '·']].map((f) => (
-          <React.Fragment key={f[1]}>
-            <span style={{ fontSize: 13 }}>{f[0]}</span>
-            {ultimos.map((u) => <span key={u.k} className="font-body" style={{ textAlign: 'center', color: T.text, fontSize: 11.5, fontWeight: 700 }}>{f[2](u[f[1]])}</span>)}
-          </React.Fragment>
-        ))}
-      </div>
-    </Card>
-  );
-}
-
+/* ---------- Cuerpo: medidas corporales ---------- */
 
 function GestorZonas({ zonas }) {
   const { addZonaMedida, renombrarZonaMedida, quitarZonaMedida, askConfirm, showToast } = useGym();
@@ -307,8 +213,6 @@ export function MedidasCard() {
 export function CuerpoSec() {
   return (
     <div>
-      <SectionTitle emoji="📝">Tu día</SectionTitle>
-      <HoyCard />
       <SectionTitle emoji="📏">Medidas corporales</SectionTitle>
       <MedidasCard />
     </div>

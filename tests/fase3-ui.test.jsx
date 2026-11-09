@@ -100,28 +100,25 @@ describe('progreso: calendario, cuerpo y logros', () => {
     await click(screen.getByText('Gemelo de pie'));
     await click(btn('💾 Guardar registro de hoy'));
     await tab('Progreso');
-    await click(btn('📅 Calendario'));
+    // el calendario está siempre a la vista (debajo de la racha): el día sale como "Entreno"
     const hoy = A.ymd(new Date());
+    expect(screen.getByTestId('cal-' + hoy).getAttribute('data-combo')).toBe('e');
     expect(screen.getByTestId('cal-' + hoy).style.background).toMatch(/rgba/);
     await click(screen.getByTestId('cal-' + hoy));
-    expect(texto()).toMatch(/1 día entrenados/);
+    expect(screen.getByTestId('cal-resumen').textContent).toMatch(/1 día de entreno/);
     expect(texto()).toMatch(/Gemelo de pie/);
     await click(btn('🏅 Logros'));
     expect(screen.getByTestId('logro-ses1').textContent).toMatch(/✓/);
     sinBasura();
   });
 
-  test('pasos, sueño y energía del día; medidas con gráfica, edición y borrado', async () => {
+  test('Cuerpo solo tiene las medidas: con gráfica, edición y borrado', async () => {
     await montar();
     await tab('Progreso');
     await click(btn('📏 Cuerpo'));
-    await type(screen.getByPlaceholderText('pasos'), '12000');
-    await click(btn('😴 Sueño (1 = fatal, 5 = genial) 4'));
-    await click(btn('⚡ Energía (1 = sin fuerzas, 5 = a tope) 5'));
-    await flush();
-    const hoy = A.ymd(new Date());
-    expect(guardado().registro[hoy]).toEqual({ pasos: 12000, sueno: 4, energia: 5 });
-    expect(texto()).toMatch(/100 % ✓/);
+    // ya no se preguntan pasos, sueño ni energía
+    expect(screen.queryByPlaceholderText('pasos')).toBeNull();
+    expect(texto()).not.toContain('Tu día');
     // medidas
     await type(screen.getByPlaceholderText('cm'), '84,5');
     await click(btn('Apuntar cintura de hoy'));

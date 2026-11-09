@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { LineChartSVG } from '../components/LineChart.jsx';
-import { RepasoSemanalCard } from '../components/Herramientas.jsx';
 import { Bar, Card, Chip, EditLockBar, Label, LabeledNum, MiniBtn, Modal, NumField, SectionTitle, SupRow, useGym, useSwipe } from '../components/ui.jsx';
 import { CATS, CAT_IDS, catInfo } from '../data/catalog.js';
 import { T } from '../data/theme.js';
 import { fmt, fmtDateLong, fmtDateShort, formatDecimal, groupByMonth, mean, monthLabel, ymd } from '../utils/format.js';
 import { bmiCategory, calcBMI } from '../utils/health.js';
 import { OBJETIVO_PESO_MAX, OBJETIVO_PESO_MIN, validarObjetivoPeso } from '../utils/peso.js';
-import { CalendarioSec, CuerpoSec, LogrosSec, RachaCard, ResumenSemanalCard, SECCIONES_PROGRESO, VolumenSemanasCard } from './ProgresoExtra.jsx';
+import { CalendarioSec, CuerpoSec, LogrosSec, RachaCard, SECCIONES_PROGRESO } from './ProgresoExtra.jsx';
 import { sesionesDe } from '../utils/entreno.js';
 import { activeExerciseIds, muscleProgress, weeklySets } from '../utils/training.js';
 
@@ -303,7 +302,7 @@ export function ObjetivosMusculoCard() {
 
 export function ProgresoTab() {
   const { state, commit } = useGym();
-  const sec = SECCIONES_PROGRESO.some((x) => x[0] === state.meta.progresoSec) ? state.meta.progresoSec : 'calendario';
+  const sec = SECCIONES_PROGRESO.some((x) => x[0] === state.meta.progresoSec) ? state.meta.progresoSec : 'analisis';
   const elegir = (k) => commit((prev) => ({ ...prev, meta: { ...prev.meta, progresoSec: k } }));
   const sesiones = useMemo(() => sesionesDe(state), [state.exercises]);
   return (
@@ -313,21 +312,20 @@ export function ProgresoTab() {
       <PesoCard />
       <SectionTitle emoji="🔥">Racha</SectionTitle>
       <RachaCard sesiones={sesiones} />
-      <SectionTitle emoji="🗓️">Resumen de la semana</SectionTitle>
-      <ResumenSemanalCard />
+      {/* El calendario siempre a la vista, justo debajo de la racha */}
+      <CalendarioSec />
       <div className="gt-scroll" data-testid="progreso-secciones" style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 6, margin: '6px 0 12px' }}>
         {SECCIONES_PROGRESO.map((x) => <Chip key={x[0]} active={sec === x[0]} onClick={() => elegir(x[0])}>{x[1]}</Chip>)}
       </div>
-      {sec === 'calendario' && <CalendarioSec />}
-      {sec === 'analisis' && <AnalisisSec sesiones={sesiones} />}
+      {sec === 'analisis' && <AnalisisSec />}
       {sec === 'cuerpo' && <CuerpoSec />}
       {sec === 'logros' && <LogrosSec />}
     </div>
   );
 }
 
-// Análisis: repaso de la semana, series, volumen, objetivos por músculo y progreso por ejercicio
-function AnalisisSec({ sesiones }) {
+// Análisis: series efectivas por semana, cuánto falta para los objetivos y progreso por ejercicio
+function AnalisisSec() {
   const { state } = useGym();
   const allIds = useMemo(() => activeExerciseIds(state), [state.days, state.exercises]);
   const [selected, setSelected] = useState(allIds[0]);
@@ -341,14 +339,8 @@ function AnalisisSec({ sesiones }) {
 
   return (
     <div>
-      <SectionTitle emoji="📋">Repaso de la semana</SectionTitle>
-      <RepasoSemanalCard />
-
       <SectionTitle emoji="📊">Series efectivas por semana</SectionTitle>
       <SeriesSemanalesCard />
-
-      <SectionTitle emoji="📦">Volumen por semana</SectionTitle>
-      <VolumenSemanasCard sesiones={sesiones} />
 
       <SectionTitle emoji="🎯">Cuánto me falta para mis objetivos</SectionTitle>
       <ObjetivosMusculoCard />

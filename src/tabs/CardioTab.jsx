@@ -3,7 +3,7 @@ import { Card, Label, TextField, useGym } from '../components/ui.jsx';
 import { CardioPresetsModal } from '../components/Herramientas.jsx';
 import { T } from '../data/theme.js';
 import { Native } from '../native/index.js';
-import { alternarHoy, DIAS_CORTOS, DIAS_LARGOS, diasDe, hechoHoy, modoDe, semanaDe, tocaHoy, toggleDia, vecesDe } from '../utils/cardio.js';
+import { alternarHoy, DIAS_CORTOS, DIAS_LARGOS, diasDe, hechoHoy, modoDe, previstosDe, semanaDe, tocaHoy, toggleDia, vecesDe } from '../utils/cardio.js';
 
 const botonModo = (on) => ({
   flex: 1, height: 36, borderRadius: 12, cursor: 'pointer', fontWeight: 800, fontSize: 12.5,
@@ -11,7 +11,7 @@ const botonModo = (on) => ({
 });
 
 // Elegir cómo se lleva el cardio: días concretos de la semana o cuántos días a la semana
-function ModoCardio({ c, onChange }) {
+export function ModoCardio({ c, onChange }) {
   const modo = modoDe(c);
   const veces = vecesDe(c);
   return (
@@ -61,7 +61,8 @@ function DiasCardio({ c, onChange }) {
   );
 }
 
-function Cumplir({ c, onChange, showToast }) {
+// que: 'cardio' o 'movilidad' (solo cambia el texto)
+export function Cumplir({ c, onChange, showToast, que = 'cardio' }) {
   const hoy = new Date();
   const toca = tocaHoy(c, hoy);
   const hecho = hechoHoy(c, hoy);
@@ -69,7 +70,7 @@ function Cumplir({ c, onChange, showToast }) {
   const pct = sem.previstos ? Math.min(100, (sem.hechas / sem.previstos) * 100) : 0;
   const marcar = () => {
     onChange({ hechos: alternarHoy(c, hoy) });
-    if (!hecho) { Native.vibrate(40); showToast(sem.hechas + 1 >= sem.previstos ? '🏆 ¡Semana de cardio cumplida!' : '✓ Cardio cumplido hoy 💪'); }
+    if (!hecho) { Native.vibrate(40); showToast(sem.hechas + 1 >= sem.previstos ? '🏆 ¡Semana de ' + que + ' cumplida!' : (que === 'cardio' ? '✓ Cardio cumplido hoy 💪' : '✓ Movilidad hecha hoy 🧘')); }
   };
   if (!sem.previstos) return null;
   return (
@@ -82,7 +83,7 @@ function Cumplir({ c, onChange, showToast }) {
         <div style={{ width: pct + '%', height: '100%', background: sem.cumplida ? '#A3E635' : T.cyan, transition: 'width .3s' }} />
       </div>
       <button onClick={marcar} className={'font-body btn ' + (hecho ? 'btn-ghost' : 'btn-primary')} style={{ width: '100%' }} aria-pressed={hecho}>
-        {hecho ? '✓ Cumplido hoy · deshacer' : '✅ He hecho el cardio de hoy'}
+        {hecho ? '✓ Cumplido hoy · deshacer' : '✅ He hecho ' + (que === 'cardio' ? 'el cardio' : 'la movilidad') + ' de hoy'}
       </button>
       {!toca && !hecho && (
         <div className="font-body" style={{ color: T.dim, fontSize: 11.5, textAlign: 'center', marginTop: 6 }}>Hoy no te tocaba. Si lo has hecho igualmente, márcalo.</div>
@@ -106,7 +107,9 @@ function CardioItem({ c, editMode, updateCardio, askConfirm, removeCardio, showT
       {!editando && (
         <>
           <div className="font-body" style={{ color: T.muted, fontSize: 13, marginBottom: 10, lineHeight: 1.5 }}>{c.detalle || 'Sin descripción. Toca Editar para añadirla.'}</div>
-          <Cumplir c={c} showToast={showToast} onChange={(p) => updateCardio(c.id, p)} />
+          {previstosDe(c) === 0
+            ? <div className="font-body" data-testid="cardio-sin-plan" style={{ color: T.dim, fontSize: 12.5, lineHeight: 1.5 }}>Elige cuántos días a la semana o qué días lo haces: toca Editar.</div>
+            : <Cumplir c={c} showToast={showToast} onChange={(p) => updateCardio(c.id, p)} />}
         </>
       )}
       {editando && (

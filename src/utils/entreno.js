@@ -81,7 +81,27 @@ export function rachaDias(sesiones, hoy) {
 }
 
 // Celdas del calendario de un mes (empieza en lunes). mes = 'AAAA-MM'.
-export function calendarioMes(mes, sesiones, cardioFechas = {}) {
+// Colores del calendario según lo que hiciste ese día (entreno, cardio y movilidad).
+// De más completo a menos: con las tres cosas, verde intenso con ✓.
+export const COMBOS_DIA = [
+  { k: 'ecm', label: 'Entreno + cardio + movilidad', bg: '#22C55E', fg: '#052E12', fuerte: true },
+  { k: 'ec', label: 'Entreno + cardio', bg: 'rgba(45,212,191,0.72)', fg: '#FFFFFF' },
+  { k: 'em', label: 'Entreno + movilidad', bg: 'rgba(129,140,248,0.72)', fg: '#FFFFFF' },
+  { k: 'e', label: 'Entreno', bg: 'rgba(96,165,250,0.45)', fg: '#FFFFFF' },
+  { k: 'cm', label: 'Cardio + movilidad', bg: 'rgba(251,191,36,0.45)', fg: '#FFFFFF' },
+  { k: 'c', label: 'Cardio', bg: 'rgba(74,222,128,0.35)', fg: '#FFFFFF' },
+  { k: 'm', label: 'Movilidad', bg: 'rgba(196,181,253,0.38)', fg: '#FFFFFF' },
+];
+export function comboDelDia(c) {
+  const k = (c && c.entreno ? 'e' : '') + (c && c.cardio ? 'c' : '') + (c && c.movilidad ? 'm' : '');
+  return COMBOS_DIA.find((x) => x.k === k) || null;
+}
+
+// extra: { entrenoFechas, movilidadFechas } (fechas 'AAAA-MM-DD' → true). Un día es de entreno si guardaste
+// algún ejercicio ese día o lo marcaste como terminado.
+export function calendarioMes(mes, sesiones, cardioFechas = {}, extra = {}) {
+  const entrenoFechas = extra.entrenoFechas || {};
+  const movilidadFechas = extra.movilidadFechas || {};
   const p = mes.split('-').map(Number);
   const primero = new Date(p[0], p[1] - 1, 1);
   const inicio = mondayOf(primero);
@@ -93,7 +113,7 @@ export function calendarioMes(mes, sesiones, cardioFechas = {}) {
     const d = addDays(inicio, i);
     const k = ymd(d);
     const s = porFecha[k] || null;
-    celdas.push({ fecha: k, dia: d.getDate(), delMes: d.getMonth() === primero.getMonth(), sesion: s, intensidad: s ? Math.max(0.25, s.volumen / max) : 0, cardio: !!cardioFechas[k] });
+    celdas.push({ fecha: k, dia: d.getDate(), delMes: d.getMonth() === primero.getMonth(), sesion: s, intensidad: s ? Math.max(0.25, s.volumen / max) : 0, cardio: !!cardioFechas[k], entreno: !!s || !!entrenoFechas[k], movilidad: !!movilidadFechas[k] });
   }
   // se quitan las semanas del final que ya son del mes siguiente
   while (celdas.length > 28 && celdas.slice(-7).every((c) => !c.delMes)) celdas.splice(-7, 7);

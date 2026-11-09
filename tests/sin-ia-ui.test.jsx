@@ -139,12 +139,15 @@ describe('herramientas sin IA', () => {
     expect(document.querySelector('[data-testid="consejo-gluteo"]')).toBeNull();
   });
 
-  test('Progreso: el resumen de la semana sale con cifras, sin llamar a nadie', async () => {
+  test('Progreso: sin resumen ni repaso de la semana (quitados a petición)', async () => {
     await montar();
     await tab('Progreso');
-    expect(texto()).toContain('Resumen de la semana');
+    expect(texto()).not.toContain('Resumen de la semana');
     await click(screen.getByText('📈 Análisis'));
-    expect(texto()).toContain('Repaso de la semana');
-    expect(texto()).toMatch(/Entrenos: \d+ de \d+ previstos/);
+    expect(texto()).not.toContain('Repaso de la semana');
+    expect(texto()).not.toContain('Volumen por semana');
+    expect(texto()).toContain('Series efectivas por semana');
+    expect(texto()).toContain('Cuánto me falta para mis objetivos');
+    expect(texto()).toContain('Progreso por ejercicio');
   });
 });

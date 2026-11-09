@@ -50,7 +50,22 @@ export function normalizarEntrenosHechos(x) {
   return out;
 }
 
-export const SECCIONES_PROGRESO_IDS = ['calendario', 'analisis', 'cuerpo', 'logros'];
+// Movilidad: el vídeo y, como el cardio, días concretos o cuántos días a la semana, y los días hechos
+export function normalizarMovilidad(m, base) {
+  const b = base || {};
+  const x = { ...b, ...(m && typeof m === 'object' && !Array.isArray(m) ? m : {}) };
+  const v = Number(x.veces);
+  return {
+    titulo: typeof x.titulo === 'string' ? x.titulo : (b.titulo || ''),
+    url: typeof x.url === 'string' ? x.url : (b.url || ''),
+    modo: x.modo === 'dias' ? 'dias' : 'veces',
+    dias: Array.isArray(x.dias) ? x.dias.filter((d, i, a) => Number.isInteger(d) && d >= 1 && d <= 7 && a.indexOf(d) === i).sort((p, q) => p - q) : [],
+    veces: Number.isInteger(v) && v >= 1 && v <= 7 ? v : 2,
+    hechos: Array.isArray(x.hechos) ? x.hechos.filter((f, i, a) => typeof f === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(f) && a.indexOf(f) === i).sort().slice(-120) : [],
+  };
+}
+
+export const SECCIONES_PROGRESO_IDS = ['analisis', 'cuerpo', 'logros']; // el calendario ya está siempre a la vista
 
 export const TEMAS = ['cian', 'violeta', 'verde', 'fuego'];
 export const TAMANOS_LETRA = ['pequena', 'normal', 'grande', 'muygrande'];
@@ -128,7 +143,7 @@ export function buildInitialState() {
     // Primer arranque: sin peso ni objetivo (los pone cada persona). Nada de datos personales de nadie.
     peso: { historial: [], objetivoKg: null, direccion: 'bajar', objetivoAlcanzado: false },
     extras: {
-      movilidad: { titulo: 'Rutina de movilidad matutina', url: 'https://www.youtube.com/watch?v=Pnbwyxh4LJs&t=160s' },
+      movilidad: { titulo: 'Rutina de movilidad matutina', url: 'https://www.youtube.com/watch?v=Pnbwyxh4LJs&t=160s', modo: 'veces', dias: [], veces: 2, hechos: [] },
       suplementos: [
         { id: 'creatina', nombre: 'Creatina', nota: 'Tomar durante un tiempo (3 meses) y luego descansar 2 semanas – 1 mes.', filas: [
           { id: 'a', label: 'Lo recomendable', value: '3 g (1 scoop)', destacado: false },
@@ -150,7 +165,7 @@ export function buildInitialState() {
     medidas: { historial: [], zonas: normalizarZonas(null, []) },
     fotosProgreso: [],
     entrenosHechos: {},
-    meta: { activeTab: 'rutina', activeDay: 'piernaA', editMode: false, progresoSec: 'calendario', entrenoSec: 'rutina', comidaSec: 'hoy' },
+    meta: { activeTab: 'rutina', activeDay: 'piernaA', editMode: false, progresoSec: 'analisis', entrenoSec: 'rutina', comidaSec: 'hoy' },
   };
 }
 
@@ -185,7 +200,7 @@ export function normalizeCurrent(loaded, seed, appVersion) {
   next.cardio = Array.isArray(loaded.cardio) ? loaded.cardio.filter((c) => c && typeof c === 'object').map((c) => ({ ...c, id: c.id || 'cardio_' + uid() })) : seed.cardio;
   const ex = loaded.extras || {};
   next.extras = {
-    movilidad: { ...seed.extras.movilidad, ...(ex.movilidad || {}) },
+    movilidad: normalizarMovilidad(ex.movilidad, seed.extras.movilidad),
     suplementos: Array.isArray(ex.suplementos) ? ex.suplementos.filter((s) => s && typeof s === 'object').map((s) => ({ ...s, id: s.id || 'sup_' + uid(), filas: Array.isArray(s.filas) ? s.filas : [] })) : seed.extras.suplementos,
   };
   next.nutricion = { ...seed.nutricion, ...(loaded.nutricion || {}) };
@@ -227,7 +242,7 @@ export function normalizeCurrent(loaded, seed, appVersion) {
   const veniaDeCardio = !!(loaded.meta && loaded.meta.activeTab === 'cardio' && !loaded.meta.entrenoSec);
   if (veniaDeCardio || ['rutina', 'cardio', 'movilidad'].indexOf(next.meta.entrenoSec) === -1) next.meta.entrenoSec = veniaDeCardio ? 'cardio' : 'rutina';
   if (['hoy', 'semana', 'recetas', 'objetivo'].indexOf(next.meta.comidaSec) === -1) next.meta.comidaSec = 'hoy';
-  if (SECCIONES_PROGRESO_IDS.indexOf(next.meta.progresoSec) === -1) next.meta.progresoSec = next.meta.progresoSec === 'progreso' ? 'analisis' : 'calendario';
+  if (SECCIONES_PROGRESO_IDS.indexOf(next.meta.progresoSec) === -1) next.meta.progresoSec = 'analisis';
   if (!days.some((d) => d.id === next.meta.activeDay)) next.meta.activeDay = days.length ? days[0].id : null;
   delete next.profile; delete next.pasos;
   return next;
@@ -292,7 +307,7 @@ export function upgradeLegacy(loaded, seed) {
     cardio: Array.isArray(loaded.cardio) ? loaded.cardio : seed.cardio,
     formulario: { ...seed.formulario, ...(loaded.formulario || {}) },
     peso: { ...seed.peso, ...(loaded.peso || {}) },
-    extras: loaded.extras ? { movilidad: { ...seed.extras.movilidad, ...((loaded.extras || {}).movilidad || {}) }, suplementos: Array.isArray((loaded.extras || {}).suplementos) ? loaded.extras.suplementos : seed.extras.suplementos } : seed.extras,
+    extras: loaded.extras ? { movilidad: normalizarMovilidad((loaded.extras || {}).movilidad, seed.extras.movilidad), suplementos: Array.isArray((loaded.extras || {}).suplementos) ? loaded.extras.suplementos : seed.extras.suplementos } : seed.extras,
     nutricion: { ...seed.nutricion, ...(loaded.nutricion || {}) },
     comida: loaded.comida && typeof loaded.comida === 'object' ? loaded.comida : seed.comida,
     meta: { ...seed.meta, activeTab: TAB_IDS.indexOf(lm.activeTab) !== -1 ? lm.activeTab : 'rutina', editMode: false },

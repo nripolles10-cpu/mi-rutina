@@ -175,14 +175,17 @@ describe('Entreno', () => {
 });
 
 describe('Progreso', () => {
-  test('lo primero es el peso corporal; los apartados van con Logros al final', async () => {
+  test('peso, racha y debajo el calendario siempre visible; apartados Análisis, Cuerpo y Logros', async () => {
     await montar();
     await irA('Progreso');
     const t = texto();
     expect(t.indexOf('Peso corporal')).toBeGreaterThan(-1);
     expect(t.indexOf('Peso corporal')).toBeLessThan(t.indexOf('Racha'));
+    expect(t.indexOf('Racha')).toBeLessThan(t.indexOf('Calendario'));
+    expect(screen.getByTestId('cal-leyenda')).toBeTruthy();
     const chips = Array.from(screen.getByTestId('progreso-secciones').querySelectorAll('button')).map((b) => b.textContent);
-    expect(chips).toEqual(['📅 Calendario', '📈 Análisis', '📏 Cuerpo', '🏅 Logros']);
+    expect(chips).toEqual(['📈 Análisis', '📏 Cuerpo', '🏅 Logros']);
+    expect(t).not.toContain('Resumen de la semana');
   });
 });
 
@@ -229,6 +232,66 @@ describe('Recursos', () => {
     expect(sup.getAttribute('aria-expanded')).toBe('false');
     await click(sup);
     expect(sup.getAttribute('aria-expanded')).toBe('true');
+  });
+});
+
+describe('calendario de colores', () => {
+  test('cada combinación de entreno, cardio y movilidad tiene su color; las tres, verde con ✓', () => {
+    const casos = [[{ entreno: 1 }, 'e'], [{ cardio: 1 }, 'c'], [{ movilidad: 1 }, 'm'], [{ entreno: 1, cardio: 1 }, 'ec'],
+      [{ entreno: 1, movilidad: 1 }, 'em'], [{ cardio: 1, movilidad: 1 }, 'cm'], [{ entreno: 1, cardio: 1, movilidad: 1 }, 'ecm']];
+    casos.forEach(([dia, k]) => expect(A.comboDelDia(dia).k).toBe(k));
+    expect(A.comboDelDia({})).toBe(null);
+    expect(new Set(A.COMBOS_DIA.map((x) => x.bg)).size).toBe(7); // todos distintos
+    expect(A.COMBOS_DIA.find((x) => x.k === 'ecm').fuerte).toBe(true);
+  });
+
+  test('un día terminado cuenta como entreno aunque no tenga sesión', () => {
+    const celdas = A.calendarioMes('2026-11', [], { '2026-11-03': true }, { entrenoFechas: { '2026-11-03': true }, movilidadFechas: { '2026-11-05': true } });
+    expect(A.comboDelDia(celdas.find((c) => c.fecha === '2026-11-03')).k).toBe('ec');
+    expect(A.comboDelDia(celdas.find((c) => c.fecha === '2026-11-05')).k).toBe('m');
+  });
+
+  test('en la app, hoy con entreno, cardio y movilidad sale como día completo', async () => {
+    await montar((s) => {
+      s.entrenosHechos = { [HOY]: s.days[0].id };
+      s.cardio[0].hechos = [HOY];
+      s.extras.movilidad.hechos = [HOY];
+    });
+    await irA('Progreso');
+    const celda = screen.getByTestId('cal-' + HOY);
+    expect(celda.getAttribute('data-combo')).toBe('ecm');
+    expect(celda.textContent).toContain('✓');
+    expect(screen.getByTestId('cal-resumen').textContent).toMatch(/1 día completo/);
+  });
+});
+
+describe('movilidad', () => {
+  test('como el cardio: cumplimiento de la semana, tick de hoy, editar los días y sale en el calendario', async () => {
+    await montar();
+    await irA('Movilidad');
+    const seg = screen.getByTestId('movilidad-seguimiento');
+    expect(seg.textContent).toMatch(/Esta semana\s*0 de 2/); // por defecto 2 días a la semana
+    await click(within(seg).getByRole('button', { name: /He hecho la movilidad de hoy/ })); await esperar();
+    expect(guardado().extras.movilidad.hechos).toEqual([HOY]);
+    expect(seg.textContent).toMatch(/1 de 2/);
+    // editar: cuántos días o qué días
+    await click(screen.getByTestId('movilidad-editar'));
+    await click(within(seg).getByRole('button', { name: '3 días a la semana' })); await esperar();
+    expect(guardado().extras.movilidad.veces).toBe(3);
+    await click(within(seg).getByRole('button', { name: /Días concretos/ })); await esperar();
+    await click(within(seg).getByRole('button', { name: 'miércoles' })); await esperar();
+    expect(guardado().extras.movilidad).toMatchObject({ modo: 'dias', dias: [3] });
+    await click(screen.getByTestId('movilidad-editar'));
+    // en el calendario, hoy sale con movilidad
+    await irA('Progreso');
+    expect(screen.getByTestId('cal-' + HOY).getAttribute('data-combo')).toContain('m');
+  });
+
+  test('los datos antiguos de movilidad (solo el vídeo) se completan sin perder el vídeo', () => {
+    const s = A.buildInitialState();
+    s.extras.movilidad = { titulo: 'Mi vídeo', url: 'https://ejemplo.com/v', hechos: ['2026-11-01', 'malo', '2026-11-01'], dias: [9, 2, 2], veces: 0 };
+    const m = A.migrateState(JSON.parse(JSON.stringify(s)));
+    expect(m.extras.movilidad).toEqual({ titulo: 'Mi vídeo', url: 'https://ejemplo.com/v', modo: 'veces', dias: [2], veces: 2, hechos: ['2026-11-01'] });
   });
 });
 
