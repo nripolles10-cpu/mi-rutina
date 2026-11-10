@@ -245,9 +245,9 @@ describe('calendario de colores', () => {
     // una sola cosa: tres colores apagados y distintos entre sí
     expect(new Set(['e', 'c', 'm'].map(bg)).size).toBe(3);
     ['e', 'c', 'm'].forEach((k) => expect(bg(k)).toMatch(/^rgba\(.*0\.38\)$/));
-    // dos cosas: el mismo verde intenso con ✓; las tres: otro verde aún más vivo
-    expect(new Set(['ec', 'em', 'cm'].map(bg)).size).toBe(1);
-    expect(bg('ec')).not.toBe(bg('ecm'));
+    // dos o tres cosas: el mismo verde intenso; las tres llevan además borde dorado
+    expect(new Set(['ec', 'em', 'cm', 'ecm'].map(bg)).size).toBe(1);
+    expect(A.COMBOS_DIA.filter((x) => x.oro).map((x) => x.k)).toEqual(['ecm']);
     ['ec', 'em', 'cm', 'ecm'].forEach((k) => expect(A.COMBOS_DIA.find((x) => x.k === k).fuerte).toBe(true));
     expect(A.LEYENDA_DIA.map((x) => x.label)).toEqual(['Entreno', 'Cardio', 'Movilidad', 'Dos cosas ✓', 'Las tres ✓']);
   });
@@ -268,6 +268,8 @@ describe('calendario de colores', () => {
     const celda = screen.getByTestId('cal-' + HOY);
     expect(celda.getAttribute('data-combo')).toBe('ecm');
     expect(celda.textContent).toContain('✓');
+    expect(within(celda).getByTestId('cal-tick-oro')).toBeTruthy();
+    expect(celda.style.border).toMatch(/2px solid/);
     expect(screen.getByTestId('cal-resumen').textContent).toMatch(/1 día completo/);
   });
 });

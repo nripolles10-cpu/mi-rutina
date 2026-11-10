@@ -85,9 +85,9 @@ export function rachaDias(sesiones, hoy) {
 // · una sola cosa → su color, apagado (azul entreno, naranja cardio, violeta movilidad)
 // · dos cosas → verde intenso con ✓ · las tres → verde aún más vivo con ✓
 const VERDE_DOS = '#16A34A';
-const VERDE_TRES = '#22C55E';
+export const ORO = '#FACC15';
 export const COMBOS_DIA = [
-  { k: 'ecm', label: 'Entreno + cardio + movilidad', bg: VERDE_TRES, fg: '#052E12', fuerte: true },
+  { k: 'ecm', label: 'Entreno + cardio + movilidad', bg: VERDE_DOS, fg: '#FFFFFF', fuerte: true, oro: true },
   { k: 'ec', label: 'Entreno + cardio', bg: VERDE_DOS, fg: '#FFFFFF', fuerte: true },
   { k: 'em', label: 'Entreno + movilidad', bg: VERDE_DOS, fg: '#FFFFFF', fuerte: true },
   { k: 'cm', label: 'Cardio + movilidad', bg: VERDE_DOS, fg: '#FFFFFF', fuerte: true },
@@ -101,7 +101,7 @@ export const LEYENDA_DIA = [
   { label: 'Cardio', bg: 'rgba(251,146,60,0.38)' },
   { label: 'Movilidad', bg: 'rgba(192,132,252,0.38)' },
   { label: 'Dos cosas ✓', bg: VERDE_DOS },
-  { label: 'Las tres ✓', bg: VERDE_TRES },
+  { label: 'Las tres ✓', bg: VERDE_DOS, oro: true },
 ];
 export function comboDelDia(c) {
   const k = (c && c.entreno ? 'e' : '') + (c && c.cardio ? 'c' : '') + (c && c.movilidad ? 'm' : '');

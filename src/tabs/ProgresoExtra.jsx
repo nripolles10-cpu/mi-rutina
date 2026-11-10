@@ -5,7 +5,7 @@ import { T } from '../data/theme.js';
 import { ZONAS_DEFECTO, UNIDADES_MEDIDA, validarNombreZona } from '../utils/medidasZonas.js';
 import { fmt, fmtDateLong, fmtDateShort, fromYmd, monthLabel, ymd } from '../utils/format.js';
 import { fechasHechasCardio } from '../utils/cardio.js';
-import { LEYENDA_DIA, calendarioMes, comboDelDia, logros, rachaDias, rachaSemanas, sesionesDe } from '../utils/entreno.js';
+import { LEYENDA_DIA, ORO, calendarioMes, comboDelDia, logros, rachaDias, rachaSemanas, sesionesDe } from '../utils/entreno.js';
 import { EditRecordModal, RANGOS } from './ProgresoTab.jsx';
 
 /* =========================================================================
@@ -71,10 +71,12 @@ export function CalendarioCard({ sesiones, cardioFechas = {}, entrenoFechas = {}
                 color: !c.delMes ? 'rgba(255,255,255,0.25)' : combo ? combo.fg : '#FFFFFF',
                 background: combo ? combo.bg : 'rgba(255,255,255,0.03)',
                 opacity: c.delMes ? 1 : 0.45,
-                border: c.fecha === hoy ? '1.5px solid #FFFFFF' : sel === c.fecha ? '1.5px solid ' + T.cyan : '1px solid rgba(140,170,255,0.12)',
+                border: combo && combo.oro ? '2px solid ' + ORO : c.fecha === hoy ? '1.5px solid #FFFFFF' : sel === c.fecha ? '1.5px solid ' + T.cyan : '1px solid rgba(140,170,255,0.12)',
+                boxShadow: combo && combo.oro ? '0 0 8px rgba(250,204,21,0.55)' + (c.fecha === hoy || sel === c.fecha ? ', 0 0 0 2px ' + (c.fecha === hoy ? '#FFFFFF' : T.cyan) : '') : undefined,
               }}>
               {c.dia}
-              {combo && combo.fuerte && <span aria-hidden="true" style={{ position: 'absolute', right: 2, top: 0, fontSize: 9, fontWeight: 900 }}>✓</span>}
+              {combo && combo.fuerte && !combo.oro && <span aria-hidden="true" style={{ position: 'absolute', right: 2, top: 0, fontSize: 9, fontWeight: 900 }}>✓</span>}
+              {combo && combo.oro && <span aria-hidden="true" data-testid="cal-tick-oro" style={{ position: 'absolute', right: -4, top: -5, width: 15, height: 15, borderRadius: '50%', background: ORO, color: '#14532D', fontSize: 10, fontWeight: 900, lineHeight: '15px', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.4)', zIndex: 1 }}>✓</span>}
             </button>
           );
         })}
@@ -82,7 +84,7 @@ export function CalendarioCard({ sesiones, cardioFechas = {}, entrenoFechas = {}
       <div data-testid="cal-leyenda" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px 10px', marginTop: 10 }}>
         {LEYENDA_DIA.map((x) => (
           <div key={x.label} className="font-body" style={{ display: 'flex', alignItems: 'center', gap: 6, color: T.muted, fontSize: 11 }}>
-            <span style={{ width: 12, height: 12, borderRadius: 4, background: x.bg, flexShrink: 0, border: '1px solid rgba(255,255,255,0.15)' }} />{x.label}
+            <span style={{ width: 12, height: 12, borderRadius: 4, background: x.bg, flexShrink: 0, border: x.oro ? '2px solid ' + ORO : '1px solid rgba(255,255,255,0.15)', boxSizing: 'border-box' }} />{x.label}
           </div>
         ))}
       </div>
