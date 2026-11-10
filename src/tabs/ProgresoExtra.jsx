@@ -5,7 +5,7 @@ import { T } from '../data/theme.js';
 import { ZONAS_DEFECTO, UNIDADES_MEDIDA, validarNombreZona } from '../utils/medidasZonas.js';
 import { fmt, fmtDateLong, fmtDateShort, fromYmd, monthLabel, ymd } from '../utils/format.js';
 import { fechasHechasCardio } from '../utils/cardio.js';
-import { COMBOS_DIA, calendarioMes, comboDelDia, logros, rachaDias, rachaSemanas, sesionesDe } from '../utils/entreno.js';
+import { LEYENDA_DIA, calendarioMes, comboDelDia, logros, rachaDias, rachaSemanas, sesionesDe } from '../utils/entreno.js';
 import { EditRecordModal, RANGOS } from './ProgresoTab.jsx';
 
 /* =========================================================================
@@ -80,8 +80,8 @@ export function CalendarioCard({ sesiones, cardioFechas = {}, entrenoFechas = {}
         })}
       </div>
       <div data-testid="cal-leyenda" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px 10px', marginTop: 10 }}>
-        {COMBOS_DIA.map((x) => (
-          <div key={x.k} className="font-body" style={{ display: 'flex', alignItems: 'center', gap: 6, color: T.muted, fontSize: 11 }}>
+        {LEYENDA_DIA.map((x) => (
+          <div key={x.label} className="font-body" style={{ display: 'flex', alignItems: 'center', gap: 6, color: T.muted, fontSize: 11 }}>
             <span style={{ width: 12, height: 12, borderRadius: 4, background: x.bg, flexShrink: 0, border: '1px solid rgba(255,255,255,0.15)' }} />{x.label}
           </div>
         ))}

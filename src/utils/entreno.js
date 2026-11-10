@@ -81,16 +81,27 @@ export function rachaDias(sesiones, hoy) {
 }
 
 // Celdas del calendario de un mes (empieza en lunes). mes = 'AAAA-MM'.
-// Colores del calendario según lo que hiciste ese día (entreno, cardio y movilidad).
-// De más completo a menos: con las tres cosas, verde intenso con ✓.
+// Colores del calendario según lo que hiciste ese día (entreno, cardio y movilidad):
+// · una sola cosa → su color, apagado (azul entreno, naranja cardio, violeta movilidad)
+// · dos cosas → verde intenso con ✓ · las tres → verde aún más vivo con ✓
+const VERDE_DOS = '#16A34A';
+const VERDE_TRES = '#22C55E';
 export const COMBOS_DIA = [
-  { k: 'ecm', label: 'Entreno + cardio + movilidad', bg: '#22C55E', fg: '#052E12', fuerte: true },
-  { k: 'ec', label: 'Entreno + cardio', bg: 'rgba(45,212,191,0.72)', fg: '#FFFFFF' },
-  { k: 'em', label: 'Entreno + movilidad', bg: 'rgba(129,140,248,0.72)', fg: '#FFFFFF' },
-  { k: 'e', label: 'Entreno', bg: 'rgba(96,165,250,0.45)', fg: '#FFFFFF' },
-  { k: 'cm', label: 'Cardio + movilidad', bg: 'rgba(251,191,36,0.45)', fg: '#FFFFFF' },
-  { k: 'c', label: 'Cardio', bg: 'rgba(74,222,128,0.35)', fg: '#FFFFFF' },
-  { k: 'm', label: 'Movilidad', bg: 'rgba(196,181,253,0.38)', fg: '#FFFFFF' },
+  { k: 'ecm', label: 'Entreno + cardio + movilidad', bg: VERDE_TRES, fg: '#052E12', fuerte: true },
+  { k: 'ec', label: 'Entreno + cardio', bg: VERDE_DOS, fg: '#FFFFFF', fuerte: true },
+  { k: 'em', label: 'Entreno + movilidad', bg: VERDE_DOS, fg: '#FFFFFF', fuerte: true },
+  { k: 'cm', label: 'Cardio + movilidad', bg: VERDE_DOS, fg: '#FFFFFF', fuerte: true },
+  { k: 'e', label: 'Entreno', bg: 'rgba(96,165,250,0.38)', fg: '#FFFFFF' },
+  { k: 'c', label: 'Cardio', bg: 'rgba(251,146,60,0.38)', fg: '#FFFFFF' },
+  { k: 'm', label: 'Movilidad', bg: 'rgba(192,132,252,0.38)', fg: '#FFFFFF' },
+];
+// Leyenda del calendario (los de dos cosas comparten color)
+export const LEYENDA_DIA = [
+  { label: 'Entreno', bg: 'rgba(96,165,250,0.38)' },
+  { label: 'Cardio', bg: 'rgba(251,146,60,0.38)' },
+  { label: 'Movilidad', bg: 'rgba(192,132,252,0.38)' },
+  { label: 'Dos cosas ✓', bg: VERDE_DOS },
+  { label: 'Las tres ✓', bg: VERDE_TRES },
 ];
 export function comboDelDia(c) {
   const k = (c && c.entreno ? 'e' : '') + (c && c.cardio ? 'c' : '') + (c && c.movilidad ? 'm' : '');

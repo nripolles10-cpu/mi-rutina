@@ -241,8 +241,15 @@ describe('calendario de colores', () => {
       [{ entreno: 1, movilidad: 1 }, 'em'], [{ cardio: 1, movilidad: 1 }, 'cm'], [{ entreno: 1, cardio: 1, movilidad: 1 }, 'ecm']];
     casos.forEach(([dia, k]) => expect(A.comboDelDia(dia).k).toBe(k));
     expect(A.comboDelDia({})).toBe(null);
-    expect(new Set(A.COMBOS_DIA.map((x) => x.bg)).size).toBe(7); // todos distintos
-    expect(A.COMBOS_DIA.find((x) => x.k === 'ecm').fuerte).toBe(true);
+    const bg = (k) => A.COMBOS_DIA.find((x) => x.k === k).bg;
+    // una sola cosa: tres colores apagados y distintos entre sí
+    expect(new Set(['e', 'c', 'm'].map(bg)).size).toBe(3);
+    ['e', 'c', 'm'].forEach((k) => expect(bg(k)).toMatch(/^rgba\(.*0\.38\)$/));
+    // dos cosas: el mismo verde intenso con ✓; las tres: otro verde aún más vivo
+    expect(new Set(['ec', 'em', 'cm'].map(bg)).size).toBe(1);
+    expect(bg('ec')).not.toBe(bg('ecm'));
+    ['ec', 'em', 'cm', 'ecm'].forEach((k) => expect(A.COMBOS_DIA.find((x) => x.k === k).fuerte).toBe(true));
+    expect(A.LEYENDA_DIA.map((x) => x.label)).toEqual(['Entreno', 'Cardio', 'Movilidad', 'Dos cosas ✓', 'Las tres ✓']);
   });
 
   test('un día terminado cuenta como entreno aunque no tenga sesión', () => {
