@@ -67,11 +67,12 @@ export function normalizarMovilidad(m, base) {
 
 /* Diana humana (músculos por partes). Se aplica una vez a los datos de antes:
    · añade pectoral superior, hombro lateral, hombro posterior y espalda alta (si no están)
-   · renombra Pecho → Pectoral medio/inferior, Hombro → Hombro anterior y Espalda → Dorsal (solo si conservan el nombre de serie)
+   · renombra Pecho → Pectoral medio/inferior, Hombro → Hombro anterior, Espalda → Dorsal y Trapecio → Trapecio superior
+     (solo si conservan el nombre de serie)
    · copia el estado de la Diana (débil/intermedio/fuerte) a las partes nuevas
    · reparte los ejercicios por el nombre (press inclinado → pectoral superior, laterales → hombro lateral…) */
 export const MUSCULOS_VERSION = 2;
-const RENOMBRES_V2 = { pecho: ['Pecho', 'Pectoral medio/inferior'], hombro: ['Hombro', 'Hombro anterior'], espalda: ['Espalda', 'Dorsal'] };
+const RENOMBRES_V2 = { pecho: ['Pecho', 'Pectoral medio/inferior'], hombro: ['Hombro', 'Hombro anterior'], espalda: ['Espalda', 'Dorsal'], trapecio: ['Trapecio', 'Trapecio superior'] };
 const NUEVOS_V2 = [['pecho_sup', 'pecho', 'antes'], ['hombro_lat', 'hombro', 'despues'], ['hombro_post', 'hombro_lat', 'despues'], ['espalda_alta', 'espalda', 'antes']];
 const COPIA_ESTADO_V2 = { pecho_sup: 'pecho', hombro_lat: 'hombro', hombro_post: 'hombro', espalda_alta: 'espalda' };
 export function categoriaV2(cat, nombre) {

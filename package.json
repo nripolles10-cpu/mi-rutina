@@ -15,7 +15,8 @@
     "lint": "eslint src tests scripts",
     "make-default": "node scripts/make-default.mjs",
     "assets": "node scripts/gen-icon-sources.mjs && node scripts/pwa-icons.mjs && capacitor-assets generate --android --splashBackgroundColor \"#060913\" --splashBackgroundColorDark \"#060913\" && node scripts/android-icons.mjs",
-    "android:sync": "npm run build && cap sync android"
+    "android:sync": "npm run build && cap sync android",
+    "prueba": "node scripts/build-prueba.mjs"
   },
   "dependencies": {
     "@capacitor-community/keep-awake": "8.0.1",

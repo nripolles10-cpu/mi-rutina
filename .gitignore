@@ -4,3 +4,5 @@ dist/
 *.keystore
 keystore.properties
 .env
+dist-prueba/
+mi-rutina-prueba.html

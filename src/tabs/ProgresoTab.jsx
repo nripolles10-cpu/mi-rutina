@@ -7,6 +7,7 @@ import { fmt, fmtDateLong, fmtDateShort, formatDecimal, groupByMonth, mean, mont
 import { bmiCategory, calcBMI } from '../utils/health.js';
 import { OBJETIVO_PESO_MAX, OBJETIVO_PESO_MIN, validarObjetivoPeso } from '../utils/peso.js';
 import { CalendarioSec, CuerpoSec, LogrosSec, RachaCard, SECCIONES_PROGRESO } from './ProgresoExtra.jsx';
+import { estadoPorGrupos, filasPorGrupos } from '../utils/musculos.js';
 import { sesionesDe } from '../utils/entreno.js';
 import { activeExerciseIds, muscleProgress, weeklySets } from '../utils/training.js';
 
@@ -235,15 +236,15 @@ export function PesoCard() {
 
 export function SeriesSemanalesCard() {
   const { state } = useGym();
-  const totals = useMemo(() => weeklySets(state), [state.days, state.exercises]);
-  const rows = CAT_IDS.map((k) => ({ key: k, ...CATS[k], sets: totals[k] || 0 }));
+  const totals = useMemo(() => weeklySets(estadoPorGrupos(state, CATS)), [state.days, state.exercises, state.musculos]);
+  const rows = filasPorGrupos(CAT_IDS, CATS).map((f) => ({ ...f, sets: totals[f.key] || 0 }));
   const maxV = Math.max(10, ...rows.map((r) => r.sets)) * 1.08;
   const total = rows.reduce((acc, r) => acc + r.sets, 0);
 
   return (
     <Card style={{ marginBottom: 18 }}>
       <div className="font-body" style={{ color: T.muted, fontSize: 12, lineHeight: 1.5, marginBottom: 12 }}>
-        Cada serie cuenta 1 y el calentamiento no cuenta. En rest-pause y dropset, cada tanda o descenso extra suma 0,5. Cada ejercicio cuenta solo para el músculo que le asignas.
+        Cada serie cuenta 1 y el calentamiento no cuenta. En rest-pause y dropset, cada tanda o descenso extra suma 0,5. Cada ejercicio cuenta solo para el músculo que le asignas; las partes (pectoral superior, hombro lateral y posterior, espalda alta) suman en su grupo.
       </div>
       <div style={{ marginBottom: 14 }}>
         <div className="font-body" style={{ color: T.dim, fontSize: 11 }}>Total semanal</div>
@@ -268,20 +269,22 @@ export function SeriesSemanalesCard() {
 
 export function ObjetivosMusculoCard() {
   const { state } = useGym();
-  const prog = useMemo(() => muscleProgress(state), [state.days, state.exercises]);
-  const ignorados = CAT_IDS.reduce((a, k) => a + prog[k].ignorados, 0);
+  const prog = useMemo(() => muscleProgress(estadoPorGrupos(state, CATS)), [state.days, state.exercises, state.musculos]);
+  const filas = filasPorGrupos(CAT_IDS, CATS);
+  const ignorados = filas.reduce((a, f) => a + prog[f.key].ignorados, 0);
   return (
     <Card style={{ marginBottom: 18 }}>
       <div className="font-body" style={{ color: T.muted, fontSize: 12, lineHeight: 1.5, marginBottom: 12 }}>
         Para cada músculo: media de (tu mejor marca ÷ objetivo) de sus ejercicios, con tope del 100 %, y cuántos kg te faltan de media.
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {CAT_IDS.map((k) => {
+        {filas.map((f) => {
+          const k = f.key;
           const p = prog[k];
           return (
             <div key={k}>
               <div className="font-body" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: 12.5, marginBottom: 4, gap: 8 }}>
-                <span style={{ color: T.text, fontWeight: 600 }}>{catInfo(CATS, k).emoji} {catInfo(CATS, k).label}</span>
+                <span style={{ color: T.text, fontWeight: 600 }}>{f.emoji} {f.label}</span>
                 {p.pct === null
                   ? <span style={{ color: T.dim, fontWeight: 600 }}>sin objetivos</span>
                   : <span style={{ color: T.cyan, fontWeight: 800 }}>{Math.round(p.pct)} % <span style={{ color: T.muted, fontWeight: 600 }}>· faltan {p.falta > 0 ? fmt(p.falta) + ' kg' : '0 kg'}</span></span>}

@@ -232,10 +232,15 @@ Cinco pestañas abajo: **Entreno · Progreso · Comida · Diana · Recursos**.
   - *Movilidad:* tu vídeo y, como el cardio, cuántos días a la semana o qué días la haces, con su botón de hecho hoy.
   - *Rutina:* primero ves tus días (Día 1, Día 2…). Con el candado abierto, elige en cada uno su día de la semana (L, M, X…); el que toca hoy lleva **HOY**. Un día de la semana solo puede tener un entreno.
   - Dentro de un día: las flechas ‹ › cambian de día, "‹ Todos los días" vuelve a la lista, la línea **⏱️ Descansos** se despliega para cambiar los tiempos y al final está **✅ Terminar entreno** (guarda el registro de hoy de lo que falte, cuenta para la racha y marca el día como **✓ HECHO**). En el entreno en vivo también está, abajo, con dos toques.
-- **📊 Progreso:** lo primero es tu peso; debajo la racha y el calendario, siempre a la vista. Cada día se colorea según lo que hiciste: azul (entreno), verde suave (cardio), violeta (movilidad), turquesa (entreno + cardio), índigo (entreno + movilidad), ámbar (cardio + movilidad) y **verde intenso con ✓** (las tres). Debajo, Análisis (series por semana, objetivos y progreso por ejercicio), Cuerpo (medidas) y Logros.
+- **📊 Progreso:** lo primero es tu peso; debajo la racha y el calendario, siempre a la vista. Cada día se colorea según lo que hiciste: azul (entreno), verde suave (cardio), violeta (movilidad), turquesa (entreno + cardio), índigo (entreno + movilidad), ámbar (cardio + movilidad) y **verde intenso con ✓** (las tres). Debajo, Análisis (series por semana, objetivos y progreso por ejercicio, por grupos: las partes del pecho, del hombro y de la espalda suman juntas), Cuerpo (medidas) y Logros.
 - **🍽️ Comida:** arriba, siempre, lo que llevas y lo que te queda de calorías y macros (**⚙️ Ajustar** lleva a *Mi objetivo*). Apartados: **Hoy** (lo planificado sale en cada comida con el botón *Comido*; el agua suma 1 L con un toque), **Semana** (plan y lista de la compra), **Recetas** y **Mi objetivo** (la calculadora: definición, mantener o volumen).
 - **🎯 Diana:** un cuerpo humano (de hombre o de mujer, según lo que pongas en Ajustes → Tus datos), delante y detrás. Los músculos van por partes: pectoral superior y medio/inferior, hombro anterior, lateral y posterior, trapecio, espalda alta, dorsal, lumbar, glúteo, abductores (glúteo medio)… Toca una zona para elegir su músculo y márcalo como débil, intermedio o fuerte.
 - **🧰 Recursos:** tus suplementos (se despliegan al tocarlos), 1RM, discos y el glosario.
+
+## Paso 13. Probar la app sin instalarla (un solo archivo HTML)
+
+En el ordenador, dentro de la carpeta de la app: `npm run prueba`. Sale **mi-rutina-prueba.html** con la app entera dentro.
+Ábrelo con doble clic (o pásalo al móvil y ábrelo con Chrome). Guarda sus datos aparte de la app instalada, así que puedes probar lo que quieras sin tocar tus datos reales.
 
 ## Problemas frecuentes
 

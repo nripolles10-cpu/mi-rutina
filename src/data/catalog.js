@@ -24,7 +24,7 @@ export const MUSCULOS_POR_DEFECTO = [
   { id: 'gemelos',    label: 'Gemelos',     color: '#22C55E', emoji: '🦵', region: 'gemelos' },
   { id: 'core',       label: 'Core',        color: '#94A3B8', emoji: '🧘', region: 'core' },
   { id: 'antebrazo',  label: 'Antebrazo',   color: '#FDBA74', emoji: '💪', region: 'antebrazo' },
-  { id: 'trapecio',   label: 'Trapecio',    color: '#3B82F6', emoji: '🎯', region: 'trapecio' },
+  { id: 'trapecio',   label: 'Trapecio superior', color: '#3B82F6', emoji: '🎯', region: 'trapecio' },
   { id: 'lumbar',     label: 'Lumbar',      color: '#C084FC', emoji: '🎯', region: 'lumbar' },
   { id: 'abductores', label: 'Abductores',  color: '#FDA4AF', emoji: '🦵', region: 'abductores' },
 ];

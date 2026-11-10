@@ -5,6 +5,8 @@ import { render, screen, fireEvent, act, cleanup } from '@testing-library/react'
 import { loadApp } from './loadApp.js';
 import { CUERPO_DIANA } from '../src/data/cuerpoDiana.js';
 import { irA } from './nav.js';
+import { estadoPorGrupos, filasPorGrupos } from '../src/utils/musculos.js';
+import { CATS, CAT_IDS, aplicarCatalogo } from '../src/data/catalog.js';
 
 let A, errores, oe;
 beforeEach(() => {
@@ -151,5 +153,54 @@ describe('paso de los datos de antes', () => {
     // uno nuevo lleva su versión y no se toca
     const nuevo = A.buildShareObject(A.buildInitialState(), { todo: true }, null);
     expect(nuevo.musculosVersion).toBe(2);
+  });
+});
+
+describe('Progreso → Análisis por grupos (como antes)', () => {
+  test('las partes suman en su grupo: el pecho vuelve a contar 6 series y el hombro y la espalda juntan sus partes', () => {
+    const st = A.buildInitialState();
+    aplicarCatalogo(st.musculos);
+    const filas = filasPorGrupos(CAT_IDS, CATS);
+    const ids = filas.map((f) => f.key);
+    ['pecho_sup', 'hombro_lat', 'hombro_post', 'espalda_alta'].forEach((id) => expect(ids).not.toContain(id));
+    const nombre = (k) => filas.find((f) => f.key === k).label;
+    expect(nombre('pecho')).toBe('Pecho');
+    expect(nombre('hombro')).toBe('Hombro');
+    expect(nombre('espalda')).toBe('Espalda');
+    expect(nombre('trapecio')).toBe('Trapecio superior');
+    const porPartes = A.weeklySets(st);
+    const agrupado = A.weeklySets(estadoPorGrupos(st, CATS));
+    expect(agrupado.pecho).toBe(6);
+    expect(agrupado.pecho).toBe(porPartes.pecho + porPartes.pecho_sup);
+    expect(agrupado.hombro).toBe(porPartes.hombro + porPartes.hombro_lat + porPartes.hombro_post);
+    expect(agrupado.espalda).toBe(porPartes.espalda + porPartes.espalda_alta);
+  });
+
+  test('si quitas el músculo del grupo, su parte sale por su cuenta', () => {
+    let st = A.buildInitialState();
+    st = A.borrarMusculo(st, 'pecho', 'pecho_sup').state;
+    aplicarCatalogo(st.musculos);
+    const ids = filasPorGrupos(CAT_IDS, CATS).map((f) => f.key);
+    expect(ids).toContain('pecho_sup');
+    aplicarCatalogo(A.buildInitialState().musculos);
+  });
+
+  test('en la app, Análisis muestra Pecho, Hombro y Espalda; la Diana sigue por partes', async () => {
+    await montar();
+    await irA('Progreso');
+    const t = document.body.textContent;
+    expect(t).toContain('Series efectivas por semana');
+    const serie = Array.from(document.querySelectorAll('span')).map((x) => x.textContent);
+    expect(serie.some((x) => /^\S+ Pecho$/.test(x))).toBe(true);
+    expect(serie.some((x) => /Pectoral superior/.test(x))).toBe(false);
+    await irA('Diana');
+    expect(document.body.textContent).toContain('Pectoral superior');
+  });
+
+  test('Trapecio pasa a llamarse Trapecio superior (si no lo habías renombrado)', () => {
+    const s = A.buildInitialState();
+    delete s.meta.musculosVersion;
+    s.musculos = s.musculos.map((m) => (m.id === 'trapecio' ? { ...m, label: 'Trapecio' } : m));
+    expect(A.migrateState(JSON.parse(JSON.stringify(s))).musculos.find((m) => m.id === 'trapecio').label).toBe('Trapecio superior');
   });
 });

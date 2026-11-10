@@ -83,3 +83,30 @@ export function borrarMusculo(state, id, destino) {
 
 // Músculos que se pintan en una zona del mapa
 export function musculosDeRegion(musculos, region) { return (musculos || []).filter((m) => m.region === region); }
+
+/* Análisis de Progreso por grupos, como antes: las partes suman en su músculo
+   (pectoral superior → pecho; hombro lateral y posterior → hombro; espalda alta → espalda).
+   Si el músculo del grupo ya no existe, la parte va por su cuenta. */
+export const GRUPOS_ANALISIS = { pecho_sup: 'pecho', hombro_lat: 'hombro', hombro_post: 'hombro', espalda_alta: 'espalda' };
+const NOMBRE_GRUPO = { pecho: 'Pecho', hombro: 'Hombro', espalda: 'Espalda' };
+export function grupoAnalisis(cat, cats) {
+  const g = GRUPOS_ANALISIS[cat];
+  return g && cats[g] ? g : cat;
+}
+// El mismo estado, con cada ejercicio contado en su grupo (para series por semana y objetivos)
+export function estadoPorGrupos(state, cats) {
+  const exercises = {};
+  Object.keys(state.exercises || {}).forEach((id) => {
+    const ex = state.exercises[id];
+    const g = grupoAnalisis(ex.cat, cats);
+    exercises[id] = g === ex.cat ? ex : { ...ex, cat: g };
+  });
+  return { ...state, exercises };
+}
+// Filas del análisis: un músculo por grupo, con el nombre del grupo si tiene partes
+export function filasPorGrupos(catIds, cats) {
+  return catIds.filter((k) => grupoAnalisis(k, cats) === k).map((k) => {
+    const conPartes = catIds.some((x) => x !== k && grupoAnalisis(x, cats) === k);
+    return { key: k, label: conPartes && NOMBRE_GRUPO[k] ? NOMBRE_GRUPO[k] : cats[k].label, emoji: cats[k].emoji, color: cats[k].color };
+  });
+}
