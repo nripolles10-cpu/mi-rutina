@@ -5,86 +5,88 @@ import { T } from '../data/theme.js';
 import { ConsejosDianaCard } from '../components/Herramientas.jsx';
 import { fmt } from '../utils/format.js';
 import { muscleProgress } from '../utils/training.js';
+import { CUERPO_DIANA } from '../data/cuerpoDiana.js';
 import { borrarMusculo, cambiarRegionMusculo, crearMusculo, ejerciciosDeMusculo, musculosDeRegion, renombrarMusculo } from '../utils/musculos.js';
 
+// Colores del cuerpo humano de la Diana: piel, pelo y músculo sin marcar
+const PIEL = '#C99A7E';
+const PELO = '#2B1D14';
+export const COLOR_SIN_MARCAR = '#B98A70';
+
+// Cuerpo de hombre o de mujer (según Ajustes), delante o detrás. Cada zona se pinta con el estado de sus
+// músculos (si son varios con estados distintos, a franjas). Al tocarla se elige su músculo (o el siguiente).
 export function BodyMap({ view, onSelect, selected }) {
   const { state } = useGym();
   const estados = state.diana.estados;
-  const skin = '#3A4666';
   const musculos = state.musculos || [];
+  const sexo = state.formulario && state.formulario.sexo === 'F' ? 'F' : 'M';
+  const lado = view === 'back' ? 'back' : 'front';
+  const fig = CUERPO_DIANA[sexo][lado];
   const selRegion = catInfo(CATS, selected).region;
+  const pre = 'dn-' + sexo + lado;
 
-  // Pinta una zona del mapa con el estado de los músculos que tiene asociados (si son varios con estados
-  // distintos, la zona sale a franjas con cada color). Al tocarla se elige su primer músculo.
-  const region = (key, regionId, d, mirror) => {
-    const ms = musculosDeRegion(musculos, regionId);
-    const cols = [];
-    ms.forEach((m) => { const st = estados[m.id]; const c = st ? ESTADO_COLOR[st] : '#3A4256'; if (cols.indexOf(c) === -1) cols.push(c); });
-    const gradId = 'gr-' + key;
-    const fill = !ms.length ? '#2A3044' : cols.length > 1 ? 'url(#' + gradId + ')' : cols[0];
-    const isSel = !!ms.length && selRegion === regionId;
-    const props = {
-      d: d, fill: fill, fillOpacity: isSel ? 1 : ms.length ? 0.88 : 0.5, stroke: isSel ? '#FFFFFF' : 'rgba(0,0,0,0.3)', strokeWidth: isSel ? 2 : 1,
-      onClick: () => { if (!ms.length) return; const i = ms.findIndex((m) => m.id === selected); onSelect(ms[(i + 1) % ms.length].id); },
-      style: { cursor: ms.length ? 'pointer' : 'default', transition: 'all .15s ease' },
-    };
-    return (
-      <g key={key} data-region={regionId}>
-        {cols.length > 1 && (
-          <defs>
-            <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="0">
-              {cols.map((c, i) => [<stop key={i + 'a'} offset={(i / cols.length) * 100 + '%'} stopColor={c} />, <stop key={i + 'b'} offset={((i + 1) / cols.length) * 100 + '%'} stopColor={c} />])}
-            </linearGradient>
-          </defs>
-        )}
-        <path {...props} />
-        {mirror && <path {...props} transform="translate(200,0) scale(-1,1)" />}
-      </g>
-    );
+  const zonas = useMemo(() => {
+    const z = {};
+    fig.piezas.forEach((p) => {
+      if (!p.r || p.r === 'pelo' || z[p.r]) return;
+      const ms = musculosDeRegion(musculos, p.r);
+      const cols = [];
+      ms.forEach((m) => { const st = estados[m.id]; const c = st ? ESTADO_COLOR[st] : COLOR_SIN_MARCAR; if (cols.indexOf(c) === -1) cols.push(c); });
+      z[p.r] = { ms, cols };
+    });
+    return z;
+  }, [fig, musculos, estados]);
+
+  const relleno = (r) => {
+    if (r === 'pelo') return PELO;
+    const zz = r && zonas[r];
+    if (!zz || !zz.ms.length) return PIEL; // zona sin músculo (o piel): no se marca
+    return zz.cols.length > 1 ? 'url(#' + pre + '-mix-' + r + ')' : zz.cols[0];
+  };
+  const tocar = (r) => {
+    const zz = zonas[r];
+    if (!zz || !zz.ms.length) return;
+    const i = zz.ms.findIndex((m) => m.id === selected);
+    onSelect(zz.ms[(i + 1) % zz.ms.length].id);
   };
 
-  const head = (
-    <g>
-      <circle cx="100" cy="34" r="21" fill={skin} />
-      <path d="M90,52 Q100,60 110,52 L108,68 Q100,74 92,68 Z" fill={skin} />
-      <circle cx="42" cy="212" r="7" fill={skin} />
-      <circle cx="158" cy="212" r="7" fill={skin} />
-      <ellipse cx="80" cy="368" rx="13" ry="7" fill={skin} />
-      <ellipse cx="120" cy="368" rx="13" ry="7" fill={skin} />
-    </g>
-  );
-
-  const front = (
-    <svg viewBox="0 0 200 420" width="100%" height="340">
-      {head}
-      <path d="M73,280 Q69,320 74,358 L92,358 Q94,320 92,280 Z" fill={skin} />
-      <path d="M127,280 Q131,320 126,358 L108,358 Q106,320 108,280 Z" fill={skin} />
-      {region('f-hombro', 'hombro', 'M64,72 Q42,74 38,98 Q37,116 48,120 Q58,100 68,86 Z', true)}
-      {region('f-pecho', 'pecho', 'M65,74 Q62,98 70,120 L130,120 Q138,98 135,74 Q100,60 65,74 Z')}
-      {region('f-core', 'core', 'M70,120 Q66,148 76,174 L124,174 Q134,148 130,120 Z')}
-      {region('f-biceps', 'biceps', 'M46,120 L67,120 L64,168 L45,164 Z', true)}
-      {region('f-antebrazo', 'antebrazo', 'M45,166 L64,169 L60,206 L43,200 Z', true)}
-      {region('f-cuadriceps', 'cuadriceps', 'M76,176 Q68,220 72,278 L90,278 Q92,230 90,176 Z', true)}
-      {region('f-aductores', 'aductores', 'M90,176 L98,178 Q99,220 95,262 L90,262 Q92,220 90,176 Z', true)}
+  return (
+    <svg viewBox={fig.vb.join(' ')} width="100%" height="360" role="img" aria-label={(sexo === 'F' ? 'Cuerpo de mujer' : 'Cuerpo de hombre') + (lado === 'front' ? ', delante' : ', detrás')}
+      data-testid="diana-cuerpo" data-sexo={sexo} data-lado={lado} style={{ display: 'block', margin: '4px auto 0' }}>
+      <defs>
+        <radialGradient id={pre + '-luz'} cx="38%" cy="28%" r="80%">
+          <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.38" />
+          <stop offset="45%" stopColor="#FFFFFF" stopOpacity="0" />
+          <stop offset="100%" stopColor="#000000" stopOpacity="0.38" />
+        </radialGradient>
+        <filter id={pre + '-sombra'} x="-20%" y="-10%" width="140%" height="120%">
+          <feDropShadow dx="0" dy="6" stdDeviation="7" floodColor="#000000" floodOpacity="0.55" />
+        </filter>
+        {Object.keys(zonas).filter((r) => zonas[r].cols.length > 1).map((r) => {
+          const cols = zonas[r].cols;
+          return (
+            <linearGradient key={r} id={pre + '-mix-' + r} x1="0" y1="0" x2="1" y2="0">
+              {cols.map((c, i) => [<stop key={i + 'a'} offset={(i / cols.length) * 100 + '%'} stopColor={c} />, <stop key={i + 'b'} offset={((i + 1) / cols.length) * 100 + '%'} stopColor={c} />])}
+            </linearGradient>
+          );
+        })}
+        {fig.piezas.map((p, i) => (p.c ? <clipPath key={i} id={pre + '-c' + i}><rect x={p.c[0]} y={p.c[1]} width={p.c[2]} height={p.c[3]} /></clipPath> : null))}
+      </defs>
+      <g filter={'url(#' + pre + '-sombra)'}>
+        {fig.piezas.map((p, i) => {
+          const activa = !!(p.r && p.r !== 'pelo' && zonas[p.r] && zonas[p.r].ms.length);
+          const sel = activa && selRegion === p.r;
+          return (
+            <g key={i} data-region={activa ? p.r : undefined} clipPath={p.c ? 'url(#' + pre + '-c' + i + ')' : undefined}
+              onClick={activa ? () => tocar(p.r) : undefined} style={{ cursor: activa ? 'pointer' : 'default' }}>
+              <path d={p.d} fill={relleno(p.r)} stroke={sel ? '#FFFFFF' : 'rgba(40,20,10,0.55)'} strokeWidth={sel ? 7 : 2} />
+              <path d={p.d} fill={'url(#' + pre + '-luz)'} pointerEvents="none" />
+            </g>
+          );
+        })}
+      </g>
     </svg>
   );
-
-  const back = (
-    <svg viewBox="0 0 200 420" width="100%" height="340">
-      {head}
-      {region('b-hombro', 'hombro', 'M64,72 Q42,74 38,98 Q37,116 48,120 Q58,100 68,86 Z', true)}
-      {region('b-espalda', 'espalda', 'M66,80 Q60,104 68,128 Q100,140 132,128 Q140,104 134,80 Q100,94 66,80 Z')}
-      {region('b-trapecio', 'trapecio', 'M84,60 Q100,66 116,60 L134,78 Q100,94 66,78 Z')}
-      {region('b-lumbar', 'lumbar', 'M80,128 Q100,138 120,128 L122,152 Q100,160 78,152 Z')}
-      {region('b-triceps', 'triceps', 'M46,120 L67,120 L64,168 L45,164 Z', true)}
-      {region('b-antebrazo', 'antebrazo', 'M45,166 L64,169 L60,206 L43,200 Z', true)}
-      {region('b-gluteo', 'gluteo', 'M72,152 Q66,176 76,198 L124,198 Q134,176 128,152 Q100,162 72,152 Z')}
-      {region('b-abductores', 'abductores', 'M64,150 Q58,168 66,186 L72,180 Q70,166 72,152 Z', true)}
-      {region('b-isquios', 'isquios', 'M76,200 Q70,232 74,272 L96,272 Q98,232 96,200 Z', true)}
-      {region('b-gemelos', 'gemelos', 'M73,274 Q69,316 74,358 L92,358 Q94,316 92,274 Z', true)}
-    </svg>
-  );
-  return view === 'front' ? front : back;
 }
 
 /* ---------- Editor de músculos (crear, renombrar, zona del mapa, quitar) ---------- */
@@ -218,7 +220,7 @@ export function DianaFisicaTab() {
         </div>
         <BodyMap view={view} onSelect={setSelected} selected={selected} />
         <div style={{ display: 'flex', justifyContent: 'center', gap: 14, marginTop: 4, marginBottom: 12, flexWrap: 'wrap' }}>
-          {[['fuerte', '#22C55E'], ['intermedio', '#FBBF24'], ['debil', '#F43F5E'], ['none', '#3A4256']].map((x) => (
+          {[['fuerte', ESTADO_COLOR.fuerte], ['intermedio', ESTADO_COLOR.intermedio], ['debil', ESTADO_COLOR.debil], ['none', COLOR_SIN_MARCAR]].map((x) => (
             <div key={x[0]} className="font-body" style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: T.muted }}>
               <span style={{ width: 9, height: 9, borderRadius: 999, background: x[1], display: 'inline-block' }} />{ESTADO_LABEL[x[0]]}
             </div>

@@ -1,6 +1,6 @@
 import LZString from 'lz-string';
 import { APP_VERSION, MUSCULOS_POR_DEFECTO, normalizarMusculos } from '../data/catalog.js';
-import { anadirRecetasNuevas, anadirRecetasV10, migrateState } from '../state/migrate.js';
+import { MUSCULOS_VERSION, anadirRecetasNuevas, anadirRecetasV10, ejerciciosV2, estadosV2, migrateState, musculosV2 } from '../state/migrate.js';
 
 /* =========================================================================
    SECCIÓN 5 · COMPARTIR Y EXPORTAR
@@ -63,6 +63,7 @@ export function buildShareObject(state, opts, fotos) {
   const defs = {};
   Object.keys(state.exercises).forEach((id) => { const e = { ...state.exercises[id] }; delete e.history; defs[id] = e; });
   o.rutina = { days: state.days, exercises: defs };
+  o.musculosVersion = (state.meta && state.meta.musculosVersion) || 1; // músculos por partes (Diana humana) = 2
   // Tus músculos (para que quien lo importe vea los mismos, también los que hayas creado tú)
   if (Array.isArray(state.musculos)) o.musculos = state.musculos;
   if (opts.historial) { o.historial = {}; Object.keys(state.exercises).forEach((id) => { o.historial[id] = state.exercises[id].history; }); }
@@ -100,8 +101,11 @@ export function applyImport(prev, obj, mode) {
   };
   // En modo "solo la rutina" tus ejercicios que no vienen en el código se conservan ocultos (con su historial):
   // no salen en ningún día, pero no se pierde nada y vuelven si se importa una rutina que los use.
-  const exercises = mode === 'todo' ? {} : { ...prev.exercises };
+  let exercises = mode === 'todo' ? {} : { ...prev.exercises };
   Object.keys(obj.rutina.exercises).forEach((id) => { exercises[id] = { ...obj.rutina.exercises[id], history: histOf(id) }; });
+  // Un código de antes de la Diana humana trae los músculos antiguos: sus ejercicios se reparten igual que los tuyos
+  const antiguo = !(Number(obj.musculosVersion) >= MUSCULOS_VERSION);
+  if (antiguo) exercises = ejerciciosV2(exercises, Object.keys(obj.rutina.exercises));
   next.exercises = exercises;
   next.days = obj.rutina.days;
   // Músculos: con "todo" se usan los del código; con "solo la rutina" se añaden los que te falten (por id)
@@ -116,6 +120,7 @@ export function applyImport(prev, obj, mode) {
     Object.keys(exercises).forEach((id) => { usados[exercises[id].cat] = true; });
     next.musculos = MUSCULOS_POR_DEFECTO.map((m) => ({ ...m })).concat(mios.filter((m) => usados[m.id] && !MUSCULOS_POR_DEFECTO.some((d) => d.id === m.id)));
   } else next.musculos = mios;
+  if (antiguo) next.musculos = musculosV2(next.musculos);
   next.meta = { ...prev.meta, activeDay: obj.rutina.days.length ? obj.rutina.days[0].id : null };
   if (mode === 'todo') {
     if (obj.peso) next.peso = obj.peso;
@@ -135,7 +140,7 @@ export function applyImport(prev, obj, mode) {
     if (obj.extra) {
       const x = obj.extra;
       if (x.cardio) next.cardio = x.cardio;
-      if (x.diana) next.diana = x.diana;
+      if (x.diana) next.diana = antiguo ? { ...x.diana, estados: estadosV2(x.diana.estados) } : x.diana;
       if (x.extras) next.extras = x.extras;
       next.comida = { ...next.comida, diario: x.diario || next.comida.diario, agua: x.agua || next.comida.agua, compra: x.compra || next.comida.compra };
       if (x.registro) next.registro = x.registro;

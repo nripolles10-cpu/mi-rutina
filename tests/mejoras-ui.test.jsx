@@ -149,7 +149,7 @@ describe('3) músculos personalizables', () => {
     expect(guardado().diana.estados[nuevo.id]).toBe('debil');
     expect(texto()).toMatch(/Puntos débiles \(1\)/);
     // con Pecho sin marcar y Pecho superior débil, la zona sale a franjas
-    expect(document.querySelector('[data-region="pecho"] linearGradient')).toBeTruthy();
+    expect(document.querySelector('[data-region="pecho"] path').getAttribute('fill')).toMatch(/^url\(#.*-mix-pecho\)$/);
     // aparece en el selector de músculos al editar un ejercicio
     await tab('Rutina');
     await desbloquear();
@@ -172,7 +172,7 @@ describe('3) músculos personalizables', () => {
     await tab('Diana');
     await click(btn('✏️ Crear, renombrar o quitar músculos'));
     const fila = screen.getByTestId('musculo-pecho');
-    await click(within(fila).getByTitle('Quitar Pecho'));
+    await click(within(fila).getByTitle('Quitar Pectoral medio/inferior'));
     expect(fila.textContent).toMatch(/No se pierde ninguno ni su historial/);
     fireEvent.change(within(fila).getByLabelText('Músculo de destino'), { target: { value: 'hombro' } }); await tick();
     await click(within(fila).getByText('Quitar músculo'));

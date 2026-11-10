@@ -65,6 +65,61 @@ export function normalizarMovilidad(m, base) {
   };
 }
 
+/* Diana humana (músculos por partes). Se aplica una vez a los datos de antes:
+   · añade pectoral superior, hombro lateral, hombro posterior y espalda alta (si no están)
+   · renombra Pecho → Pectoral medio/inferior, Hombro → Hombro anterior y Espalda → Dorsal (solo si conservan el nombre de serie)
+   · copia el estado de la Diana (débil/intermedio/fuerte) a las partes nuevas
+   · reparte los ejercicios por el nombre (press inclinado → pectoral superior, laterales → hombro lateral…) */
+export const MUSCULOS_VERSION = 2;
+const RENOMBRES_V2 = { pecho: ['Pecho', 'Pectoral medio/inferior'], hombro: ['Hombro', 'Hombro anterior'], espalda: ['Espalda', 'Dorsal'] };
+const NUEVOS_V2 = [['pecho_sup', 'pecho', 'antes'], ['hombro_lat', 'hombro', 'despues'], ['hombro_post', 'hombro_lat', 'despues'], ['espalda_alta', 'espalda', 'antes']];
+const COPIA_ESTADO_V2 = { pecho_sup: 'pecho', hombro_lat: 'hombro', hombro_post: 'hombro', espalda_alta: 'espalda' };
+export function categoriaV2(cat, nombre) {
+  const n = String(nombre || '').toLowerCase();
+  if (cat === 'pecho' && /inclinad|incline|press alto/.test(n)) return 'pecho_sup';
+  if (cat === 'hombro') {
+    if (/lateral|elevaci/.test(n)) return 'hombro_lat';
+    if (/hacia atr|posterior|face ?pull|p[aá]jaro|rear|invers|reverse/.test(n)) return 'hombro_post';
+  }
+  if (cat === 'espalda' && /remo|row/.test(n)) return 'espalda_alta';
+  return cat;
+}
+// Lista de músculos: añade las partes nuevas junto a su músculo y renombra los de serie
+export function musculosV2(lista) {
+  let musculos = (Array.isArray(lista) ? lista : []).map((m) => (RENOMBRES_V2[m.id] && m.label === RENOMBRES_V2[m.id][0] ? { ...m, label: RENOMBRES_V2[m.id][1] } : m));
+  NUEVOS_V2.forEach(([id, vecino, donde]) => {
+    if (musculos.some((m) => m.id === id)) return;
+    const nuevo = { ...MUSCULOS_POR_DEFECTO.find((m) => m.id === id) };
+    const i = musculos.findIndex((m) => m.id === vecino);
+    if (i === -1) musculos = musculos.concat([nuevo]);
+    else musculos = musculos.slice(0, donde === 'antes' ? i : i + 1).concat([nuevo], musculos.slice(donde === 'antes' ? i : i + 1));
+  });
+  return musculos;
+}
+// Estados de la Diana: las partes nuevas heredan el del músculo del que salen
+export function estadosV2(estados) {
+  const out = { ...(estados || {}) };
+  Object.keys(COPIA_ESTADO_V2).forEach((id) => { const de = COPIA_ESTADO_V2[id]; if (!out[id] && out[de]) out[id] = out[de]; });
+  return out;
+}
+// Ejercicios: cada uno a su parte según el nombre (solo los ids indicados, o todos)
+export function ejerciciosV2(exercises, ids) {
+  const out = { ...(exercises || {}) };
+  (ids || Object.keys(out)).forEach((id) => {
+    const ex = out[id];
+    if (!ex) return;
+    const cat = categoriaV2(ex.cat, ex.name);
+    if (cat !== ex.cat) out[id] = { ...ex, cat };
+  });
+  return out;
+}
+export function aplicarMusculosV2(s) {
+  return {
+    ...s, musculos: musculosV2(s.musculos), exercises: ejerciciosV2(s.exercises),
+    diana: { ...(s.diana || {}), estados: estadosV2(s.diana && s.diana.estados) }, meta: { ...(s.meta || {}), musculosVersion: MUSCULOS_VERSION },
+  };
+}
+
 export const SECCIONES_PROGRESO_IDS = ['analisis', 'cuerpo', 'logros']; // el calendario ya está siempre a la vista
 
 export const TEMAS = ['cian', 'violeta', 'verde', 'fuego'];
@@ -132,7 +187,7 @@ export function buildInitialState() {
       currentSets: seedSets, history: [{ date: new Date().toISOString(), sets: clone(seedSets), seed: true }],
     });
   });
-  return {
+  return aplicarMusculosV2({
     version: APP_VERSION,
     exercises,
     days: clone(DAYS_SEED).map(normalizeDay),
@@ -165,8 +220,8 @@ export function buildInitialState() {
     medidas: { historial: [], zonas: normalizarZonas(null, []) },
     fotosProgreso: [],
     entrenosHechos: {},
-    meta: { activeTab: 'rutina', activeDay: 'piernaA', editMode: false, progresoSec: 'analisis', entrenoSec: 'rutina', comidaSec: 'hoy' },
-  };
+    meta: { activeTab: 'rutina', activeDay: 'piernaA', editMode: false, progresoSec: 'analisis', entrenoSec: 'rutina', comidaSec: 'hoy', musculosVersion: MUSCULOS_VERSION },
+  });
 }
 
 // Normaliza un estado ya migrado a la versión actual: se combina con la semilla para que un campo nuevo
@@ -191,6 +246,7 @@ export function normalizeCurrent(loaded, seed, appVersion) {
   next.exercises = exercises;
   next.days = days;
   next.diana = { estados: {}, titulos: {}, ...(loaded.diana || {}) };
+  const yaMusculosV2 = !!(loaded.meta && Number(loaded.meta.musculosVersion) >= MUSCULOS_VERSION);
   next.formulario = { ...seed.formulario, ...(loaded.formulario || {}) };
   const peso = { ...seed.peso, ...(loaded.peso || {}) };
   peso.historial = (Array.isArray(peso.historial) ? peso.historial : [])
@@ -245,7 +301,7 @@ export function normalizeCurrent(loaded, seed, appVersion) {
   if (SECCIONES_PROGRESO_IDS.indexOf(next.meta.progresoSec) === -1) next.meta.progresoSec = 'analisis';
   if (!days.some((d) => d.id === next.meta.activeDay)) next.meta.activeDay = days.length ? days[0].id : null;
   delete next.profile; delete next.pasos;
-  return next;
+  return yaMusculosV2 ? next : aplicarMusculosV2(next);
 }
 
 // Datos de la APP ANTIGUA (sin campo version o con version 5 o menor): se pone la rutina nueva,

@@ -234,7 +234,7 @@ Cinco pestañas abajo: **Entreno · Progreso · Comida · Diana · Recursos**.
   - Dentro de un día: las flechas ‹ › cambian de día, "‹ Todos los días" vuelve a la lista, la línea **⏱️ Descansos** se despliega para cambiar los tiempos y al final está **✅ Terminar entreno** (guarda el registro de hoy de lo que falte, cuenta para la racha y marca el día como **✓ HECHO**). En el entreno en vivo también está, abajo, con dos toques.
 - **📊 Progreso:** lo primero es tu peso; debajo la racha y el calendario, siempre a la vista. Cada día se colorea según lo que hiciste: azul (entreno), verde suave (cardio), violeta (movilidad), turquesa (entreno + cardio), índigo (entreno + movilidad), ámbar (cardio + movilidad) y **verde intenso con ✓** (las tres). Debajo, Análisis (series por semana, objetivos y progreso por ejercicio), Cuerpo (medidas) y Logros.
 - **🍽️ Comida:** arriba, siempre, lo que llevas y lo que te queda de calorías y macros (**⚙️ Ajustar** lleva a *Mi objetivo*). Apartados: **Hoy** (lo planificado sale en cada comida con el botón *Comido*; el agua suma 1 L con un toque), **Semana** (plan y lista de la compra), **Recetas** y **Mi objetivo** (la calculadora: definición, mantener o volumen).
-- **🎯 Diana:** igual que antes.
+- **🎯 Diana:** un cuerpo humano (de hombre o de mujer, según lo que pongas en Ajustes → Tus datos), delante y detrás. Los músculos van por partes: pectoral superior y medio/inferior, hombro anterior, lateral y posterior, trapecio, espalda alta, dorsal, lumbar, glúteo, abductores (glúteo medio)… Toca una zona para elegir su músculo y márcalo como débil, intermedio o fuerte.
 - **🧰 Recursos:** tus suplementos (se despliegan al tocarlos), 1RM, discos y el glosario.
 
 ## Problemas frecuentes

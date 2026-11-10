@@ -4,11 +4,17 @@
    MÚSCULOS (cada ejercicio cuenta solo para el músculo que le asignas)
    ========================================================================= */
 
-// Catálogo de serie (los 15 músculos de siempre, con sus ids y colores). "region" = zona del mapa de la Diana física.
+// Catálogo de serie (ids y colores). "region" = zona del mapa de la Diana física.
+// Desde la Diana humana, el pecho, el hombro y la espalda van por partes; los ids antiguos se mantienen
+// (pecho = pectoral medio/inferior, hombro = hombro anterior, espalda = dorsal) para no perder nada.
 export const MUSCULOS_POR_DEFECTO = [
-  { id: 'pecho',      label: 'Pecho',       color: '#F43F5E', emoji: '🎯', region: 'pecho' },
-  { id: 'espalda',    label: 'Espalda',     color: '#14B8A6', emoji: '🎯', region: 'espalda' },
-  { id: 'hombro',     label: 'Hombro',      color: '#38BDF8', emoji: '🎯', region: 'hombro' },
+  { id: 'pecho_sup',  label: 'Pectoral superior', color: '#FB7185', emoji: '🎯', region: 'pecho_sup' },
+  { id: 'pecho',      label: 'Pectoral medio/inferior', color: '#F43F5E', emoji: '🎯', region: 'pecho' },
+  { id: 'hombro',     label: 'Hombro anterior', color: '#38BDF8', emoji: '🎯', region: 'hombro' },
+  { id: 'hombro_lat', label: 'Hombro lateral', color: '#60A5FA', emoji: '🎯', region: 'hombro_lat' },
+  { id: 'hombro_post', label: 'Hombro posterior', color: '#67E8F9', emoji: '🎯', region: 'hombro_post' },
+  { id: 'espalda_alta', label: 'Espalda alta', color: '#F0ABFC', emoji: '🎯', region: 'espalda_alta' },
+  { id: 'espalda',    label: 'Dorsal',      color: '#14B8A6', emoji: '🎯', region: 'espalda' },
   { id: 'biceps',     label: 'Bíceps',      color: '#8B5CF6', emoji: '💪', region: 'biceps' },
   { id: 'triceps',    label: 'Tríceps',     color: '#E879F9', emoji: '💪', region: 'triceps' },
   { id: 'cuadriceps', label: 'Cuádriceps',  color: '#F97316', emoji: '🦵', region: 'cuadriceps' },

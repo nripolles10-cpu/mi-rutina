@@ -71,7 +71,7 @@ describe('rutina', () => {
     await desbloquear();
     await click(screen.getByText('➕ Añadir ejercicio a este día'));
     await type(screen.getByPlaceholderText('ej. Press militar'), 'Press de prueba');
-    await click(screen.getAllByText('Pecho').find((el) => el.tagName === 'BUTTON'));
+    await click(screen.getAllByText('Pectoral medio/inferior').find((el) => el.tagName === 'BUTTON'));
     await click(btn('Añadir ejercicio'));
     // abrir la tarjeta nueva
     await click(screen.getByText('Press de prueba'));
@@ -349,7 +349,7 @@ describe('ajustes: compartir, importar, copia, exportar y restablecer', () => {
       // un .xlsx y un .docx son ZIP: empiezan por "PK"
       expect(atob(por('mi_rutina.xlsx').content).slice(0, 2)).toBe('PK');
       expect(atob(por('mi_rutina.docx').content).slice(0, 2)).toBe('PK');
-      expect(por('mi_rutina.txt').content).toContain('Pecho');
+      expect(por('mi_rutina.txt').content).toContain('Pectoral superior');
       expect(texto()).toContain('Archivo preparado ✓');
     } finally { A.Native.saveFile = original; }
   });

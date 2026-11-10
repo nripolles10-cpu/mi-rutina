@@ -155,12 +155,12 @@ describe('calorías según sexo, edad, altura, peso, % de grasa y actividad', ()
 
 /* ---------------------------------------------------------------- 3) músculos editables */
 describe('catálogo de músculos editable', () => {
-  test('datos antiguos sin catálogo propio cargan los 15 de serie con los mismos ids y colores', () => {
+  test('datos antiguos sin catálogo propio cargan los de serie (ya por partes) con los mismos ids y colores', () => {
     const st = A.buildInitialState();
     delete st.musculos;
     st.version = 7;
     const m = A.migrateState(JSON.parse(JSON.stringify(st)));
-    expect(m.musculos.map((x) => x.id)).toEqual(['pecho', 'espalda', 'hombro', 'biceps', 'triceps', 'cuadriceps', 'aductores', 'isquios', 'gluteo', 'gemelos', 'core', 'antebrazo', 'trapecio', 'lumbar', 'abductores']);
+    expect(m.musculos.map((x) => x.id)).toEqual(['pecho_sup', 'pecho', 'hombro', 'hombro_lat', 'hombro_post', 'espalda_alta', 'espalda', 'biceps', 'triceps', 'cuadriceps', 'aductores', 'isquios', 'gluteo', 'gemelos', 'core', 'antebrazo', 'trapecio', 'lumbar', 'abductores']);
     expect(m.musculos.find((x) => x.id === 'pecho').color).toBe('#F43F5E');
     expect(m.exercises.aperturasMaq.cat).toBe('pecho');
   });
@@ -190,11 +190,11 @@ describe('catálogo de músculos editable', () => {
   test('renombrar, nombres repetidos y no dejar la lista vacía', () => {
     let st = A.buildInitialState();
     expect(A.renombrarMusculo(st, 'core', 'abdomen').state.musculos.find((m) => m.id === 'core').label).toBe('abdomen');
-    expect(A.renombrarMusculo(st, 'core', 'PÉCHO').ok).toBe(false); // ya existe "Pecho" (sin mirar tildes ni mayúsculas)
+    expect(A.renombrarMusculo(st, 'core', 'DÓRSAL').ok).toBe(false); // ya existe "Dorsal" (sin mirar tildes ni mayúsculas)
     expect(A.renombrarMusculo(st, 'core', '   ').ok).toBe(false);
-    expect(A.crearMusculo(st, 'Espalda').ok).toBe(false);
+    expect(A.crearMusculo(st, 'Dorsal').ok).toBe(false);
     st = { ...st, musculos: [st.musculos[0]], exercises: {} };
-    expect(A.borrarMusculo(st, 'pecho').error).toMatch(/al menos un músculo/);
+    expect(A.borrarMusculo(st, st.musculos[0].id).error).toMatch(/al menos un músculo/);
   });
 
   test('quitar un músculo borra su estado de la Diana; los demás estados no se tocan', () => {
@@ -248,7 +248,7 @@ describe('catálogo de músculos editable', () => {
     const viejo = A.buildShareObject(A.buildInitialState(), { todo: true }, null);
     delete viejo.musculos; viejo.appVersion = 7;
     const res = A.applyImport(st, viejo, 'todo');
-    expect(res.musculos.length).toBe(15);
+    expect(res.musculos.length).toBe(19);
   });
 
   test('un ejercicio con un músculo que ya no existe pasa a Core (o al primero) al cargar, sin romper', () => {
@@ -258,7 +258,7 @@ describe('catálogo de músculos editable', () => {
     expect(m.exercises.gemelo.cat).toBe('core');
     const sinCore = A.borrarMusculo(A.buildInitialState(), 'core', 'espalda').state;
     sinCore.exercises.gemelo.cat = 'no_existe';
-    expect(A.migrateState(JSON.parse(JSON.stringify(sinCore))).exercises.gemelo.cat).toBe('pecho');
+    expect(A.migrateState(JSON.parse(JSON.stringify(sinCore))).exercises.gemelo.cat).toBe(sinCore.musculos[0].id); // el primero
   });
 
   test('importar CSV reconoce tus músculos propios por el nombre', () => {
@@ -271,10 +271,10 @@ describe('catálogo de músculos editable', () => {
   });
 
   test('normalizarMusculos repara datos raros y nunca devuelve una lista vacía', () => {
-    expect(A.normalizarMusculos([]).length).toBe(15);
-    expect(A.normalizarMusculos(null).length).toBe(15);
+    expect(A.normalizarMusculos([]).length).toBe(19);
+    expect(A.normalizarMusculos(null).length).toBe(19);
     const l = A.normalizarMusculos([{ id: 'a', label: '', color: 'rojo', region: 'cabeza' }, { id: 'a', label: 'dup' }, null, { id: 'pecho' }]);
-    expect(l).toEqual([{ id: 'a', label: 'Músculo', color: '#94A3B8', emoji: '🎯', region: null }, { id: 'pecho', label: 'Pecho', color: '#F43F5E', emoji: '🎯', region: 'pecho' }]);
+    expect(l).toEqual([{ id: 'a', label: 'Músculo', color: '#94A3B8', emoji: '🎯', region: null }, { id: 'pecho', label: 'Pectoral medio/inferior', color: '#F43F5E', emoji: '🎯', region: 'pecho' }]);
   });
 });
 

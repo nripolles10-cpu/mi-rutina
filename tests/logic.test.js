@@ -22,16 +22,17 @@ describe('series efectivas', () => {
     const w = A.weeklySets(st);
     expect(w.gemelos).toBe(6); // 3 series × 2 días
     expect(w.cuadriceps).toBe(8); // 2+2+2 + rest-pause de 3 tandas (2)
-    expect(w.pecho).toBe(6); // aperturas solo calentamiento (0) + 2 + 2 + 2
+    expect(w.pecho).toBe(2); // aperturas solo calentamiento (0) + press en máquina (2)
+    expect(w.pecho_sup).toBe(4); // los dos press inclinados (2 + 2)
     expect(w.lumbar).toBe(2);
     expect(w.abductores).toBe(2);
-    expect(Object.keys(w).length).toBe(15);
+    expect(Object.keys(w).length).toBe(19);
   });
 
   test('weeklySets ignora ejercicios que no están en ningún día', () => {
     const st = A.buildInitialState();
     st.exercises.oculto = A.normalizeExercise({ name: 'Oculto', cat: 'pecho', currentSets: [{ reps: 8, weight: 50 }, { reps: 8, weight: 50 }] });
-    expect(A.weeklySets(st).pecho).toBe(6);
+    expect(A.weeklySets(st).pecho).toBe(2);
   });
 });
 
