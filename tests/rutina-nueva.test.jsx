@@ -33,8 +33,9 @@ const guardado = () => {
   return JSON.parse(localStorage.getItem(A.STORAGE_KEY));
 };
 
-async function montar() {
+async function montar(retoque) {
   const s = A.buildInitialState(); s.formulario.nombre = 'Prueba';
+  if (retoque) retoque(s);
   localStorage.setItem(A.STORAGE_KEY, JSON.stringify(s));
   render(<A.App />); await tick(); await entrarDia();
 }
@@ -118,5 +119,16 @@ describe('bilateral / unilateral', () => {
     await click(screen.getByRole('radio', { name: /Bilateral/ }));
     expect(guardado().exercises.gemelo.lado).toBe('bilateral');
     expect(texto()).not.toContain('Descanso entre un lado y el otro');
+  });
+});
+
+describe('entreno en vivo', () => {
+  test('marcar una serie sin repeticiones no la da por hecha: avisa y no arranca el descanso', async () => {
+    await montar((st) => { st.exercises.gemelo.currentSets[0].reps = null; });
+    await click(screen.getByRole('button', { name: /Empezar entreno en vivo/ }));
+    await click(screen.getByTestId('vivo-hecha'));
+    expect(texto()).toContain('Escribe las repeticiones de esta serie');
+    expect(screen.queryByTestId('vivo-descanso')).toBeNull();
+    expect(texto()).toMatch(/Serie 1 de/);
   });
 });

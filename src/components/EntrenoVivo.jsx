@@ -6,7 +6,7 @@ import { Native } from '../native/index.js';
 import { fmt, fmtMS, formatDecimal, parseDecimal, ymd } from '../utils/format.js';
 import { ensureStruct, setsVolume } from '../utils/training.js';
 import { DESCANSO_SERIES_DEFECTO, descansoTrasSerie, textoDescanso } from '../utils/descanso.js';
-import { estadoRegistroHoy, serieAzul } from '../utils/entreno.js';
+import { estadoRegistroHoy, serieAzul, tieneReps } from '../utils/entreno.js';
 import { bloquesDelDia } from '../tabs/RutinaTab.jsx';
 import { SugerenciaProgresion } from './HistorialEjercicio.jsx';
 
@@ -107,6 +107,8 @@ export function EntrenoVivoModal({ dayId, onClose }) {
   const tras = descansoTrasSerie({ tipo: s.tipo, unilateral: false }, prefs);
 
   const marcarSerie = () => {
+    // Sin repeticiones la serie no cuenta como hecha (igual que en la tarjeta: no se pone en azul)
+    if (!tieneReps(s)) { showToast('Escribe las repeticiones de esta serie antes de marcarla', 'warn'); return; }
     confirmarSerie(exId, nSerie); // la serie queda en azul: repeticiones confirmadas hoy
     if (primerLadoPendiente) {
       // Unilateral: primero un lado, descanso entre lados, y luego el otro lado en la misma serie
