@@ -1,9 +1,9 @@
 // Pruebas de interfaz de la Fase 3 (app real montada en jsdom)
 import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import React from 'react';
-import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, act, cleanup, within } from '@testing-library/react';
 import { loadApp } from './loadApp.js';
-import { bloquear, comida, desbloquear, entrarDia, irA } from './nav.js';
+import { desbloquear, entrarDia, irA } from './nav.js';
 
 let A, errores, oe;
 beforeEach(() => {
@@ -98,6 +98,8 @@ describe('progreso: calendario, cuerpo y logros', () => {
   test('tras guardar un registro el día aparece en el calendario, la racha y los logros', async () => {
     await montar();
     await click(screen.getByText('Gemelo de pie'));
+    const tarjeta = screen.getByText('Gemelo de pie').closest('.card');
+    for (const r of within(tarjeta).getAllByPlaceholderText('reps')) { await click(r); fireEvent.change(r, { target: { value: '8' } }); fireEvent.blur(r); await tick(); }
     await click(btn('💾 Guardar registro de hoy'));
     await tab('Progreso');
     // el calendario está siempre a la vista (debajo de la racha): el día sale como "Entreno"

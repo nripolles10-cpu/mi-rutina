@@ -93,8 +93,12 @@ export const SET_TYPES = {
   backoff: { label: 'Back-off',      emoji: '📐', color: '#10B981', soft: '#34D399' },
   rp:      { label: 'Rest-Pause',    emoji: '⚡', color: '#EF4444', soft: '#F87171' },
   drop:    { label: 'Dropset',       emoji: '🔻', color: '#A855F7', soft: '#C084FC' },
+  aprox:   { label: 'Aproximación',  emoji: '🪜', color: '#2DD4BF', soft: '#5EEAD4' },
   warm:    { label: 'Calentamiento', emoji: '🌡️', color: '#94A3B8', soft: '#CBD5E1' },
 };
+
+// Tipos que NO cuentan como serie efectiva ni suman volumen (calentamiento y aproximación)
+export const TIPOS_SIN_SERIE = ['warm', 'aprox'];
 
 export const OBJETIVOS = {
   volumen:       { label: 'Volumen',       emoji: '📈', color: '#22D3EE', protF: 2.0, fatF: 0.8 },

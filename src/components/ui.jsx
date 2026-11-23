@@ -50,7 +50,7 @@ export function Toast({ toast }) {
 // Es un campo de texto con teclado numérico (inputMode decimal) en lugar de un campo de tipo número,
 // porque el de tipo número devuelve vacío con la coma en algunos teclados y navegadores y el valor se borraba.
 // Mientras escribes se respeta lo que llevas ("7," no se pierde); al salir del campo se muestra con formato.
-export function NumInput({ value, onChange, placeholder, className, style, title }) {
+export function NumInput({ value, onChange, placeholder, className, style, title, onBlur: alSalir }) {
   const [txt, setTxt] = useState(formatDecimal(value));
   const focused = useRef(false);
   useEffect(() => {
@@ -61,7 +61,7 @@ export function NumInput({ value, onChange, placeholder, className, style, title
     <input type="text" inputMode="decimal" autoComplete="off" spellCheck={false} placeholder={placeholder} title={title}
       value={txt}
       onFocus={() => { focused.current = true; }}
-      onBlur={() => { focused.current = false; setTxt(formatDecimal(value)); }}
+      onBlur={() => { focused.current = false; setTxt(formatDecimal(value)); if (alSalir) alSalir(); }}
       onChange={(e) => {
         const t = e.target.value;
         if (t.trim() !== '' && !/^\d*[.,]?\d*$/.test(t.trim())) return; // ignora letras y símbolos
@@ -73,15 +73,18 @@ export function NumInput({ value, onChange, placeholder, className, style, title
   );
 }
 
-export function NumField({ value, onChange, placeholder, w = 56, forceEditable }) {
+// Azul = repeticiones de esta serie ya confirmadas hoy
+export const ESTILO_AZUL = { color: '#93C5FD', background: 'rgba(59,130,246,0.18)', borderColor: '#3B82F6', boxShadow: '0 0 0 1px rgba(59,130,246,0.55), 0 0 12px rgba(59,130,246,0.35)' };
+
+export function NumField({ value, onChange, placeholder, w = 56, forceEditable, azul = false, onBlur }) {
   const { state } = useGym();
   const editable = forceEditable || state.meta.editMode;
   if (!editable) {
     return <span className="font-body" style={{ width: w, display: 'inline-block', textAlign: 'center', color: T.text, fontWeight: 700, fontSize: 14, padding: '7px 6px' }}>{nz(value) === null ? '—' : formatDecimal(value)}</span>;
   }
   return (
-    <NumInput placeholder={placeholder} value={value} onChange={onChange}
-      className="font-body inp" style={{ width: w, fontWeight: 700, padding: '8px 4px', textAlign: 'center' }} />
+    <NumInput placeholder={placeholder} value={value} onChange={onChange} onBlur={onBlur}
+      className="font-body inp" style={{ width: w, fontWeight: 700, padding: '8px 4px', textAlign: 'center', ...(azul ? ESTILO_AZUL : {}) }} />
   );
 }
 

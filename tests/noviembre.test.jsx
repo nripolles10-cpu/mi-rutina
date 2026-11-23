@@ -4,7 +4,7 @@ import React from 'react';
 import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
 import { loadApp } from './loadApp.js';
 import { textoIngredientes, textoListaCompra } from '../src/tabs/ComidaTab.jsx';
-import { bloquear, comida, desbloquear, entrarDia, irA } from './nav.js';
+import { comida, entrarDia, irA } from './nav.js';
 
 let A, errores, oe, copiado;
 beforeEach(() => {

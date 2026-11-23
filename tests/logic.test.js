@@ -7,13 +7,14 @@ beforeAll(() => { localStorage.clear(); A = loadApp(); });
 
 
 describe('series efectivas', () => {
-  test('effectiveCount: calentamiento 0, normal 1, rest-pause y dropset suman 0,5 por tanda/descenso extra', () => {
+  test('effectiveCount: calentamiento y aproximación 0; top, back-off, rest-pause y dropset cuentan 1 cada uno', () => {
     expect(A.effectiveCount({ tipo: 'warm', reps: 10, weight: 50 })).toBe(0);
     expect(A.effectiveCount({ tipo: 'top', reps: 8, weight: 100 })).toBe(1);
     expect(A.effectiveCount({ tipo: 'backoff', reps: 8, weight: 90 })).toBe(1);
-    expect(A.effectiveCount({ tipo: 'rp', weight: 70, tandas: [8, 4, 3] })).toBe(2);
-    expect(A.effectiveCount({ tipo: 'rp', weight: 70, tandas: [8, 4] })).toBe(1.5);
-    expect(A.effectiveCount({ tipo: 'drop', drops: [{ weight: 60, reps: 8 }, { weight: 50, reps: 6 }, { weight: 40, reps: 6 }] })).toBe(2);
+    expect(A.effectiveCount({ tipo: 'rp', weight: 70, tandas: [8, 4, 3] })).toBe(1);
+    expect(A.effectiveCount({ tipo: 'rp', weight: 70, tandas: [8, 4] })).toBe(1);
+    expect(A.effectiveCount({ tipo: 'drop', drops: [{ weight: 60, reps: 8 }, { weight: 50, reps: 6 }, { weight: 40, reps: 6 }] })).toBe(1);
+    expect(A.effectiveCount({ tipo: 'aprox', reps: 6, weight: 80 })).toBe(0);
     expect(A.effectiveCount(null)).toBe(0);
   });
 
@@ -21,7 +22,7 @@ describe('series efectivas', () => {
     const st = A.buildInitialState();
     const w = A.weeklySets(st);
     expect(w.gemelos).toBe(6); // 3 series × 2 días
-    expect(w.cuadriceps).toBe(8); // 2+2+2 + rest-pause de 3 tandas (2)
+    expect(w.cuadriceps).toBe(7); // 2+2+2 + rest-pause de 3 tandas (1)
     expect(w.pecho).toBe(2); // aperturas solo calentamiento (0) + press en máquina (2)
     expect(w.pecho_sup).toBe(4); // los dos press inclinados (2 + 2)
     expect(w.lumbar).toBe(2);

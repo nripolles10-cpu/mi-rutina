@@ -9,7 +9,7 @@ import { describeSet } from '../utils/training.js';
 
 export const CSV_HEADER = ['Dia', 'Equipo', 'Ejercicio', 'Musculo', 'Serie', 'Tipo', 'Repeticiones', 'Peso_kg', 'Nota_serie', 'Objetivo', 'Objetivo_kg', 'Comentarios'];
 
-export const TIPO_CSV = { top: 'top set', backoff: 'back-off', rp: 'rest-pause', drop: 'dropset', warm: 'calentamiento' };
+export const TIPO_CSV = { top: 'top set', backoff: 'back-off', rp: 'rest-pause', drop: 'dropset', warm: 'calentamiento', aprox: 'aproximación' };
 
 export function csvEsc(v) {
   const s = String(v === null || v === undefined ? '' : v);

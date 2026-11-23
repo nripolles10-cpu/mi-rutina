@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Chip, Label, MiniBtn, NumField, TextField, chipStyle, useGym } from '../components/ui.jsx';
-import { DESCANSO_CALENTAMIENTO_DEFECTO, DESCANSO_LADOS_DEFECTO, DESCANSO_SERIES_DEFECTO, RAPIDOS, textoDescanso } from '../utils/descanso.js';
+import { Card, Chip, DescansoPicker, Label, MiniBtn, NumField, TextField, chipStyle, useGym } from '../components/ui.jsx';
+import { DESCANSO_APROX_DEFECTO, DESCANSO_CALENTAMIENTO_DEFECTO, DESCANSO_LADOS_DEFECTO, DESCANSO_SERIES_DEFECTO, textoDescanso } from '../utils/descanso.js';
 import { CATS, CAT_IDS, SET_TYPES, catInfo } from '../data/catalog.js';
 import { T } from '../data/theme.js';
 import { Native } from '../native/index.js';
@@ -9,7 +9,7 @@ import { DIAS_CORTOS, DIAS_LARGOS } from '../utils/cardio.js';
 import { computeScore, effectiveCount, ensureStruct, latestSerie1 } from '../utils/training.js';
 import { EntrenoVivoModal } from '../components/EntrenoVivo.jsx';
 import { HistorialEjercicioModal, SugerenciaProgresion } from '../components/HistorialEjercicio.jsx';
-import { semanaDescarga } from '../utils/entreno.js';
+import { estadoRegistroHoy, semanaDescarga, serieAzul } from '../utils/entreno.js';
 
 /* =========================================================================
    SECCIÓN 7 · PESTAÑAS
@@ -187,7 +187,7 @@ export function SetTypeSelect({ value, onChange }) {
   );
 }
 
-export function SetRow({ s, idx, onPatch, onRemove, canRemove, editMode }) {
+export function SetRow({ s, idx, onPatch, onRemove, canRemove, editMode, azul = false, onConfirm }) {
   const t = SET_TYPES[s.tipo] || SET_TYPES.top;
   const tandas = s.tandas || [];
   const drops = s.drops || [];
@@ -220,7 +220,7 @@ export function SetRow({ s, idx, onPatch, onRemove, canRemove, editMode }) {
             {tandas.map((r, i) => (
               <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
                 <span className="font-body" style={{ color: T.dim, fontSize: 10.5 }}>Tanda {i + 1}</span>
-                <NumField forceEditable value={r} onChange={(v) => onPatch({ tandas: tandas.map((x, k) => (k === i ? v : x)) })} placeholder="reps" w={54} />
+                <NumField forceEditable value={r} onChange={(v) => onPatch({ tandas: tandas.map((x, k) => (k === i ? v : x)) })} placeholder="reps" w={54} azul={azul} onBlur={onConfirm} />
               </div>
             ))}
           </div>
@@ -232,7 +232,7 @@ export function SetRow({ s, idx, onPatch, onRemove, canRemove, editMode }) {
           {drops.map((d, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span className="font-body" style={{ ...small, width: 82, flexShrink: 0 }}>{i === 0 ? 'Serie base' : 'Descenso ' + i}</span>
-              <NumField forceEditable value={d.reps} onChange={(v) => setDrop(i, { reps: v })} placeholder="reps" w={52} />
+              <NumField forceEditable value={d.reps} onChange={(v) => setDrop(i, { reps: v })} placeholder="reps" w={52} azul={azul} onBlur={onConfirm} />
               <span className="font-body" style={small}>×</span>
               <NumField forceEditable value={d.weight} onChange={(v) => setDrop(i, { weight: v })} placeholder="kg" w={58} />
               <span className="font-body" style={small}>kg</span>
@@ -247,7 +247,7 @@ export function SetRow({ s, idx, onPatch, onRemove, canRemove, editMode }) {
 
       {s.tipo !== 'rp' && s.tipo !== 'drop' && (
         <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <NumField forceEditable value={s.reps} onChange={(v) => onPatch({ reps: v })} placeholder="reps" w={54} />
+          <NumField forceEditable value={s.reps} onChange={(v) => onPatch({ reps: v })} placeholder="reps" w={54} azul={azul} onBlur={onConfirm} />
           <span className="font-body" style={small}>×</span>
           <NumField forceEditable value={s.weight} onChange={(v) => onPatch({ weight: v })} placeholder="kg" w={60} />
           <span className="font-body" style={small}>kg</span>
@@ -280,8 +280,34 @@ export function RapidosDescanso({ valor, opciones, onChange, conGeneral = null, 
   );
 }
 
+// Bloque con número y título para ordenar la edición del ejercicio por partes
+function Seccion({ num, titulo, children }) {
+  return (
+    <div style={{ padding: 12, borderRadius: 14, border: '1px solid rgba(140,170,255,0.16)', background: 'rgba(255,255,255,0.03)' }}>
+      <div className="font-body" style={{ display: 'flex', alignItems: 'center', gap: 8, color: T.text, fontWeight: 800, fontSize: 13, marginBottom: 10 }}>
+        {num && <span aria-hidden="true" style={{ width: 22, height: 22, borderRadius: 999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: 'rgba(var(--ac-rgb),0.22)', border: '1px solid ' + T.cyan, color: T.cyan, fontSize: 11.5, fontWeight: 900 }}>{num}</span>}
+        <span>{titulo}</span>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// Botón grande bilateral / unilateral (la "casilla" de cada ejercicio)
+function LadoBoton({ activo, onClick, emoji, titulo, texto }) {
+  return (
+    <button type="button" role="radio" aria-checked={activo} onClick={onClick} className="font-body"
+      style={{ padding: '12px 10px', borderRadius: 14, cursor: 'pointer', textAlign: 'left', minHeight: 66, color: T.text,
+        border: '2px solid ' + (activo ? T.cyan : 'rgba(140,170,255,0.25)'),
+        background: activo ? 'rgba(var(--ac-rgb),0.2)' : 'rgba(255,255,255,0.04)' }}>
+      <div style={{ fontSize: 14, fontWeight: 800 }}>{emoji} {titulo}{activo ? ' ✓' : ''}</div>
+      <div style={{ color: T.muted, fontSize: 11.5, marginTop: 3, lineHeight: 1.35 }}>{texto}</div>
+    </button>
+  );
+}
+
 export function ExerciseCard({ id, dayId, embedded }) {
-  const { state, updateExercise, updateDay, saveEntry, suggestObjetivo, removeFromDay, addSerie, removeSerieAt, askConfirm, fotos, setFoto, delFoto, showToast, duplicarEjercicio } = useGym();
+  const { state, updateExercise, updateDay, saveEntry, confirmarSerie, suggestObjetivo, removeFromDay, addSerie, removeSerieAt, askConfirm, fotos, setFoto, delFoto, showToast, duplicarEjercicio } = useGym();
   const [open, setOpen] = useState(false);
   const [verHistorial, setVerHistorial] = useState(false);
   const [fotoOcupada, setFotoOcupada] = useState(false);
@@ -290,20 +316,29 @@ export function ExerciseCard({ id, dayId, embedded }) {
 
   const editMode = state.meta.editMode;
   const day = dayId ? (state.days || []).find((d) => d.id === dayId) : null;
-  // Posición del bloque (un ejercicio suelto o un par de alternos) para subir y bajar
+  // Posición del bloque (un ejercicio suelto o un par de alternos) para ordenarlo en el día
   const bloques = day ? bloquesDelDia(day, state.exercises) : [];
   const posBloque = bloques.findIndex((b) => b.id === id || (b.par && (b.par.a === id || b.par.b === id)));
   const isFirst = posBloque <= 0;
   const isLast = posBloque === -1 || posBloque === bloques.length - 1;
   const par = day ? parDe(paresValidos(day, state.exercises), id) : null;
+  const uni = ex.lado === 'unilateral';
+  const hoyK = ymd(new Date());
+  const est = estadoRegistroHoy(ex, hoyK);
+  const general = state.preferencias || {};
 
-  const moverBloque = (dir) => {
-    const j = posBloque + dir;
-    if (!day || posBloque === -1 || j < 0 || j >= bloques.length) return;
+  // Lleva el bloque a la posición indicada (0 = arriba del todo)
+  const moverA = (nueva) => {
+    if (!day || posBloque === -1) return;
+    const dest = Math.max(0, Math.min(bloques.length - 1, nueva));
+    if (dest === posBloque) return;
     const nuevos = bloques.slice();
-    const tmp = nuevos[posBloque]; nuevos[posBloque] = nuevos[j]; nuevos[j] = tmp;
+    const [b] = nuevos.splice(posBloque, 1);
+    nuevos.splice(dest, 0, b);
     updateDay(day.id, { ids: idsDesdeBloques(nuevos) });
   };
+  const moverBloque = (dir) => moverA(posBloque + dir);
+  const nombreBloque = (b) => (b.par ? [b.par.a, b.par.b].map((x) => (state.exercises[x] ? state.exercises[x].name : '?')).join(' / ') : (state.exercises[b.id] ? state.exercises[b.id].name : '?'));
 
   // El trofeo muestra el peso de la serie 1 de tu ÚLTIMO registro guardado (suba o baje), tal como lo pidió el dueño.
   // La mejor marca de siempre está en "📈 Historial, récords y 1RM".
@@ -320,6 +355,8 @@ export function ExerciseCard({ id, dayId, embedded }) {
   const foto = fotos && fotos[id] ? Native.photoSrc(fotos[id]) : null;
   const mc = catInfo(CATS, ex.cat).color; // cada músculo tiene su color; todos los ejercicios del mismo músculo comparten color
   const chipSt = chipStyle(mc);
+  const nSeries = (ex.currentSets || []).length;
+  const enAzul = nSeries - est.pendientes.length;
 
   const setSet = (idx, patch) => {
     const cur = ex.currentSets[idx];
@@ -359,13 +396,15 @@ export function ExerciseCard({ id, dayId, embedded }) {
     });
   };
 
+  const cambiarLado = (lado) => updateExercise(id, { lado });
+
   return (
     <div className={embedded ? '' : 'card'} style={embedded ? { borderTop: '1px solid rgba(140,170,255,0.14)' } : { marginBottom: 12, padding: 0, overflow: 'hidden' }}>
       <div onClick={() => setOpen(!open)} style={{ textAlign: 'left', padding: '14px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
         {editMode && dayId && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
-            <MiniBtn title="Subir" disabled={isFirst} onClick={() => moverBloque(-1)}>▲</MiniBtn>
-            <MiniBtn title="Bajar" disabled={isLast} onClick={() => moverBloque(1)}>▼</MiniBtn>
+            <MiniBtn title="Subir uno" disabled={isFirst} onClick={() => moverBloque(-1)}>▲</MiniBtn>
+            <MiniBtn title="Bajar uno" disabled={isLast} onClick={() => moverBloque(1)}>▼</MiniBtn>
           </div>
         )}
         <div style={{ width: 4, alignSelf: 'stretch', borderRadius: 4, background: mc, minHeight: 34, flexShrink: 0, boxShadow: '0 0 12px ' + mc + '99' }} />
@@ -378,10 +417,17 @@ export function ExerciseCard({ id, dayId, embedded }) {
           </div>
           <div className="font-body" style={{ color: T.muted, fontSize: 11.5, marginTop: 2 }}><b style={{ color: mc }}>{catInfo(CATS, ex.cat).label}</b></div>
           <div style={{ display: 'flex', gap: 6, marginTop: 7, flexWrap: 'wrap' }}>
+            {editMode
+              ? <span role="button" tabIndex={0} title="Cambiar entre bilateral y unilateral" onClick={(e) => { e.stopPropagation(); cambiarLado(uni ? 'bilateral' : 'unilateral'); }}
+                  className="font-body" style={{ ...chipSt, fontWeight: 800, border: '1.5px solid ' + T.cyan, cursor: 'pointer' }}>{uni ? '🦵 Unilateral' : '⚖️ Bilateral'} ⇄</span>
+              : <span className="font-body" style={{ ...chipSt, fontWeight: 800 }}>{uni ? '🦵 Unilateral' : '⚖️ Bilateral'}</span>}
             {record !== null && <span className="font-body" title="Peso de la serie 1 en tu último registro" style={{ ...chipSt, fontWeight: 700 }}>🏆 {fmt(record, 2)} kg</span>}
             {ex.objetivo && <span className="font-body" style={chipSt}>🎯 {ex.objetivo.text}</span>}
             {!ex.objetivo && <span className="font-body" style={chipSt}>Sin objetivo — ponlo tú o pide una sugerencia</span>}
             {ex.marcaAntigua && <span className="font-body" style={chipSt}>↩️ recuperar {ex.marcaAntigua.text}</span>}
+            {est.yaGuardado
+              ? <span className="font-body" style={{ ...chipSt, color: '#93C5FD', borderColor: '#3B82F6' }}>✅ Hoy guardado</span>
+              : nSeries > 0 && <span className="font-body" style={{ ...chipSt, color: enAzul ? '#93C5FD' : T.dim }}>🔵 {enAzul}/{nSeries} en azul</span>}
           </div>
         </div>
         {foto && <img src={foto} alt="" style={{ width: 48, height: 48, borderRadius: 12, objectFit: 'cover', flexShrink: 0, border: '2px solid ' + mc }} />}
@@ -391,55 +437,114 @@ export function ExerciseCard({ id, dayId, embedded }) {
       {open && (
         <div style={{ padding: '0 14px 16px 14px', borderTop: '1px solid rgba(140,170,255,0.14)' }}>
           {editMode && (
-            <div style={{ marginTop: 12 }}>
-              <Label>Nombre del ejercicio</Label>
-              <TextField value={ex.name} onChange={(v) => updateExercise(id, { name: v }, 'ex:' + id + ':name')} placeholder="Nombre del ejercicio" />
-              {day && (
-                <div style={{ marginTop: 10 }}>
-                  <Label>🔁 Alternar con otro ejercicio (una semana uno y otra semana el otro)</Label>
-                  <AlternoPicker day={day} id={id} />
+            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <Seccion num="1" titulo="Tipo: bilateral o unilateral">
+                <div role="radiogroup" aria-label="Bilateral o unilateral" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  <LadoBoton activo={!uni} onClick={() => cambiarLado('bilateral')} emoji="⚖️" titulo="Bilateral" texto="Los dos lados a la vez, como siempre" />
+                  <LadoBoton activo={uni} onClick={() => cambiarLado('unilateral')} emoji="🦵" titulo="Unilateral" texto="Un lado, descanso y el otro lado" />
                 </div>
+                {uni && (
+                  <div style={{ marginTop: 12 }}>
+                    <Label>Descanso entre un lado y el otro</Label>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <Chip active={ex.descansoLados === null || ex.descansoLados === undefined} onClick={() => updateExercise(id, { descansoLados: null })} style={{ padding: '6px 12px', fontSize: 12 }}>
+                        Igual que el general ({textoDescanso(general.descansoLados || DESCANSO_LADOS_DEFECTO)})
+                      </Chip>
+                      <DescansoPicker value={ex.descansoLados ?? (general.descansoLados || DESCANSO_LADOS_DEFECTO)} onChange={(v) => updateExercise(id, { descansoLados: v })} />
+                    </div>
+                  </div>
+                )}
+              </Seccion>
+
+              <Seccion num="2" titulo="Nombre y músculo">
+                <Label>Nombre del ejercicio</Label>
+                <TextField value={ex.name} onChange={(v) => updateExercise(id, { name: v }, 'ex:' + id + ':name')} placeholder="Nombre del ejercicio" />
+                <div style={{ marginTop: 10 }}>
+                  <Label>Músculo (el ejercicio cuenta solo para este)</Label>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {CAT_IDS.map((k) => (
+                      <Chip key={k} active={ex.cat === k} onClick={() => updateExercise(id, { cat: k })} accent={catInfo(CATS, k).color} style={{ padding: '6px 12px', fontSize: 12 }}>{catInfo(CATS, k).label}</Chip>
+                    ))}
+                  </div>
+                </div>
+              </Seccion>
+
+              {day && (
+                <Seccion num="3" titulo="Orden dentro del día">
+                  <div className="font-body" style={{ color: T.muted, fontSize: 12, marginBottom: 8 }}>Puesto {posBloque + 1} de {bloques.length}</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                    <button type="button" disabled={isFirst} onClick={() => moverA(0)} className="font-body btn btn-ghost" style={{ padding: '10px 6px', fontSize: 12.5 }}>⤒ Arriba del todo</button>
+                    <button type="button" disabled={isLast} onClick={() => moverA(bloques.length - 1)} className="font-body btn btn-ghost" style={{ padding: '10px 6px', fontSize: 12.5 }}>⤓ Abajo del todo</button>
+                    <button type="button" disabled={isFirst} onClick={() => moverBloque(-1)} className="font-body btn btn-ghost" style={{ padding: '10px 6px', fontSize: 12.5 }}>▲ Subir uno</button>
+                    <button type="button" disabled={isLast} onClick={() => moverBloque(1)} className="font-body btn btn-ghost" style={{ padding: '10px 6px', fontSize: 12.5 }}>▼ Bajar uno</button>
+                  </div>
+                  <Label style={{ marginTop: 10 }}>O toca el puesto exacto al que lo quieres mover</Label>
+                  <div role="group" aria-label="Puestos del día" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {bloques.map((b, i) => {
+                      const actual = i === posBloque;
+                      return (
+                        <button key={i} type="button" disabled={actual} aria-current={actual ? 'step' : undefined} onClick={() => moverA(i)}
+                          title={'Pasar a la posición ' + (i + 1)} className="font-body"
+                          style={{ padding: '6px 10px', borderRadius: 999, fontSize: 11.5, fontWeight: 800, maxWidth: '100%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', cursor: actual ? 'default' : 'pointer', color: actual ? '#06202B' : T.text,
+                            border: '1.5px solid ' + (actual ? T.cyan : 'rgba(140,170,255,0.3)'), background: actual ? T.cyan : 'rgba(255,255,255,0.04)' }}>
+                          {i + 1}. {nombreBloque(b)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </Seccion>
               )}
-              <Label style={{ marginTop: 10 }}>Tipo de ejercicio</Label>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                <Chip active={ex.lado !== 'unilateral'} onClick={() => updateExercise(id, { lado: 'bilateral' })} style={{ padding: '6px 12px', fontSize: 12 }}>Bilateral (los dos a la vez)</Chip>
-                <Chip active={ex.lado === 'unilateral'} onClick={() => updateExercise(id, { lado: 'unilateral' })} style={{ padding: '6px 12px', fontSize: 12 }}>Unilateral (un lado y luego el otro)</Chip>
-              </div>
-              {ex.lado === 'unilateral' && (
-                <>
-                  <Label style={{ marginTop: 10 }}>Tiempo entre un lado y el otro</Label>
-                  <RapidosDescanso valor={ex.descansoLados ?? null} opciones={RAPIDOS.lados} conGeneral textoGeneral="Igual que general"
-                    onChange={(v) => updateExercise(id, { descansoLados: v })} />
-                </>
+
+              {day && (
+                <Seccion num="4" titulo="Alternar con otro ejercicio">
+                  <div className="font-body" style={{ color: T.dim, fontSize: 11.5, marginBottom: 8 }}>Una semana uno y otra semana el otro.</div>
+                  <AlternoPicker day={day} id={id} />
+                </Seccion>
               )}
-              <Label style={{ marginTop: 10 }}>Músculo (el ejercicio cuenta solo para este)</Label>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                {CAT_IDS.map((k) => (
-                  <Chip key={k} active={ex.cat === k} onClick={() => updateExercise(id, { cat: k })} accent={catInfo(CATS, k).color} style={{ padding: '6px 12px', fontSize: 12 }}>{catInfo(CATS, k).label}</Chip>
-                ))}
-              </div>
             </div>
           )}
 
-          <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {ex.currentSets.map((s, idx) => (
-              <SetRow key={idx} s={s} idx={idx} editMode={editMode} canRemove={ex.currentSets.length > 1}
-                onPatch={(patch) => setSet(idx, patch)} onRemove={() => removeSerieAt(id, idx)} />
-            ))}
+          <div style={{ marginTop: 14 }}>
+            <div className="font-body" style={{ color: T.text, fontWeight: 800, fontSize: 13, marginBottom: 8 }}>Series</div>
+            {editMode && (
+              <div className="font-body" style={{ color: T.muted, fontSize: 11.5, lineHeight: 1.45, marginBottom: 10, padding: '8px 10px', borderRadius: 10, background: 'rgba(255,255,255,0.04)' }}>
+                Cuentan como serie efectiva: 🔥 Top Set, 📐 Back-off, ⚡ Rest-Pause y 🔻 Dropset. No cuentan: 🌡️ Calentamiento y 🪜 Aproximación.
+              </div>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {ex.currentSets.map((s, idx) => (
+                <SetRow key={idx} s={s} idx={idx} editMode={editMode} canRemove={ex.currentSets.length > 1}
+                  azul={serieAzul(ex, idx, hoyK)} onConfirm={() => confirmarSerie(id, idx)}
+                  onPatch={(patch) => setSet(idx, patch)} onRemove={() => removeSerieAt(id, idx)} />
+              ))}
+            </div>
+            {editMode && (
+              <button disabled={ex.currentSets.length >= 8} onClick={() => addSerie(id)} className="font-body btn btn-ghost" style={{ width: '100%', marginTop: 10, padding: '9px', fontSize: 12.5 }}>
+                ➕ Añadir serie
+              </button>
+            )}
           </div>
 
-          {editMode && (
-            <button disabled={ex.currentSets.length >= 8} onClick={() => addSerie(id)} className="font-body btn btn-ghost" style={{ width: '100%', marginTop: 10, padding: '9px', fontSize: 12.5 }}>
-              ➕ Añadir serie
+          <div style={{ marginTop: 12, padding: 12, borderRadius: 14, background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.3)' }}>
+            <div className="font-body" style={{ color: '#93C5FD', fontWeight: 800, fontSize: 13 }}>
+              🔵 Registro de hoy · {enAzul}/{nSeries} series en azul
+            </div>
+            <div className="font-body" style={{ color: T.muted, fontSize: 11.5, marginTop: 4, lineHeight: 1.45 }}>
+              {est.yaGuardado
+                ? '✅ Ya está guardado. Si cambias algún número, podrás guardarlo otra vez y sustituirá al de hoy.'
+                : est.listo
+                  ? 'Todas las series están en azul. Ya puedes guardar el registro de hoy.'
+                  : 'Escribe las repeticiones de cada serie y sal del campo: se pondrá en azul. Guardar se activa cuando estén todas.'}
+            </div>
+            <button onClick={() => saveEntry(id)} disabled={est.yaGuardado || !est.listo} className="font-body btn"
+              style={{ marginTop: 10, width: '100%', background: est.yaGuardado || !est.listo ? 'rgba(255,255,255,0.08)' : mc, color: est.yaGuardado || !est.listo ? T.dim : '#060913', boxShadow: est.yaGuardado || !est.listo ? 'none' : '0 6px 20px ' + mc + '55' }}>
+              {est.yaGuardado ? '✅ Registro de hoy guardado' : est.listo ? '💾 Guardar registro de hoy' : '💾 Guardar (faltan ' + est.pendientes.length + (est.pendientes.length === 1 ? ' serie' : ' series') + ' en azul)'}
             </button>
-          )}
+          </div>
 
           <div className="font-body" style={{ marginTop: 12, fontSize: 11, color: T.dim }}>{last && !last.seed ? 'Último registro: ' + fmtDateShort(last.date) : 'Sin registros guardados aún'}</div>
           <SugerenciaProgresion id={id} compacta />
 
-          <button onClick={() => saveEntry(id)} className="font-body btn" style={{ marginTop: 10, width: '100%', background: mc, color: '#060913', boxShadow: '0 6px 20px ' + mc + '55' }}>
-            💾 Guardar registro de hoy
-          </button>
           <button onClick={() => setVerHistorial(true)} className="font-body btn btn-ghost" style={{ marginTop: 8, width: '100%', fontSize: 12.5 }}>📈 Historial, récords y 1RM</button>
           {verHistorial && <HistorialEjercicioModal id={id} onClose={() => setVerHistorial(false)} />}
 
@@ -653,30 +758,40 @@ export function DiasLista({ onAbrir }) {
   );
 }
 
-/* ---------- Descansos en una línea (se despliega al tocarla) ---------- */
+/* ---------- Descansos: se pueden cambiar desde el principio y se usan en el entreno en vivo ---------- */
 function DescansosLinea() {
   const { state, setPreferencia } = useGym();
   const [abierto, setAbierto] = useState(false);
   const p = state.preferencias || {};
   const series = p.descanso || DESCANSO_SERIES_DEFECTO;
-  const lados = p.descansoLados || DESCANSO_LADOS_DEFECTO;
+  const aprox = p.descansoAproximacion || DESCANSO_APROX_DEFECTO;
   const cal = p.descansoCalentamiento || DESCANSO_CALENTAMIENTO_DEFECTO;
+  const lados = p.descansoLados || DESCANSO_LADOS_DEFECTO;
+  const filas = [
+    { clave: 'descanso', titulo: 'Series efectivas', sub: 'Top set, back-off, rest-pause y dropset', valor: series },
+    { clave: 'descansoAproximacion', titulo: 'Aproximación', sub: 'La serie antes de la efectiva', valor: aprox },
+    { clave: 'descansoCalentamiento', titulo: 'Calentamiento', sub: 'Series para entrar en calor', valor: cal },
+    { clave: 'descansoLados', titulo: 'Entre lados', sub: 'Ejercicios unilaterales: un lado y luego el otro', valor: lados },
+  ];
   return (
     <Card style={{ marginBottom: 12, padding: abierto ? 12 : '10px 12px' }}>
       <button type="button" onClick={() => setAbierto(!abierto)} aria-expanded={abierto} data-testid="descansos-linea" className="font-body"
         style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, background: 'transparent', border: 0, padding: 0, cursor: 'pointer', textAlign: 'left', color: T.text }}>
-        <span style={{ fontSize: 12.5, lineHeight: 1.45 }}>⏱️ Descansos: <b>{textoDescanso(series)}</b> · lados <b>{textoDescanso(lados)}</b> · calentamiento <b>{textoDescanso(cal)}</b></span>
+        <span style={{ fontSize: 12.5, lineHeight: 1.45 }}>⏱️ Descansos: <b>{textoDescanso(series)}</b> · aprox. <b>{textoDescanso(aprox)}</b> · calent. <b>{textoDescanso(cal)}</b> · lados <b>{textoDescanso(lados)}</b></span>
         <span style={{ color: T.cyan, fontSize: 12, fontWeight: 800, flexShrink: 0 }}>{abierto ? 'Cerrar ▲' : 'Cambiar ›'}</span>
       </button>
       {abierto && (
         <div style={{ marginTop: 10 }}>
-          <div className="font-body" style={{ color: T.muted, fontSize: 11.5, marginBottom: 6 }}>Se usan en el entreno en vivo. Toca uno y se guarda.</div>
-          <Label>Entre series</Label>
-          <RapidosDescanso valor={series} opciones={RAPIDOS.series} onChange={(v) => setPreferencia({ descanso: v })} />
-          <Label style={{ marginTop: 10 }}>Entre lados (ejercicios unilaterales)</Label>
-          <RapidosDescanso valor={lados} opciones={RAPIDOS.lados} onChange={(v) => setPreferencia({ descansoLados: v })} />
-          <Label style={{ marginTop: 10 }}>En series de calentamiento</Label>
-          <RapidosDescanso valor={cal} opciones={RAPIDOS.calentamiento} onChange={(v) => setPreferencia({ descansoCalentamiento: v })} />
+          <div className="font-body" style={{ color: T.muted, fontSize: 11.5, marginBottom: 6 }}>Elige cuánto descansas en cada tipo de serie. Se usan en el entreno en vivo y se guardan al cambiarlos.</div>
+          {filas.map((f) => (
+            <div key={f.clave} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '8px 0', borderTop: '1px solid rgba(140,170,255,0.12)' }}>
+              <div style={{ minWidth: 0 }}>
+                <div className="font-body" style={{ color: T.text, fontWeight: 700, fontSize: 13 }}>{f.titulo}</div>
+                <div className="font-body" style={{ color: T.dim, fontSize: 11 }}>{f.sub}</div>
+              </div>
+              <DescansoPicker value={f.valor} onChange={(v) => setPreferencia({ [f.clave]: v })} />
+            </div>
+          ))}
         </div>
       )}
     </Card>
@@ -688,17 +803,19 @@ function TerminarEntreno({ day }) {
   const { state, askConfirm, terminarEntreno } = useGym();
   const hoyK = ymd(new Date());
   const ids = idsActivosDelDia(day, state.exercises);
-  const pendientes = ids.filter((id) => !guardadoHoy(state.exercises[id], hoyK)).length;
+  const sinGuardar = ids.filter((id) => !guardadoHoy(state.exercises[id], hoyK));
+  const listos = sinGuardar.filter((id) => estadoRegistroHoy(state.exercises[id], hoyK).listo).length;
+  const incompletos = sinGuardar.length - listos;
   const hecho = (state.entrenosHechos || {})[hoyK] === day.id;
   if (!ids.length) return null;
-  if (hecho && pendientes === 0) {
+  if (hecho && sinGuardar.length === 0) {
     return <div data-testid="entreno-terminado" className="font-body" style={{ marginTop: 14, padding: 13, borderRadius: 14, textAlign: 'center', border: '1.5px solid #A3E635', color: '#A3E635', fontWeight: 900, fontSize: 14 }}>✓ Entreno de hoy terminado</div>;
   }
   const pedir = () => askConfirm({
     title: '¿Terminar el entreno?',
-    text: pendientes
-      ? 'Se guardará el registro de hoy de ' + pendientes + (pendientes === 1 ? ' ejercicio que aún no has guardado' : ' ejercicios que aún no has guardado') + ', con los pesos y repeticiones que tienen ahora. Cuenta para tu racha y sale en el calendario.'
-      : 'Todos los ejercicios ya tienen su registro de hoy. Se marcará el día como hecho.',
+    text: (listos ? 'Se guardará el registro de hoy de ' + listos + (listos === 1 ? ' ejercicio' : ' ejercicios') + ' con todas sus series en azul. ' : '')
+      + (incompletos ? incompletos + (incompletos === 1 ? ' ejercicio se queda sin guardar: le faltan series en azul.' : ' ejercicios se quedan sin guardar: les faltan series en azul.') : '')
+      + (!listos && !incompletos ? 'Todos los ejercicios ya tienen su registro de hoy. Se marcará el día como hecho.' : ' Cuenta para tu racha y sale en el calendario.'),
     confirmLabel: 'Terminar',
     danger: false,
     onConfirm: () => terminarEntreno(day.id, ids),
@@ -706,7 +823,9 @@ function TerminarEntreno({ day }) {
   return (
     <div style={{ marginTop: 14 }}>
       <button onClick={pedir} data-testid="terminar-entreno" className="font-body btn" style={{ width: '100%', padding: 14, fontSize: 15, fontWeight: 900, background: '#A3E635', color: '#0B1500', border: 0 }}>✅ Terminar entreno</button>
-      <div className="font-body" style={{ color: T.dim, fontSize: 11.5, textAlign: 'center', marginTop: 6 }}>Cuenta para tu racha y sale en el calendario.</div>
+      <div className="font-body" style={{ color: T.dim, fontSize: 11.5, textAlign: 'center', marginTop: 6 }}>
+        {incompletos ? 'Quedan ' + incompletos + ' ejercicio' + (incompletos === 1 ? '' : 's') + ' con series sin confirmar (en azul).' : 'Cuenta para tu racha y sale en el calendario.'}
+      </div>
     </div>
   );
 }
@@ -775,7 +894,7 @@ export function RutinaTab({ onVolver }) {
 
       <AvisoDescarga />
       {vivo && <EntrenoVivoModal dayId={vivo} onClose={() => setVivo(null)} />}
-      {!editMode && day.ids.length > 0 && <DescansosLinea />}
+      {day.ids.length > 0 && <DescansosLinea />}
       {!editMode && day.ids.length > 0 && (
         <button onClick={() => setVivo(day.id)} className="font-body btn btn-primary" style={{ width: '100%', marginBottom: 8, padding: 13, fontSize: 14 }}>▶ Empezar entreno en vivo</button>
       )}

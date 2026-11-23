@@ -32,6 +32,19 @@ const HOY = ymd(new Date());
 const SEM_HOY = ((new Date().getDay() + 6) % 7) + 1; // 1 = lunes … 7 = domingo
 const otroDia = (k) => (k % 7) + 1;
 
+// Deja todas las series de estos ejercicios confirmadas hoy (reps + en azul), para que "Terminar entreno" pueda guardarlos
+function dejarListosHoy(s, ids) {
+  ids.forEach((id) => {
+    const ex = s.exercises[id];
+    ex.currentSets = ex.currentSets.map((st) => {
+      if (st.tipo === 'rp') return { ...st, tandas: (st.tandas && st.tandas.length ? st.tandas : [null]).map((v) => v ?? 8) };
+      if (st.tipo === 'drop') return { ...st, drops: (st.drops && st.drops.length ? st.drops : [{ weight: st.weight || 50 }]).map((d) => ({ ...d, reps: d.reps ?? 8 })) };
+      return { ...st, reps: st.reps ?? 8 };
+    });
+    ex.marcasHoy = { fecha: ymd(new Date()), sets: ex.currentSets.map((_, i) => i) };
+  });
+}
+
 async function montar(retoque) {
   const s = A.buildInitialState(); s.formulario.nombre = 'Prueba';
   s.formulario.sexo = 'hombre';
@@ -102,16 +115,17 @@ describe('Entreno', () => {
   });
 
   test('dentro del día: volver, descansos en una línea y terminar entreno guarda, cuenta y sobrevive a reabrir la app', async () => {
-    let s0; await montar((s) => { s0 = s; s.days[0].semana = SEM_HOY; s.meta.activeDay = s.days[0].id; });
+    let s0; await montar((s) => { s0 = s; s.days[0].semana = SEM_HOY; s.meta.activeDay = s.days[0].id; dejarListosHoy(s, idsActivosDelDia(s.days[0], s.exercises)); });
     await click(tarjetaDia(s0, 0));
     expect(screen.getByTestId('volver-dias')).toBeTruthy();
     expect(screen.getByTestId('dia-subtitulo').textContent).toContain('HOY');
     // descansos: una línea que se despliega
     const linea = screen.getByTestId('descansos-linea');
     expect(linea.getAttribute('aria-expanded')).toBe('false');
-    expect(texto()).not.toContain('Entre lados (ejercicios unilaterales)');
+    expect(texto()).not.toContain('Entre lados');
     await click(linea);
-    expect(texto()).toContain('Entre lados (ejercicios unilaterales)');
+    expect(texto()).toContain('Entre lados');
+    expect(texto()).toContain('Ejercicios unilaterales');
     // terminar entreno: pide confirmar y guarda los que faltan
     const ids = idsActivosDelDia(guardado().days[0], guardado().exercises);
     expect(ids.length).toBeGreaterThan(0);
@@ -142,6 +156,7 @@ describe('Entreno', () => {
       ya = idsActivosDelDia(s.days[0], s.exercises)[0];
       const ex = s.exercises[ya];
       ex.history = (ex.history || []).concat([{ date: new Date().toISOString(), sets: JSON.parse(JSON.stringify(ex.currentSets)) }]);
+      dejarListosHoy(s, idsActivosDelDia(s.days[0], s.exercises).filter((id) => id !== ya));
     });
     await click(tarjetaDia(s0, 0));
     const ids = idsActivosDelDia(guardado().days[0], guardado().exercises);

@@ -50,7 +50,7 @@ const COLS = {
   tipo: ['tipo', 'tipodeserie'], reps: ['repeticiones', 'reps'], peso: ['pesokg', 'peso', 'kg'], nota: ['notaserie', 'nota'],
   objetivo: ['objetivo'], objetivoKg: ['objetivokg'], comentarios: ['comentarios', 'comentario', 'tecnica'],
 };
-const TIPOS = { topset: 'top', top: 'top', backoff: 'backoff', restpause: 'rp', rp: 'rp', dropset: 'drop', drop: 'drop', calentamiento: 'warm', warm: 'warm' };
+const TIPOS = { topset: 'top', top: 'top', backoff: 'backoff', restpause: 'rp', rp: 'rp', dropset: 'drop', drop: 'drop', calentamiento: 'warm', warm: 'warm', aproximacion: 'aprox', aprox: 'aprox' };
 
 function musculoDe(txt, cats) {
   const n = norm(txt);

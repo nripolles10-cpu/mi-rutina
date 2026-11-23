@@ -3,7 +3,7 @@ import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent, act, cleanup, within } from '@testing-library/react';
 import { loadApp } from './loadApp.js';
-import { bloquear, comida, desbloquear, entrarDia, irA } from './nav.js';
+import { comida, desbloquear, entrarDia, irA } from './nav.js';
 
 let A, errores, oe;
 beforeEach(() => {

@@ -5,6 +5,7 @@
    ========================================================================= */
 import { addDays, fmt, fromYmd, mean, mondayOf, num, uid, ymd } from './format.js';
 import { calc1RM, computeScore, effectiveCount, setsVolume } from './training.js';
+import { TIPOS_SIN_SERIE } from '../data/catalog.js';
 
 /* ---------- Sesiones (a partir de los registros guardados de cada ejercicio) ---------- */
 
@@ -145,7 +146,7 @@ export function pesoReps(s) {
 export function mejor1RMSeries(sets) {
   let best = null;
   (sets || []).forEach((s) => {
-    if (!s || s.tipo === 'warm') return;
+    if (!s || TIPOS_SIN_SERIE.includes(s.tipo)) return;
     const pr = pesoReps(s);
     const r = calc1RM(pr.peso, pr.reps);
     if (r && (best === null || r.media > best)) best = r.media;
@@ -371,4 +372,46 @@ export function proximosRecordatorios(dias, hora, desde, semanas) {
   }
   out.sort((a, b) => a.at - b.at);
   return out.slice(0, n * dias.length).map((x, i) => ({ ...x, id: RECORDATORIO_ID_BASE + i }));
+}
+
+/* =========================================================================
+   REGISTRO DEL DÍA: series en azul y guardado único
+   · Una serie se pone en azul cuando confirmas sus repeticiones de hoy (aunque sean las mismas).
+   · El registro de un ejercicio solo se guarda cuando TODAS sus series están en azul.
+   · Si ya guardaste hoy y no has cambiado nada, no se vuelve a guardar. Si cambias algo y guardas
+     otra vez el mismo día, sustituye el registro de hoy: nunca hay dos registros del mismo día.
+   ========================================================================= */
+
+// Una serie tiene repeticiones si todas sus cifras de reps están rellenas (rest-pause: cada tanda; dropset: cada descenso)
+export function tieneReps(s) {
+  if (!s) return false;
+  const lleno = (v) => v !== null && v !== undefined && v !== '';
+  if (s.tipo === 'rp') return (s.tandas || []).length > 0 && s.tandas.every(lleno);
+  if (s.tipo === 'drop') return (s.drops || []).length > 0 && s.drops.every((d) => d && lleno(d.reps));
+  return lleno(s.reps);
+}
+
+// Índices de las series que has confirmado HOY (si la marca es de otro día, no cuenta)
+export function marcasDeHoy(ex, hoyK) {
+  const m = ex && ex.marcasHoy;
+  return m && m.fecha === hoyK && Array.isArray(m.sets) ? m.sets : [];
+}
+
+// Una serie está en azul cuando la confirmaste hoy y tiene repeticiones
+export function serieAzul(ex, idx, hoyK) {
+  const s = ((ex && ex.currentSets) || [])[idx];
+  return marcasDeHoy(ex, hoyK).includes(idx) && tieneReps(s);
+}
+
+// Huella de las series tal como están (para saber si cambiaron desde que guardaste)
+export function firmaSets(sets) {
+  return JSON.stringify((sets || []).map((s) => ({ t: s.tipo, r: s.reps, w: s.weight, tn: s.tandas || null, d: s.drops || null })));
+}
+
+// Estado del registro de hoy de un ejercicio: si está listo para guardar, qué series faltan y si ya está guardado
+export function estadoRegistroHoy(ex, hoyK) {
+  const sets = (ex && ex.currentSets) || [];
+  const pendientes = sets.map((_, i) => i).filter((i) => !serieAzul(ex, i, hoyK));
+  const guardado = !!(ex && ex.guardadoHoy && ex.guardadoHoy.fecha === hoyK && ex.guardadoHoy.firma === firmaSets(sets));
+  return { listo: sets.length > 0 && pendientes.length === 0, pendientes, yaGuardado: guardado };
 }

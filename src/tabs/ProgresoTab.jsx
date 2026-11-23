@@ -244,7 +244,7 @@ export function SeriesSemanalesCard() {
   return (
     <Card style={{ marginBottom: 18 }}>
       <div className="font-body" style={{ color: T.muted, fontSize: 12, lineHeight: 1.5, marginBottom: 12 }}>
-        Cada serie cuenta 1 y el calentamiento no cuenta. En rest-pause y dropset, cada tanda o descenso extra suma 0,5. Cada ejercicio cuenta solo para el músculo que le asignas; las partes (pectoral superior, hombro lateral y posterior, espalda alta) suman en su grupo.
+        Cada serie efectiva cuenta 1 (top set, back-off, rest-pause y dropset). El calentamiento y la aproximación no cuentan. Cada ejercicio cuenta solo para el músculo que le asignas; las partes (pectoral superior, hombro lateral y posterior, espalda alta) suman en su grupo.
       </div>
       <div style={{ marginBottom: 14 }}>
         <div className="font-body" style={{ color: T.dim, fontSize: 11 }}>Total semanal</div>

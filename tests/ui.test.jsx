@@ -5,7 +5,7 @@ import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent, act, within, cleanup } from '@testing-library/react';
 import { loadApp } from './loadApp.js';
-import { bloquear, comida, desbloquear, entrarDia, irA } from './nav.js';
+import { comida, desbloquear, entrarDia, irA } from './nav.js';
 
 let A, errores, oe;
 beforeEach(() => {
@@ -98,6 +98,8 @@ describe('rutina', () => {
     await click(within(card).getByText('➕ Añadir descenso'));
     expect(within(card).getByText('Descenso 2')).toBeTruthy();
     fireEvent.change(card.querySelectorAll('select.set-select')[2], { target: { value: 'warm' } }); await tick();
+    // las repeticiones pasan a azul al salir del campo; guardar exige que todas las series estén en azul
+    for (const r of within(card).queryAllByPlaceholderText('reps')) { if (!r.value) await type(r, '8'); fireEvent.blur(r); await tick(); }
     // guardar registro: es récord
     await click(within(card).getByText('💾 Guardar registro de hoy'));
     expect(texto()).toMatch(/Nuevo récord en Press de prueba/);
@@ -134,6 +136,7 @@ describe('rutina', () => {
     expect(card().textContent).not.toContain('110 kg');
     // al guardar el registro de hoy (con 97,5 en la serie 1), el trofeo pasa a 97,5
     await click(screen.getByText('Gemelo de pie'));
+    for (const r of within(card()).getAllByPlaceholderText('reps')) { await type(r, '7'); fireEvent.blur(r); await tick(); }
     await click(screen.getByText('💾 Guardar registro de hoy'));
     expect(card().textContent).toContain('🏆 97,5 kg');
   });
@@ -142,7 +145,7 @@ describe('rutina', () => {
     await montar();
     await desbloquear();
     // mover el segundo ejercicio arriba
-    const subir = screen.getAllByTitle('Subir');
+    const subir = screen.getAllByTitle('Subir uno');
     expect(subir[0].disabled).toBe(true);
     await click(subir[1]);
     await flush();

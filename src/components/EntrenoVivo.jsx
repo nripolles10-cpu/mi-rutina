@@ -3,9 +3,10 @@ import { Modal, useGym } from './ui.jsx';
 import { CATS, SET_TYPES, catInfo } from '../data/catalog.js';
 import { T } from '../data/theme.js';
 import { Native } from '../native/index.js';
-import { fmt, fmtMS, formatDecimal, parseDecimal } from '../utils/format.js';
+import { fmt, fmtMS, formatDecimal, parseDecimal, ymd } from '../utils/format.js';
 import { ensureStruct, setsVolume } from '../utils/training.js';
-import { descansoTrasSerie, textoDescanso } from '../utils/descanso.js';
+import { DESCANSO_SERIES_DEFECTO, descansoTrasSerie, textoDescanso } from '../utils/descanso.js';
+import { estadoRegistroHoy, serieAzul } from '../utils/entreno.js';
 import { bloquesDelDia } from '../tabs/RutinaTab.jsx';
 import { SugerenciaProgresion } from './HistorialEjercicio.jsx';
 
@@ -21,7 +22,7 @@ const sumar = (v, d, min) => {
   return Math.max(min === undefined ? 0 : min, n);
 };
 
-function Grande({ etiqueta, valor, unidad, pasos, onChange, testid }) {
+function Grande({ etiqueta, valor, unidad, pasos, onChange, testid, azul = false }) {
   const [txt, setTxt] = useState(null); // mientras escribes a mano
   return (
     <div style={{ textAlign: 'center', marginBottom: 14 }}>
@@ -35,7 +36,7 @@ function Grande({ etiqueta, valor, unidad, pasos, onChange, testid }) {
           onFocus={(e) => { setTxt(formatDecimal(valor)); e.target.select(); }}
           onChange={(e) => { setTxt(e.target.value); const v = parseDecimal(e.target.value); if (v !== undefined) onChange(v); }}
           onBlur={() => setTxt(null)}
-          className="font-display" style={{ width: 86, minWidth: 0, textAlign: 'center', fontSize: 38, fontWeight: 700, color: '#FFFFFF', background: 'transparent', border: 'none', borderBottom: '2px solid rgba(140,170,255,0.3)', padding: 0 }} />
+          className="font-display" style={{ width: 86, minWidth: 0, textAlign: 'center', fontSize: 38, fontWeight: 700, color: azul ? '#93C5FD' : '#FFFFFF', background: 'transparent', border: 'none', borderBottom: '2px solid rgba(140,170,255,0.3)', padding: 0 }} />
         {pasos.map((p) => (
           <button key={'+' + p} onClick={() => onChange(sumar(valor, p))} className="font-body btn btn-ghost" aria-label={'Sumar ' + fmt(p, 2)}
             style={{ minWidth: 42, height: 50, fontSize: p === pasos[0] ? 20 : 12, padding: 0 }}>+{p === pasos[0] ? '' : fmt(p, 2)}</button>
@@ -47,8 +48,9 @@ function Grande({ etiqueta, valor, unidad, pasos, onChange, testid }) {
 }
 
 export function EntrenoVivoModal({ dayId, onClose }) {
-  const { state, updateExercise, saveEntry, terminarEntreno, marcarEntrenoHecho, startTimer, addTimer, stopTimer, timer, nowMs, showToast } = useGym();
+  const { state, updateExercise, saveEntry, confirmarSerie, terminarEntreno, marcarEntrenoHecho, startTimer, addTimer, stopTimer, timer, nowMs, showToast } = useGym();
   const day = (state.days || []).find((d) => d.id === dayId);
+  const hoyK = ymd(new Date());
   // Ejercicios del día en orden (de cada pareja de alternos, el que toca esta semana)
   const lista = useMemo(() => (day ? bloquesDelDia(day, state.exercises).map((b) => (b.par ? b.par.activo : b.id)).filter((id) => state.exercises[id]) : []), [day, state.exercises]);
   const [idx, setIdx] = useState(0);
@@ -56,7 +58,7 @@ export function EntrenoVivoModal({ dayId, onClose }) {
   const [hechas, setHechas] = useState({}); // { exId: [true, false…] }
   const [guardados, setGuardados] = useState({}); // ejercicios ya guardados en esta sesión
   const prefs = state.preferencias || {};
-  const descanso = prefs.descanso || 90;
+  const descanso = prefs.descanso || DESCANSO_SERIES_DEFECTO;
   const [ladoHecho, setLadoHecho] = useState({}); // { 'exId:serie': true } cuando ya está hecho el primer lado
   const [descansoAct, setDescansoAct] = useState(descanso); // lo que dura el descanso que está corriendo
   const arrancar = (seg) => { setDescansoAct(seg); startTimer(seg); };
@@ -105,6 +107,7 @@ export function EntrenoVivoModal({ dayId, onClose }) {
   const tras = descansoTrasSerie({ tipo: s.tipo, unilateral: false }, prefs);
 
   const marcarSerie = () => {
+    confirmarSerie(exId, nSerie); // la serie queda en azul: repeticiones confirmadas hoy
     if (primerLadoPendiente) {
       // Unilateral: primero un lado, descanso entre lados, y luego el otro lado en la misma serie
       setLadoHecho({ ...ladoHecho, [claveSerie]: true });
@@ -118,8 +121,10 @@ export function EntrenoVivoModal({ dayId, onClose }) {
     const quedan = m.findIndex((x) => !x);
     if (quedan === -1) {
       // Todas las series hechas: se guarda el registro de hoy de este ejercicio (como el botón de la tarjeta)
+      // Si faltan repeticiones, no se guarda ni se avanza: el aviso dice qué series faltan
+      const yaOk = guardados[exId] || estadoRegistroHoy(ex, hoyK).yaGuardado || saveEntry(exId);
+      if (!yaOk) return;
       const nuevos = { ...guardados, [exId]: true };
-      if (!guardados[exId]) saveEntry(exId);
       setGuardados(nuevos);
       let sig = lista.findIndex((id, i) => i > idx && !nuevos[id]);
       if (sig === -1) sig = lista.findIndex((id) => !nuevos[id]);
@@ -134,8 +139,7 @@ export function EntrenoVivoModal({ dayId, onClose }) {
 
   const guardarYa = () => {
     if (guardados[exId]) { showToast('Este ejercicio ya está guardado hoy'); return; }
-    saveEntry(exId);
-    setGuardados({ ...guardados, [exId]: true });
+    if (saveEntry(exId)) setGuardados({ ...guardados, [exId]: true });
   };
 
   const resta = timer ? Math.max(0, timer.end - nowMs) : 0;
@@ -204,15 +208,15 @@ export function EntrenoVivoModal({ dayId, onClose }) {
             <div key={j} style={{ borderTop: j ? '1px solid rgba(140,170,255,0.14)' : 'none', paddingTop: j ? 10 : 0 }}>
               <div className="font-body" style={{ color: T.muted, fontSize: 12, fontWeight: 700, textAlign: 'center' }}>Descenso {j + 1}</div>
               <Grande etiqueta="Peso (kg)" valor={d.weight} pasos={[2.5, 1.25]} onChange={(v) => patchSet({ drops: s.drops.map((x, k) => (k === j ? { ...x, weight: v } : x)) })} />
-              <Grande etiqueta="Repeticiones" valor={d.reps} pasos={[1]} onChange={(v) => patchSet({ drops: s.drops.map((x, k) => (k === j ? { ...x, reps: Math.round(v) } : x)) })} />
+              <Grande etiqueta="Repeticiones" valor={d.reps} pasos={[1]} azul={serieAzul(ex, nSerie, hoyK)} onChange={(v) => patchSet({ drops: s.drops.map((x, k) => (k === j ? { ...x, reps: Math.round(v) } : x)) })} />
             </div>
           ))
         ) : (
           <>
             <Grande testid="vivo-peso" etiqueta="Peso (kg)" valor={s.weight} pasos={[2.5, 1.25]} onChange={(v) => patchSet({ weight: v })} />
             {s.tipo === 'rp'
-              ? (s.tandas || []).map((r, j) => <Grande key={j} etiqueta={'Tanda ' + (j + 1) + ' (reps)'} valor={r} pasos={[1]} onChange={(v) => patchSet({ tandas: s.tandas.map((x, k) => (k === j ? Math.round(v) : x)) })} />)
-              : <Grande testid="vivo-reps" etiqueta="Repeticiones" valor={s.reps} pasos={[1]} onChange={(v) => patchSet({ reps: Math.round(v) })} />}
+              ? (s.tandas || []).map((r, j) => <Grande key={j} azul={serieAzul(ex, nSerie, hoyK)} etiqueta={'Tanda ' + (j + 1) + ' (reps)'} valor={r} pasos={[1]} onChange={(v) => patchSet({ tandas: s.tandas.map((x, k) => (k === j ? Math.round(v) : x)) })} />)
+              : <Grande testid="vivo-reps" azul={serieAzul(ex, nSerie, hoyK)} etiqueta="Repeticiones" valor={s.reps} pasos={[1]} onChange={(v) => patchSet({ reps: Math.round(v) })} />}
           </>
         )}
 
@@ -230,9 +234,11 @@ export function EntrenoVivoModal({ dayId, onClose }) {
       </div>
       <button data-testid="vivo-terminar" className="font-body btn" onClick={() => {
         if (!confirmarFin) { setConfirmarFin(true); return; }
+        // Solo se dan por guardados los ejercicios con todas sus series en azul (o ya guardados hoy)
+        const listos = lista.filter((id) => { const e = estadoRegistroHoy(state.exercises[id], hoyK); return e.listo || e.yaGuardado; });
         terminarEntreno(dayId, lista);
         if (timer) stopTimer();
-        setGuardados(Object.fromEntries(lista.map((id) => [id, true])));
+        setGuardados(Object.fromEntries(listos.map((id) => [id, true])));
       }} style={{ width: '100%', marginTop: 12, padding: 13, fontWeight: 900, fontSize: 14, border: '1.5px solid #A3E635', background: confirmarFin ? '#A3E635' : 'transparent', color: confirmarFin ? '#0B1500' : '#A3E635' }}>
         {confirmarFin ? 'Toca otra vez para terminar · se guarda lo que falte' : '🏁 Terminar entreno'}
       </button>

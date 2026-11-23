@@ -5,7 +5,7 @@ import { render, screen, fireEvent, act, cleanup } from '@testing-library/react'
 import { loadApp } from './loadApp.js';
 import { effNutri } from '../src/utils/health.js';
 import { ymd } from '../src/utils/format.js';
-import { bloquear, comida, desbloquear, entrarDia, irA } from './nav.js';
+import { comida, entrarDia, irA } from './nav.js';
 
 let A, errores, oe;
 beforeEach(() => {

@@ -21,7 +21,7 @@ import { stateFromDefaults } from './utils/defaults.js';
 import { clone, fmt, fmtMS, uid, ymd } from './utils/format.js';
 import { idZonaNueva } from './utils/medidasZonas.js';
 import { aplicarObjetivoPeso, pesoActualDe } from './utils/peso.js';
-import { RECORDATORIO_ID_BASE, duplicarDia as duplicarDiaPuro, duplicarEjercicio as duplicarEjercicioPuro, proximosRecordatorios } from './utils/entreno.js';
+import { RECORDATORIO_ID_BASE, duplicarDia as duplicarDiaPuro, duplicarEjercicio as duplicarEjercicioPuro, estadoRegistroHoy, firmaSets, marcasDeHoy, proximosRecordatorios, tieneReps } from './utils/entreno.js';
 import { applyImport } from './utils/share.js';
 import { activeExerciseIds, bestSerie1, computeScore, normalizeSet } from './utils/training.js';
 
@@ -233,7 +233,9 @@ export function App() {
   const removeSerieAt = useCallback((exId, idx) => {
     commit((prev) => {
       const ex = prev.exercises[exId]; if (!ex || ex.currentSets.length <= 1) return prev;
-      return { ...prev, exercises: { ...prev.exercises, [exId]: { ...ex, currentSets: ex.currentSets.filter((_, i) => i !== idx) } } };
+      // Las series en azul de después bajan un puesto para seguir apuntando a la misma serie
+      const marcas = ex.marcasHoy ? { ...ex.marcasHoy, sets: (ex.marcasHoy.sets || []).filter((i) => i !== idx).map((i) => (i > idx ? i - 1 : i)) } : null;
+      return { ...prev, exercises: { ...prev.exercises, [exId]: { ...ex, currentSets: ex.currentSets.filter((_, i) => i !== idx), ...(marcas ? { marcasHoy: marcas } : {}) } } };
     });
   }, [commit]);
 
@@ -275,22 +277,52 @@ export function App() {
   }, [commit]);
 
   /* ---------- registro del día, peso, ajustes ---------- */
+  // Confirma una serie de hoy (la pone en azul). Solo cuenta si tiene repeticiones.
+  const confirmarSerie = useCallback((id, idx) => {
+    commit((prev) => {
+      const ex = prev.exercises[id];
+      const hoyK = ymd(new Date());
+      if (!ex || !ex.currentSets[idx] || !tieneReps(ex.currentSets[idx])) return prev;
+      const marcadas = marcasDeHoy(ex, hoyK);
+      if (marcadas.includes(idx)) return prev;
+      return { ...prev, exercises: { ...prev.exercises, [id]: { ...ex, marcasHoy: { fecha: hoyK, sets: marcadas.concat([idx]) } } } };
+    });
+  }, [commit]);
+
+  // Guarda el registro de hoy de un ejercicio. Reglas:
+  // · solo si TODAS sus series están en azul (confirmadas hoy);
+  // · si ya está guardado hoy y no has cambiado nada, no hace nada;
+  // · si ya había un registro de hoy, lo sustituye (nunca hay dos del mismo día).
+  // Devuelve true si guardó.
   const saveEntry = useCallback((id) => {
     const prev = stateRef.current; const ex = prev.exercises[id];
-    if (!ex) return;
-    const newEntry = { date: new Date().toISOString(), sets: clone(ex.currentSets) };
-    const prevHistory = ex.history || [];
-    const prevBest = prevHistory.reduce((m, h) => Math.max(m, computeScore(h.sets && h.sets[0])), 0);
-    const newScore = computeScore(newEntry.sets[0]);
-    const last = prevHistory.length ? prevHistory[prevHistory.length - 1] : null;
+    if (!ex) return false;
+    const hoyK = ymd(new Date());
+    const est = estadoRegistroHoy(ex, hoyK);
+    if (est.yaGuardado) { showToast('Ya tienes guardado el registro de hoy de ' + ex.name + ' ✓'); return false; }
+    if (!est.listo) {
+      const n = est.pendientes.length;
+      showToast('Te falta' + (n === 1 ? '' : 'n') + ' ' + n + (n === 1 ? ' serie' : ' series') + ' por confirmar (en azul) en ' + ex.name, 'warn');
+      return false;
+    }
+    const sets = clone(ex.currentSets);
+    const newEntry = { date: new Date().toISOString(), sets };
+    const hist = ex.history || [];
+    const iHoy = hist.findIndex((h) => h && !h.seed && h.date && ymd(new Date(h.date)) === hoyK);
+    const anteriores = iHoy === -1 ? hist : hist.filter((_, i) => i !== iHoy);
+    const nuevoHist = iHoy === -1 ? hist.concat([newEntry]) : hist.map((h, i) => (i === iHoy ? newEntry : h));
+    const prevBest = anteriores.reduce((m, h) => Math.max(m, computeScore(h.sets && h.sets[0])), 0);
+    const newScore = computeScore(sets[0]);
+    const last = anteriores.length ? anteriores[anteriores.length - 1] : null;
     const prevLatestScore = last ? computeScore(last.sets && last.sets[0]) : null;
     const isPR = newScore > 0 && newScore > prevBest;
     const isDown = prevLatestScore !== null && newScore > 0 && newScore < prevLatestScore;
-    const next = { ...prev, exercises: { ...prev.exercises, [id]: { ...ex, history: prevHistory.concat([newEntry]) } } };
+    const next = { ...prev, exercises: { ...prev.exercises, [id]: { ...ex, history: nuevoHist, guardadoHoy: { fecha: hoyK, firma: firmaSets(ex.currentSets) } } } };
     setState(next); persistNow(next);
     if (isPR) showToast('🏆 ¡Nuevo récord en ' + ex.name + '!', 'pr');
     else if (isDown) showToast('Anotado — ha bajado un poco en ' + ex.name, 'warn');
     else showToast('Progreso guardado ✓');
+    return true;
   }, [persistNow, showToast]);
 
   // Terminar el entreno de un día: guarda el registro de hoy de los ejercicios que aún no lo tienen
@@ -303,9 +335,14 @@ export function App() {
     (ids || []).forEach((id) => {
       const ex = exercises[id];
       if (!ex) return;
-      const yaHoy = (ex.history || []).some((h) => h && !h.seed && h.date && ymd(new Date(h.date)) === hoyK);
-      if (yaHoy) return;
-      exercises[id] = { ...ex, history: (ex.history || []).concat([{ date: new Date().toISOString(), sets: clone(ex.currentSets) }]) };
+      // Solo guarda los ejercicios con todas sus series en azul y que no estén ya guardados hoy
+      const est = estadoRegistroHoy(ex, hoyK);
+      if (est.yaGuardado || !est.listo) return;
+      const hist = ex.history || [];
+      const iHoy = hist.findIndex((h) => h && !h.seed && h.date && ymd(new Date(h.date)) === hoyK);
+      const entrada = { date: new Date().toISOString(), sets: clone(ex.currentSets) };
+      const nuevoHist = iHoy === -1 ? hist.concat([entrada]) : hist.map((h, i) => (i === iHoy ? entrada : h));
+      exercises[id] = { ...ex, history: nuevoHist, guardadoHoy: { fecha: hoyK, firma: firmaSets(ex.currentSets) } };
       guardados += 1;
     });
     const next = { ...prev, exercises, entrenosHechos: normalizarEntrenosHechos({ ...(prev.entrenosHechos || {}), [hoyK]: dayId }) };
@@ -587,7 +624,7 @@ export function App() {
     updateExercise, updateCardio, addCardio, removeCardio,
     setActiveDay, setActiveTab, toggleEditMode, updateDay, addDay, removeDay, moveDay,
     addExercise, removeFromDay, moveExercise, addSerie, removeSerieAt,
-    saveEntry, terminarEntreno, marcarEntrenoHecho, logPeso, guardarFormulario, resetAll, importObj, restoreBackup, restaurarCopiaJson, hasBackup,
+    saveEntry, confirmarSerie, terminarEntreno, marcarEntrenoHecho, logPeso, guardarFormulario, resetAll, importObj, restoreBackup, restaurarCopiaJson, hasBackup,
     suggestObjetivo, rellenarObjetivosFaltantes, setPreferencia, setObjetivoPeso, commitDeshacible, persistencia, pedirPersistencia,
     duplicarDia, duplicarEjercicio, setRegistroDia, addMedida, editMedida, delMedida, addZonaMedida, renombrarZonaMedida, quitarZonaMedida, editRegistroEjercicio, borrarRegistroEjercicio, addFotoProgreso, delFotoProgreso, editFotoProgreso, programarRecordatorios,
     timer, nowMs, startTimer, addTimer, stopTimer, hoy: ymd(new Date()),

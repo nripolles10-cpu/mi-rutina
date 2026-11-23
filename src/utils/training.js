@@ -1,4 +1,4 @@
-import { DISCOS_KG, SET_TYPES, TABLA_1RM, catIdsDe } from '../data/catalog.js';
+import { DISCOS_KG, SET_TYPES, TABLA_1RM, TIPOS_SIN_SERIE, catIdsDe } from '../data/catalog.js';
 import { fmt, mean, num, numOrNull, nz } from '../utils/format.js';
 
 /* =========================================================================
@@ -46,14 +46,11 @@ export function normalizeSet(s, idx) {
   return ensureStruct(base);
 }
 
-// Series efectivas que cuenta una serie: calentamiento no cuenta; en rest-pause y dropset
-// cada tanda / descenso extra suma media serie.
+// Series efectivas que cuenta una serie: top set, back-off, rest-pause y dropset cuentan 1 cada una.
+// Calentamiento y aproximación no cuentan.
 export function effectiveCount(set) {
-  if (!set || set.tipo === 'warm') return 0;
-  let n = 1;
-  if (set.tipo === 'rp') n += 0.5 * Math.max(0, (set.tandas || []).length - 1);
-  if (set.tipo === 'drop') n += 0.5 * Math.max(0, (set.drops || []).length - 1);
-  return n;
+  if (!set || TIPOS_SIN_SERIE.includes(set.tipo)) return 0;
+  return 1;
 }
 
 // Volumen (kg totales levantados) de una serie. El calentamiento no cuenta.
@@ -140,7 +137,7 @@ export function describeSet(s) {
 }
 
 export function setVolume(s) {
-  if (!s || s.tipo === 'warm') return 0;
+  if (!s || TIPOS_SIN_SERIE.includes(s.tipo)) return 0;
   if (s.tipo === 'rp') return num(s.weight) * (s.tandas || []).reduce((a, r) => a + num(r), 0);
   if (s.tipo === 'drop') return (s.drops || []).reduce((a, d) => a + num(d && d.weight) * num(d && d.reps), 0);
   return num(s.weight) * num(s.reps);
