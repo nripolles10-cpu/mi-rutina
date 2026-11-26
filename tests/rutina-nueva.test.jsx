@@ -86,7 +86,7 @@ describe('registro de hoy: guardar solo con todas las series en azul', () => {
     for (const r of reps) { await type(r, '8'); await salirDe(r); }
     expect(boton().disabled).toBe(false);
     await click(boton());
-    expect(screen.getByRole('button', { name: /Registro de hoy guardado/ }).disabled).toBe(true);
+    expect(screen.getByRole('button', { name: /Guardado hoy/ }).disabled).toBe(true);
     const hoy = guardado().exercises.gemelo.history.filter((h) => !h.seed && h.date && new Date(h.date).toDateString() === new Date().toDateString());
     expect(hoy.length).toBe(1);
   });

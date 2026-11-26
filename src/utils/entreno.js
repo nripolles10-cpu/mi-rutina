@@ -398,6 +398,19 @@ export function marcasDeHoy(ex, hoyK) {
 }
 
 // Una serie está en azul cuando la confirmaste hoy y tiene repeticiones
+// Pesos confirmados hoy (el peso se marca en cuanto se cambia ese día; es solo un recordatorio, no bloquea nada)
+export function pesosDeHoy(ex, hoyK) {
+  const m = ex && ex.marcasHoy;
+  return m && m.fecha === hoyK && Array.isArray(m.pesos) ? m.pesos : [];
+}
+export function pesoAzul(ex, idx, hoyK) {
+  return pesosDeHoy(ex, hoyK).includes(idx);
+}
+// Quita un índice de una lista de marcas y baja los posteriores (al borrar una serie)
+export function quitarIndice(lista, idx) {
+  return (lista || []).filter((i) => i !== idx).map((i) => (i > idx ? i - 1 : i));
+}
+
 export function serieAzul(ex, idx, hoyK) {
   const s = ((ex && ex.currentSets) || [])[idx];
   return marcasDeHoy(ex, hoyK).includes(idx) && tieneReps(s);

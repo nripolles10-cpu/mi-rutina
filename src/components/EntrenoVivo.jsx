@@ -6,7 +6,8 @@ import { Native } from '../native/index.js';
 import { fmt, fmtMS, formatDecimal, parseDecimal, ymd } from '../utils/format.js';
 import { ensureStruct, setsVolume } from '../utils/training.js';
 import { DESCANSO_SERIES_DEFECTO, descansoTrasSerie, textoDescanso } from '../utils/descanso.js';
-import { estadoRegistroHoy, serieAzul, tieneReps } from '../utils/entreno.js';
+import { estadoRegistroHoy, pesoAzul, serieAzul, tieneReps } from '../utils/entreno.js';
+import { pasosUnilateral } from '../utils/lados.js';
 import { bloquesDelDia } from '../tabs/RutinaTab.jsx';
 import { SugerenciaProgresion } from './HistorialEjercicio.jsx';
 
@@ -48,7 +49,7 @@ function Grande({ etiqueta, valor, unidad, pasos, onChange, testid, azul = false
 }
 
 export function EntrenoVivoModal({ dayId, onClose }) {
-  const { state, updateExercise, saveEntry, confirmarSerie, terminarEntreno, marcarEntrenoHecho, startTimer, addTimer, stopTimer, timer, nowMs, showToast } = useGym();
+  const { state, updateExercise, saveEntry, confirmarSerie, actualizarPeso, terminarEntreno, marcarEntrenoHecho, startTimer, addTimer, stopTimer, timer, nowMs, showToast } = useGym();
   const day = (state.days || []).find((d) => d.id === dayId);
   const hoyK = ymd(new Date());
   // Ejercicios del día en orden (de cada pareja de alternos, el que toca esta semana)
@@ -104,6 +105,8 @@ export function EntrenoVivoModal({ dayId, onClose }) {
   const claveSerie = exId + ':' + nSerie;
   const unilateral = ex.lado === 'unilateral';
   const primerLadoPendiente = unilateral && !ladoHecho[claveSerie];
+  const pasos = unilateral ? pasosUnilateral(ex) : null;
+  const ladoAhora = pasos ? pasos[primerLadoPendiente ? 0 : 1] : null;
   const tras = descansoTrasSerie({ tipo: s.tipo, unilateral: false }, prefs);
 
   const marcarSerie = () => {
@@ -195,9 +198,23 @@ export function EntrenoVivoModal({ dayId, onClose }) {
             }}>{marcadas[i] ? '✓' : i + 1}</button>
           ))}
         </div>
-        {unilateral && (
-          <div className="font-body" data-testid="vivo-lado" style={{ marginTop: 10, color: T.cyan, fontWeight: 800, fontSize: 13 }}>
-            ↔️ Unilateral · {primerLadoPendiente ? 'primer lado' : 'ahora el otro lado'}
+        {pasos && (
+          <div style={{ marginTop: 10 }}>
+            <div className="font-body" style={{ color: T.muted, fontSize: 12, fontWeight: 700 }}>Ahora: <span data-testid="vivo-lado" style={{ color: T.cyan, fontWeight: 900, fontSize: 14 }}>{ladoAhora.texto}</span></div>
+            <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+              {pasos.map((p, k) => {
+                const hecho = k === 0 && !primerLadoPendiente;
+                const activo = k === (primerLadoPendiente ? 0 : 1);
+                return (
+                  <span key={k} className="font-body" style={{ padding: '6px 10px', borderRadius: 10, fontSize: 12.5, fontWeight: 800,
+                    color: activo ? '#06202B' : hecho ? '#ECFCCB' : T.dim,
+                    background: activo ? T.cyan : hecho ? 'rgba(163,230,53,0.25)' : 'transparent',
+                    border: '1.5px solid ' + (activo ? T.cyan : hecho ? '#A3E635' : 'rgba(140,170,255,0.3)') }}>
+                    {hecho ? '✓ ' : ''}{p.texto}
+                  </span>
+                );
+              })}
+            </div>
           </div>
         )}
         <div className="font-body" style={{ marginTop: 12, marginBottom: 12, color: tipo.soft, fontWeight: 800, fontSize: 15 }}>
@@ -215,7 +232,7 @@ export function EntrenoVivoModal({ dayId, onClose }) {
           ))
         ) : (
           <>
-            <Grande testid="vivo-peso" etiqueta="Peso (kg)" valor={s.weight} pasos={[2.5, 1.25]} onChange={(v) => patchSet({ weight: v })} />
+            <Grande testid="vivo-peso" etiqueta="Peso (kg)" valor={s.weight} pasos={[2.5, 1.25]} azul={pesoAzul(ex, nSerie, hoyK)} onChange={(v) => actualizarPeso(exId, nSerie, v)} />
             {s.tipo === 'rp'
               ? (s.tandas || []).map((r, j) => <Grande key={j} azul={serieAzul(ex, nSerie, hoyK)} etiqueta={'Tanda ' + (j + 1) + ' (reps)'} valor={r} pasos={[1]} onChange={(v) => patchSet({ tandas: s.tandas.map((x, k) => (k === j ? Math.round(v) : x)) })} />)
               : <Grande testid="vivo-reps" azul={serieAzul(ex, nSerie, hoyK)} etiqueta="Repeticiones" valor={s.reps} pasos={[1]} onChange={(v) => patchSet({ reps: Math.round(v) })} />}
@@ -224,7 +241,7 @@ export function EntrenoVivoModal({ dayId, onClose }) {
 
         <button onClick={marcarSerie} data-testid="vivo-hecha" className="font-body btn" style={{ width: '100%', padding: 16, fontSize: 16, marginTop: 4, background: color, color: '#060913', boxShadow: '0 6px 20px ' + color + '55' }}>
           {primerLadoPendiente
-            ? '✓ Primer lado hecho · descanso ' + textoDescanso(descansoTrasSerie({ tipo: s.tipo, unilateral: true, ladoPendiente: true }, prefs, ex.descansoLados))
+            ? '✓ ' + pasos[0].texto + ' hecho · descanso ' + textoDescanso(descansoTrasSerie({ tipo: s.tipo, unilateral: true, ladoPendiente: true }, prefs, ex.descansoLados)) + ', luego ' + pasos[1].texto
             : marcadas.filter(Boolean).length + (marcadas[nSerie] ? 0 : 1) >= sets.length && !guardados[exId] ? '✓ Última serie · guardar y descansar' : '✓ Serie hecha · descanso ' + fmtMS(tras * 1000)}
         </button>
         <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>

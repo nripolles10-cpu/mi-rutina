@@ -9,7 +9,8 @@ import { DIAS_CORTOS, DIAS_LARGOS } from '../utils/cardio.js';
 import { computeScore, effectiveCount, ensureStruct, latestSerie1 } from '../utils/training.js';
 import { EntrenoVivoModal } from '../components/EntrenoVivo.jsx';
 import { HistorialEjercicioModal, SugerenciaProgresion } from '../components/HistorialEjercicio.jsx';
-import { estadoRegistroHoy, semanaDescarga, serieAzul } from '../utils/entreno.js';
+import { estadoRegistroHoy, semanaDescarga, serieAzul, pesoAzul } from '../utils/entreno.js';
+import { ladoInicioDe, pasosUnilateral } from '../utils/lados.js';
 
 /* =========================================================================
    SECCIÓN 7 · PESTAÑAS
@@ -187,7 +188,7 @@ export function SetTypeSelect({ value, onChange }) {
   );
 }
 
-export function SetRow({ s, idx, onPatch, onRemove, canRemove, editMode, azul = false, onConfirm }) {
+export function SetRow({ s, idx, onPatch, onRemove, canRemove, editMode, azul = false, onConfirm, pasos = null, pesoAzulSerie = false, onPeso }) {
   const t = SET_TYPES[s.tipo] || SET_TYPES.top;
   const tandas = s.tandas || [];
   const drops = s.drops || [];
@@ -204,11 +205,25 @@ export function SetRow({ s, idx, onPatch, onRemove, canRemove, editMode, azul = 
         {editMode && canRemove && <MiniBtn title="Quitar esta serie" onClick={onRemove}>✕</MiniBtn>}
       </div>
 
+      {pasos && (
+        <div role="list" aria-label={'Orden de la serie ' + (idx + 1)} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
+          {pasos.map((p, k) => (
+            <React.Fragment key={k}>
+              {k > 0 && <span aria-hidden="true" className="font-body" style={{ color: T.muted, fontWeight: 800 }}>→</span>}
+              <span role="listitem" className="font-body" style={{ padding: '6px 10px', borderRadius: 10, fontSize: 12.5, fontWeight: 800, color: k === 0 ? '#06202B' : '#EDE9FE',
+                background: k === 0 ? T.cyan : 'rgba(167,139,250,0.35)', border: '1px solid ' + (k === 0 ? T.cyan : 'rgba(167,139,250,0.6)') }}>
+                Serie {idx + 1} · {p.texto}
+              </span>
+            </React.Fragment>
+          ))}
+        </div>
+      )}
+
       {s.tipo === 'rp' && (
         <div style={{ marginTop: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <span className="font-body" style={small}>Peso fijo</span>
-            <NumField forceEditable value={s.weight} onChange={(v) => onPatch({ weight: v })} placeholder="kg" w={60} />
+            <NumField forceEditable value={s.weight} onChange={onPeso || ((v) => onPatch({ weight: v }))} placeholder="kg" w={60} azul={pesoAzulSerie} />
             <span className="font-body" style={small}>kg</span>
             <span style={{ flex: 1 }} />
             <span className="font-body" style={small}>Tandas</span>
@@ -249,7 +264,7 @@ export function SetRow({ s, idx, onPatch, onRemove, canRemove, editMode, azul = 
         <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
           <NumField forceEditable value={s.reps} onChange={(v) => onPatch({ reps: v })} placeholder="reps" w={54} azul={azul} onBlur={onConfirm} />
           <span className="font-body" style={small}>×</span>
-          <NumField forceEditable value={s.weight} onChange={(v) => onPatch({ weight: v })} placeholder="kg" w={60} />
+          <NumField forceEditable value={s.weight} onChange={onPeso || ((v) => onPatch({ weight: v }))} placeholder="kg" w={60} azul={pesoAzulSerie} />
           <span className="font-body" style={small}>kg</span>
         </div>
       )}
@@ -307,7 +322,7 @@ function LadoBoton({ activo, onClick, emoji, titulo, texto }) {
 }
 
 export function ExerciseCard({ id, dayId, embedded }) {
-  const { state, updateExercise, updateDay, saveEntry, confirmarSerie, suggestObjetivo, removeFromDay, addSerie, removeSerieAt, askConfirm, fotos, setFoto, delFoto, showToast, duplicarEjercicio } = useGym();
+  const { state, updateExercise, updateDay, saveEntry, confirmarSerie, actualizarPeso, suggestObjetivo, removeFromDay, addSerie, removeSerieAt, askConfirm, fotos, setFoto, delFoto, showToast, duplicarEjercicio } = useGym();
   const [open, setOpen] = useState(false);
   const [verHistorial, setVerHistorial] = useState(false);
   const [fotoOcupada, setFotoOcupada] = useState(false);
@@ -445,6 +460,24 @@ export function ExerciseCard({ id, dayId, embedded }) {
                 </div>
                 {uni && (
                   <div style={{ marginTop: 12 }}>
+                    <Label>Empiezo con</Label>
+                    <div role="radiogroup" aria-label="Lado con el que empiezas" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                      {[['izquierdo', 'Izquierdo'], ['derecho', 'Derecho']].map(([val, txt]) => {
+                        const act = ladoInicioDe(ex) === val;
+                        return (
+                          <button key={val} type="button" role="radio" aria-checked={act} onClick={() => updateExercise(id, { ladoInicio: val })} className="font-body"
+                            style={{ padding: '10px 8px', borderRadius: 12, cursor: 'pointer', fontWeight: 800, fontSize: 13, color: T.text,
+                              border: '2px solid ' + (act ? T.cyan : 'rgba(140,170,255,0.25)'), background: act ? 'rgba(var(--ac-rgb),0.2)' : 'rgba(255,255,255,0.04)' }}>
+                            {txt}{act ? ' ✓' : ''}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="font-body" style={{ color: T.muted, fontSize: 12, marginTop: 6 }}>Orden de cada serie: {pasosUnilateral(ex).map((p) => p.texto).join(' → ')}</div>
+                  </div>
+                )}
+                {uni && (
+                  <div style={{ marginTop: 12 }}>
                     <Label>Descanso entre un lado y el otro</Label>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                       <Chip active={ex.descansoLados === null || ex.descansoLados === undefined} onClick={() => updateExercise(id, { descansoLados: null })} style={{ padding: '6px 12px', fontSize: 12 }}>
@@ -515,6 +548,7 @@ export function ExerciseCard({ id, dayId, embedded }) {
               {ex.currentSets.map((s, idx) => (
                 <SetRow key={idx} s={s} idx={idx} editMode={editMode} canRemove={ex.currentSets.length > 1}
                   azul={serieAzul(ex, idx, hoyK)} onConfirm={() => confirmarSerie(id, idx)}
+                  pasos={uni ? pasosUnilateral(ex) : null} pesoAzulSerie={pesoAzul(ex, idx, hoyK)} onPeso={(v) => actualizarPeso(id, idx, v)}
                   onPatch={(patch) => setSet(idx, patch)} onRemove={() => removeSerieAt(id, idx)} />
               ))}
             </div>
@@ -538,7 +572,7 @@ export function ExerciseCard({ id, dayId, embedded }) {
             </div>
             <button onClick={() => saveEntry(id)} disabled={est.yaGuardado || !est.listo} className="font-body btn"
               style={{ marginTop: 10, width: '100%', background: est.yaGuardado || !est.listo ? 'rgba(255,255,255,0.08)' : mc, color: est.yaGuardado || !est.listo ? T.dim : '#060913', boxShadow: est.yaGuardado || !est.listo ? 'none' : '0 6px 20px ' + mc + '55' }}>
-              {est.yaGuardado ? '✅ Registro de hoy guardado' : est.listo ? '💾 Guardar registro de hoy' : '💾 Guardar (faltan ' + est.pendientes.length + (est.pendientes.length === 1 ? ' serie' : ' series') + ' en azul)'}
+              {est.yaGuardado ? '✅ Guardado hoy · cambia algo para volver a guardar' : est.listo ? '💾 Guardar registro de hoy' : '💾 Guardar (faltan ' + est.pendientes.length + (est.pendientes.length === 1 ? ' serie' : ' series') + ' en azul)'}
             </button>
           </div>
 

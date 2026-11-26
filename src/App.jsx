@@ -21,7 +21,7 @@ import { stateFromDefaults } from './utils/defaults.js';
 import { clone, fmt, fmtMS, uid, ymd } from './utils/format.js';
 import { idZonaNueva } from './utils/medidasZonas.js';
 import { aplicarObjetivoPeso, pesoActualDe } from './utils/peso.js';
-import { RECORDATORIO_ID_BASE, duplicarDia as duplicarDiaPuro, duplicarEjercicio as duplicarEjercicioPuro, estadoRegistroHoy, firmaSets, marcasDeHoy, proximosRecordatorios, tieneReps } from './utils/entreno.js';
+import { RECORDATORIO_ID_BASE, duplicarDia as duplicarDiaPuro, duplicarEjercicio as duplicarEjercicioPuro, estadoRegistroHoy, firmaSets, marcasDeHoy, proximosRecordatorios, tieneReps, pesosDeHoy, quitarIndice } from './utils/entreno.js';
 import { applyImport } from './utils/share.js';
 import { activeExerciseIds, bestSerie1, computeScore, normalizeSet } from './utils/training.js';
 
@@ -234,7 +234,10 @@ export function App() {
     commit((prev) => {
       const ex = prev.exercises[exId]; if (!ex || ex.currentSets.length <= 1) return prev;
       // Las series en azul de después bajan un puesto para seguir apuntando a la misma serie
-      const marcas = ex.marcasHoy ? { ...ex.marcasHoy, sets: (ex.marcasHoy.sets || []).filter((i) => i !== idx).map((i) => (i > idx ? i - 1 : i)) } : null;
+      const hoyK = ymd(new Date());
+      const marcas = ex.marcasHoy && ex.marcasHoy.fecha === hoyK
+        ? { fecha: hoyK, sets: quitarIndice(marcasDeHoy(ex, hoyK), idx), pesos: quitarIndice(pesosDeHoy(ex, hoyK), idx) }
+        : null;
       return { ...prev, exercises: { ...prev.exercises, [exId]: { ...ex, currentSets: ex.currentSets.filter((_, i) => i !== idx), ...(marcas ? { marcasHoy: marcas } : {}) } } };
     });
   }, [commit]);
@@ -285,7 +288,21 @@ export function App() {
       if (!ex || !ex.currentSets[idx] || !tieneReps(ex.currentSets[idx])) return prev;
       const marcadas = marcasDeHoy(ex, hoyK);
       if (marcadas.includes(idx)) return prev;
-      return { ...prev, exercises: { ...prev.exercises, [id]: { ...ex, marcasHoy: { fecha: hoyK, sets: marcadas.concat([idx]) } } } };
+      return { ...prev, exercises: { ...prev.exercises, [id]: { ...ex, marcasHoy: { fecha: hoyK, sets: marcadas.concat([idx]), pesos: pesosDeHoy(ex, hoyK) } } } };
+    });
+  }, [commit]);
+
+  // Cambia el peso de una serie. Se marca en azul ese mismo día (recordatorio), sin bloquear nada.
+  const actualizarPeso = useCallback((id, idx, peso) => {
+    commit((prev) => {
+      const ex = prev.exercises[id];
+      if (!ex || !ex.currentSets[idx]) return prev;
+      const hoyK = ymd(new Date());
+      const conPeso = peso !== null && peso !== undefined && peso !== '';
+      const pesos = pesosDeHoy(ex, hoyK);
+      const nuevos = conPeso ? (pesos.includes(idx) ? pesos : pesos.concat([idx])) : pesos.filter((i) => i !== idx);
+      const sets = ex.currentSets.map((x, i) => (i === idx ? { ...x, weight: peso } : x));
+      return { ...prev, exercises: { ...prev.exercises, [id]: { ...ex, currentSets: sets, marcasHoy: { fecha: hoyK, sets: marcasDeHoy(ex, hoyK), pesos: nuevos } } } };
     });
   }, [commit]);
 
@@ -624,7 +641,7 @@ export function App() {
     updateExercise, updateCardio, addCardio, removeCardio,
     setActiveDay, setActiveTab, toggleEditMode, updateDay, addDay, removeDay, moveDay,
     addExercise, removeFromDay, moveExercise, addSerie, removeSerieAt,
-    saveEntry, confirmarSerie, terminarEntreno, marcarEntrenoHecho, logPeso, guardarFormulario, resetAll, importObj, restoreBackup, restaurarCopiaJson, hasBackup,
+    saveEntry, confirmarSerie, actualizarPeso, terminarEntreno, marcarEntrenoHecho, logPeso, guardarFormulario, resetAll, importObj, restoreBackup, restaurarCopiaJson, hasBackup,
     suggestObjetivo, rellenarObjetivosFaltantes, setPreferencia, setObjetivoPeso, commitDeshacible, persistencia, pedirPersistencia,
     duplicarDia, duplicarEjercicio, setRegistroDia, addMedida, editMedida, delMedida, addZonaMedida, renombrarZonaMedida, quitarZonaMedida, editRegistroEjercicio, borrarRegistroEjercicio, addFotoProgreso, delFotoProgreso, editFotoProgreso, programarRecordatorios,
     timer, nowMs, startTimer, addTimer, stopTimer, hoy: ymd(new Date()),
