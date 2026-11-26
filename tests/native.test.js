@@ -224,7 +224,7 @@ describe('avisos y compartir en el móvil', () => {
     const at = Date.now() + 90000;
     const r = await N.scheduleNotification({ id: 1001, title: 'Descanso terminado', body: 'A por la siguiente serie', at });
     expect(r.ok).toBe(true);
-    expect(sim.programadas[0]).toMatchObject({ id: 1001, channelId: 'descanso', smallIcon: 'ic_stat_mirutina', schedule: { allowWhileIdle: true } });
+    expect(sim.programadas[0]).toMatchObject({ id: 1001, channelId: 'descanso_v2', smallIcon: 'ic_stat_mirutina', schedule: { allowWhileIdle: true } });
     expect(sim.programadas[0].schedule.at.getTime()).toBe(at);
   });
 

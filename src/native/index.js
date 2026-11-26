@@ -26,7 +26,9 @@ const STAMP_KEY = STORAGE_KEY + '_hora'; // cuándo se guardó cada copia (para 
 export const FOTOS_KEY = 'gymtracker_fotos_v1'; // fotos en base64 (navegador, y datos antiguos del móvil)
 const FOTOS_NATIVE_KEY = 'gymtracker_fotos_v2'; // móvil: { idEjercicio: ruta del archivo }
 export const NATIVE_AVISO = 'Esta función solo está disponible en la app instalada en el móvil.';
-export const NOTIF_CANAL = 'descanso';
+// Canal del aviso de fin de descanso. Es un id nuevo a propósito: Android no cambia el sonido de un canal ya creado.
+export const NOTIF_CANAL = 'descanso_v2';
+const NOTIF_CANAL_ANTIGUO = 'descanso'; // canal de versiones anteriores (sonido por defecto), se borra al arrancar
 export const NOTIF_ID_DESCANSO = 1001;
 export const NOTIF_CANAL_RECORDATORIOS = 'recordatorios';
 
@@ -175,8 +177,9 @@ export const Native = {
     MEM.fotos = mapa;
     // Canal de notificaciones de prioridad alta para el descanso
     try {
-      await LocalNotifications.createChannel({ id: NOTIF_CANAL, name: 'Descanso entre series', description: 'Aviso cuando termina el descanso', importance: 5, visibility: 1, vibration: true });
+      await LocalNotifications.createChannel({ id: NOTIF_CANAL, name: 'Fin del descanso', description: 'Aviso fuerte cuando termina el descanso entre series', importance: 5, visibility: 1, vibration: true, sound: 'descanso_fin' });
     } catch (e) { /* sin canal: Android usa el de por defecto */ }
+    try { await LocalNotifications.deleteChannel({ id: NOTIF_CANAL_ANTIGUO }); } catch (e) { /* ya no existe */ }
     try {
       await LocalNotifications.createChannel({ id: NOTIF_CANAL_RECORDATORIOS, name: 'Recordatorios de entrenamiento', description: 'Aviso los días y a la hora que elijas para entrenar', importance: 4, visibility: 1, vibration: true });
     } catch (e) { /* sin canal: Android usa el de por defecto */ }
@@ -336,20 +339,29 @@ export const Native = {
   },
 
   beep() { // NATIVE-HOOK
+    // Respaldo dentro de la app (cuando no hay notificación): la misma melodía que el sonido del canal
     try {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return false;
       const shared = SHARED_AUDIO && SHARED_AUDIO.state !== 'closed';
       const ctx = shared ? SHARED_AUDIO : new AC();
       if (ctx.state === 'suspended' && ctx.resume) ctx.resume().catch(() => {});
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine'; osc.frequency.value = 880;
-      gain.gain.setValueAtTime(0.2, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.start(); osc.stop(ctx.currentTime + 0.4);
-      if (!shared) setTimeout(() => { try { ctx.close(); } catch (e) { /* ya cerrado */ } }, 600);
+      const t0 = ctx.currentTime + 0.02;
+      const notas = [[880, 0], [1108.7, 0.22], [1318.5, 0.44], [1318.5, 0.70]];
+      notas.forEach(([f, dt]) => {
+        const largo = dt === 0.70 ? 0.9 : 0.32;
+        [[1, 1], [2, 0.45], [3, 0.15]].forEach(([mult, peso]) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine'; osc.frequency.value = f * mult;
+          gain.gain.setValueAtTime(0.0001, t0 + dt);
+          gain.gain.linearRampToValueAtTime(0.6 * peso, t0 + dt + 0.008);
+          gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dt + largo);
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.start(t0 + dt); osc.stop(t0 + dt + largo + 0.05);
+        });
+      });
+      if (!shared) setTimeout(() => { try { ctx.close(); } catch (e) { /* ya cerrado */ } }, 2000);
       return true;
     } catch (e) { return false; }
   },
